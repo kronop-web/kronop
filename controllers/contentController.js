@@ -89,11 +89,6 @@ const getUserStories = async (req, res) => {
             storyConfig.libraryId, 
             storyConfig.apiKey
         );
-        
-            libraryId: storyConfig.libraryId,
-            apiKey: storyConfig.apiKey ? 'Present' : 'Missing',
-            apiKeyLength: storyConfig.apiKey?.length
-        });
 
         res.json({ success: true, data: bunnyStories });
     } catch (error) {
