@@ -1,0 +1,1 @@
+export const liveService = { getLiveStreams: async () => [] };

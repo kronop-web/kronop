@@ -1,0 +1,160 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createClient } from '@supabase/supabase-js';
+import 'react-native-url-polyfill/auto';
+import Constants from 'expo-constants';
+
+const supabaseUrl = Constants.expoConfig?.extra?.EXPO_PUBLIC_SUPABASE_URL || 'https://sduyduumnvkuxqhjhjof.supabase.co';
+const supabaseAnonKey = Constants.expoConfig?.extra?.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkdXlkdXVtbnZrdXhxaGpoam9mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2MjI5OTMsImV4cCI6MjA4NTE5ODk5M30.RoDPoo3mqJccDUpERr_lnEGHjiJXQXhOouzqhuDXtkE';
+
+console.log('🔗 Supabase URL:', supabaseUrl);
+console.log('🔐 Using REAL Supabase Auth - No Mock Authentication!');
+console.log('✅ Supabase Connection Successful - Real Credentials Loaded!');
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+export class SupabaseAuthService {
+  static async signIn(email: string, password: string) {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          throw new Error('गलत पासवर्ड या ईमेल!');
+        }
+        throw error;
+      }
+
+      // Store token in AsyncStorage
+      if (data.session?.access_token) {
+        await AsyncStorage.setItem('supabase_token', data.session.access_token);
+      }
+
+      // Sync user with MongoDB - this will throw error if user not found
+      if (data.user) {
+        try {
+          await this.syncUserWithMongoDB(data.user);
+        } catch (syncError: any) {
+          // Clear session if sync fails
+          await supabase.auth.signOut();
+          await AsyncStorage.removeItem('supabase_token');
+          throw new Error(syncError.message || 'Access Denied');
+        }
+      }
+
+      return { success: true, data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  static async signUp(email: string, password: string, displayName?: string) {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            display_name: displayName || 'User',
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      // Store token in AsyncStorage
+      if (data.session?.access_token) {
+        await AsyncStorage.setItem('supabase_token', data.session.access_token);
+      }
+
+      // Sync user with MongoDB
+      if (data.user) {
+        await this.syncUserWithMongoDB(data.user);
+      }
+
+      return { success: true, data };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  static async signOut() {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+
+      // Remove token from AsyncStorage
+      await AsyncStorage.removeItem('supabase_token');
+
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  static async getCurrentSession() {
+    try {
+      // First try to get token from AsyncStorage
+      const token = await AsyncStorage.getItem('supabase_token');
+      
+      if (token) {
+        const { data: { user }, error } = await supabase.auth.getUser(token);
+        if (error) throw error;
+        return { success: true, data: user };
+      }
+
+      // Fallback to current session
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      
+      return { success: true, data: session?.user || null };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  static async syncUserWithMongoDB(user: any) {
+    try {
+      const response = await fetch('http://10.37.255.157:3000/api/users/sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          supabaseId: user.id,
+          email: user.email,
+          displayName: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (!response.ok) {
+        if (response.status === 403) {
+          throw new Error('Access Denied - User not found in database');
+        }
+        throw new Error(result.error || 'Failed to sync with MongoDB');
+      }
+      
+      if (!result.success) {
+        console.error('MongoDB sync failed:', result.error);
+        throw new Error('Access Denied - User verification failed');
+      }
+
+      return result;
+    } catch (error) {
+      console.error('MongoDB sync error:', error);
+      throw error;
+    }
+  }
+
+  static async onAuthStateChange(callback: (user: any) => void) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      callback(session?.user || null);
+    });
+
+    return subscription;
+  }
+}
