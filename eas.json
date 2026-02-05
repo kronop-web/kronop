@@ -7,18 +7,18 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://10.37.255.157:3000/api"
+        "EXPO_PUBLIC_API_URL": "https://web-production-dc9f.up.railway.app/api"
       }
     },
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://10.37.255.157:3000/api"
+        "EXPO_PUBLIC_API_URL": "https://web-production-dc9f.up.railway.app/api"
       }
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://10.37.255.157:3000/api"
+        "EXPO_PUBLIC_API_URL": "https://web-production-dc9f.up.railway.app/api"
       }
     }
   }
