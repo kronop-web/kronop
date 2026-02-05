@@ -1,17 +1,8 @@
 import axios from 'axios';
-import { BASE_URL } from '../config/apiConfig';
 
-// Clean base URL to prevent double slashes
-const getCleanBaseUrl = () => {
-  const envUrl = process.env.EXPO_PUBLIC_API_URL;
-  if (!envUrl) return BASE_URL;
-  
-  // Remove all trailing slashes and add single /api
-  const cleanUrl = envUrl.replace(/\/+$/, '');
-  return `${cleanUrl}/api`;
-};
-
-const API_URL = getCleanBaseUrl();
+const base = process.env.EXPO_PUBLIC_API_URL || '';
+const cleanBase = base.replace(/\/+$/, ''); 
+export const API_URL = `${cleanBase}/api`;
 console.log('🔗 API Base URL set to:', API_URL);
 
 const API_CLIENT = axios.create({
