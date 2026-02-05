@@ -5,9 +5,9 @@
 const getBaseUrl = () => {
   // Check for environment variable (server-side)
   if (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_API_URL) {
-    // Remove /api from the end if it exists to avoid double slash
+    // Don't add /api if it's already there
     const apiUrl = process.env.EXPO_PUBLIC_API_URL;
-    return apiUrl.endsWith('/api') ? apiUrl : `${apiUrl}/api`;
+    return apiUrl;
   }
 
   // Fallback to Railway
