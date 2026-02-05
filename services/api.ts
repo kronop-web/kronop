@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { BASE_URL } from '../config/apiConfig';
 
-const API_URL = BASE_URL;
+// Fix double slash issue by cleaning the base URL
+const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, '') + '/api';
 console.log('🔗 API Base URL set to:', API_URL);
 
 const API_CLIENT = axios.create({
