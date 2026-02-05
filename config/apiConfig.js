@@ -1,24 +1,20 @@
 // Global API Configuration for Kronop App
-// Updated for Render Deployment
+// Updated for Railway Deployment
 
 // Dynamic base URL that works in all environments
 const getBaseUrl = () => {
-  // Check if we're in production on Render
-  if (typeof window !== 'undefined' && window.location.hostname.includes('onrender.com')) {
-    return 'https://kronop.onrender.com/api';
-  }
-  
   // Check for environment variable (server-side)
   if (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_API_URL) {
-    return `${process.env.EXPO_PUBLIC_API_URL}/api`;
+    return process.env.EXPO_PUBLIC_API_URL;
   }
 
-  return '';
+  // Fallback to Railway
+  return 'https://web-production-dc9f.up.railway.app/api';
 };
 
 export const BASE_URL = getBaseUrl();
 
-// API Endpoints
+// API Endpoints (remove /api since BASE_URL already includes it)
 export const API_ENDPOINTS = {
   // Content endpoints
   PHOTOS: `${BASE_URL}/photos`,
