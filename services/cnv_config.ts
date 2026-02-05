@@ -52,7 +52,6 @@ export const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     const response = await fetch(fullUrl, {
       headers: {
         'Content-Type': 'application/json',
-        'ngrok-skip-browser-warning': 'true',
         'User-Agent': 'KronopApp',
         ...authHeader,
         ...options.headers,

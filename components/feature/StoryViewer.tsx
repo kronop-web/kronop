@@ -32,7 +32,6 @@ function VideoStory({ videoUrl, isPlaying, style }: { videoUrl: string; isPlayin
   const player = useVideoPlayer({
     uri: videoUrl,
     headers: {
-      'ngrok-skip-browser-warning': 'true',
       'User-Agent': 'KronopApp'
     }
   }, (player) => {

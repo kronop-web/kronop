@@ -328,7 +328,6 @@ function ReelItem({
   const player = useVideoPlayer({
     uri: videoSource,
     headers: {
-      'ngrok-skip-browser-warning': 'true',
       'User-Agent': 'KronopApp'
     }
   }, (playerInstance) => {

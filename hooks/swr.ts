@@ -26,7 +26,6 @@ const fetchContent = async (type: ContentType, page: number, limit: number): Pro
   const tryFetch = async (url: string) => {
     const res = await fetch(url, {
       headers: {
-        'ngrok-skip-browser-warning': 'true',
         'Content-Type': 'application/json',
       }
     });
