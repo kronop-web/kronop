@@ -10,8 +10,6 @@
     "dev": "node server.js",
     "start": "node server.js",
     "start:backend": "node server.js",
-    "start:ngrok": "node scripts/start-ngrok.js",
-    "dev:ngrok": "concurrently \"npm run start:ngrok\" \"npm run start:backend\"",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",
     "ios": "expo run:ios",
