@@ -1,7 +1,7 @@
 const axios = require('axios');
 const Content = require('../models/Content');
 const RealtimeService = require('./realtimeService');
-const { BUNNY_CONFIG } = require('../constants/Config');
+const { BUNNY_CONFIG, LIBRARY_ID_MAP } = require('../config/bunnyConfig');
 
 class AutoSyncService {
   constructor() {

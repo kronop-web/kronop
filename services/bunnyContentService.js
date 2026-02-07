@@ -1,7 +1,7 @@
 const axios = require('axios');
 const mongoose = require('mongoose');
 const DatabaseService = require('./databaseService');
-const { LIBRARY_ID_MAP } = require('../constants/Config');
+const { LIBRARY_ID_MAP } = require('../config/bunnyConfig');
 require('dotenv').config();
 
 let redisClient = null;

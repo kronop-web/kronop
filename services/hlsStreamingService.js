@@ -2,7 +2,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 const axios = require('axios');
-const { BUNNY_CONFIG } = require('../constants/Config');
+const { BUNNY_CONFIG } = require('../config/bunnyConfig');
 
 class HLSStreamingService {
   constructor() {

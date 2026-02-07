@@ -1,6 +1,6 @@
 const axios = require('axios');
 const DatabaseService = require('./databaseService');
-const { BUNNY_CONFIG } = require('../constants/Config');
+const { BUNNY_CONFIG, LIBRARY_ID_MAP } = require('../config/bunnyConfig');
 
 class BunnySyncService {
   static async verifyVideoExists(videoGuid, type) {
