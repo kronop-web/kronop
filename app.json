@@ -74,7 +74,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "EXPO_PUBLIC_API_URL": "https://web-production-dc9f.up.railway.app",
+      "EXPO_PUBLIC_API_URL": "https://web-production-9afbe.up.railway.app",
       "router": {},
       "eas": {
         "projectId": "6dc9b76b-95bf-4c94-a09f-e4481b97cac2"
