@@ -38,6 +38,9 @@ export const API_KEYS = {
   
   // Database
   MONGODB_URI: process.env.MONGODB_URI || '',
+  
+  // Railway URL
+  RAILWAY_URL: process.env.EXPO_PUBLIC_API_URL || 'https://web-production-9afbe.up.railway.app',
 };
 
 // Type definitions for better TypeScript support

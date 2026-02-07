@@ -1,18 +1,22 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
+// ==================== NETWORK CONFIGURATION ====================
+// Railway deployment URL configuration
+
 const PORT = 3000;
 
-// Use EXPO_PUBLIC_API_URL directly from environment
+// Use Railway URL for deployment
 const getApiBaseUrl = () => {
   const envUrl = Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL || process.env.EXPO_PUBLIC_API_URL;
   if (!envUrl) {
-    throw new Error('EXPO_PUBLIC_API_URL environment variable is required');
+    // Default to Railway URL for production
+    return 'https://web-production-9afbe.up.railway.app';
   }
   
   // Remove trailing slashes and add /api
-  const cleanUrl = envUrl.replace(/\/+$/, '');
-  return `${cleanUrl}/api`;
+  const cleanBase = envUrl.replace(/\/+$/, '');
+  return cleanBase.endsWith('/api') ? cleanBase : `${cleanBase}/api`;
 };
 
 export const API_BASE_URL = getApiBaseUrl();
