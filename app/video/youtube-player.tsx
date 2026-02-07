@@ -194,7 +194,6 @@ export default function YouTubePlayerScreen() {
             style={styles.videoPlayer}
             player={player}
             contentFit="contain"
-            allowsFullscreen
             allowsPictureInPicture
           />
           

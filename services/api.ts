@@ -1,8 +1,10 @@
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_KEYS, BUNNY_CONFIG, getBunnyConfigByType, BunnyConfigType } from '../constants/Config';
 
 const base = process.env.EXPO_PUBLIC_API_URL || '';
 const cleanBase = base.replace(/\/+$/, ''); 
-export const API_URL = `${cleanBase}/api`;
+export const API_URL = cleanBase.endsWith('/api') ? cleanBase : `${cleanBase}/api`;
 console.log('🔗 API Base URL set to:', API_URL);
 
 const API_CLIENT = axios.create({
@@ -39,17 +41,41 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     const fullUrl = `${API_URL}${endpoint}`;
     console.log(`📡 Fetching: ${fullUrl}`);
     
+    // Get authentication token - check both for compatibility
+    const token = await AsyncStorage.getItem('supabase_token') || await AsyncStorage.getItem('user_token');
+    console.log(`🔐 Token present: ${!!token}, Token length: ${token?.length || 0}`);
+    
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` }),
+      ...options.headers,
+    };
+    
+    console.log(`📤 Request headers:`, JSON.stringify(headers, null, 2));
+    console.log(`📤 Request options:`, JSON.stringify({
+      method: options.method || 'GET',
+      body: options.body,
+    }, null, 2));
+    
     const response = await fetch(fullUrl, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      headers,
       ...options,
     });
 
     if (!response.ok) {
       console.error(`❌ API Error: ${response.status} ${response.statusText} at ${fullUrl}`);
-      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      
+      // Try to get error response body
+      let errorDetails = '';
+      try {
+        const errorText = await response.text();
+        errorDetails = errorText;
+        console.error(`❌ Error response body:`, errorText);
+      } catch (e) {
+        console.error(`❌ Could not read error response body`);
+      }
+      
+      throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorDetails}`);
     }
 
     const result = await response.json();
@@ -346,7 +372,10 @@ export const savedApi = {
       limit: limit.toString()
     });
     
-    return await apiCall(`/content/saved?${params}`);
+    const endpoint = `/content/saved?${params}`;
+    console.log('🔍 Calling savedApi.getSaved with endpoint:', endpoint);
+    
+    return await apiCall(endpoint);
   },
   
   saveItem: async (itemId: string, itemType: string) => {
@@ -417,43 +446,12 @@ export const userProfileApi = {
   }
 };
 
-// ==================== BUNNYCDN CONFIGURATION ====================
-// Centralized configuration for all BunnyCDN services
-
-const BUNNY_CONFIG = {
-  reels: {
-    libraryId: '584910',
-    host: 'vz-43e06bff-fc5.b-cdn.net',
-    apiKey: 'c10fc40f-3882-4f6c-a1b7e654db1c-bb7a-4eff'
-  },
-  video: {
-    libraryId: '584911', 
-    host: 'vz-c9342ec7-688.b-cdn.net',
-    apiKey: 'f9ed281d-a736-4c02-84cf92af8b98-beaf-41d0'
-  },
-  live: {
-    libraryId: '584916',
-    host: 'vz-abea507d-489.b-cdn.net', 
-    apiKey: '8b84db72-6ab8-4da0-9e46e39f10dd-907e-48e3'
-  },
-  story: {
-    libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_STORY || process.env.BUNNY_LIBRARY_ID_STORY || '584913',
-    host: process.env.EXPO_PUBLIC_BUNNY_HOST_STORY || process.env.BUNNY_HOST_STORY || 'vz-0f58fe48-df9.b-cdn.net',
-    apiKey: process.env.EXPO_PUBLIC_BUNNY_ACCESS_KEY_STORY || process.env.BUNNY_ACCESS_KEY_STORY || process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY
-  },
-  photos: {
-    storageZoneName: 'photosusar',
-    host: 'storage.bunnycdn.com',
-    apiKey: '17ec1af0-bea8-4c7d-872425454ca0-0007-4424'
-  }
-};
-
 // ==================== CHUNK UPLOAD HELPER ====================
 // For large video files - upload in chunks
 
 const uploadInChunks = async (
   file: any, 
-  videoConfig: { libraryId: string; host: string; apiKey: string }, 
+  videoConfig: BunnyConfigType, 
   videoGuid: string,
   metadata?: any
 ) => {
@@ -603,7 +601,7 @@ export const uploadToBunny = async (file: any, contentType: string, metadata?: a
 
       return {
         success: true,
-        url: `https://kronop.b-cdn.net/${fileName}`,
+        url: `https://${photoConfig.host}/${photoConfig.storageZoneName}/${fileName}`,
         fileName: fileName,
         size: file.size || file.fileSize
       };
@@ -738,3 +736,6 @@ export default {
   validateFileSize,
   apiCall,
 };
+
+// Also export apiCall separately for direct imports
+export { apiCall };

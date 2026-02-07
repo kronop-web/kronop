@@ -6,7 +6,9 @@ const PORT = 3000;
 // Use EXPO_PUBLIC_API_URL directly from environment
 const getApiBaseUrl = () => {
   const envUrl = Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL || process.env.EXPO_PUBLIC_API_URL;
-  if (!envUrl) return 'https://web-production-dc9f.up.railway.app/api';
+  if (!envUrl) {
+    throw new Error('EXPO_PUBLIC_API_URL environment variable is required');
+  }
   
   // Remove trailing slashes and add /api
   const cleanUrl = envUrl.replace(/\/+$/, '');

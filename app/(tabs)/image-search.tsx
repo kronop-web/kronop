@@ -17,6 +17,7 @@ import {
 import { MaterialIcons, Ionicons, Feather } from '@expo/vector-icons';
 import { SafeScreen } from '../../components/layout';
 import { theme } from '../../constants/theme';
+import { API_KEYS } from '../../constants/Config';
 
 interface ImageResult {
   id: string;
@@ -37,8 +38,8 @@ export default function ImageSearchScreen() {
 
   const { width, height } = Dimensions.get('window');
 
-  // ✅ YOUR OPENAI API KEY - Replace with your actual key
-  const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
+  // ✅ AI Supporter Key - Now using centralized configuration
+  const AI_SUPPORT_KEY = API_KEYS.AI_SUPPORT;
 
   // ✅ Image Search - 10 APIs
   const searchImages = async (searchQuery: string): Promise<ImageResult[]> => {
@@ -48,7 +49,7 @@ export default function ImageSearchScreen() {
       // 1. Google Custom Search
       try {
         const response = await fetch(
-          `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(searchQuery)}&cx=${process.env.EXPO_PUBLIC_GOOGLE_SEARCH_CX}&key=${process.env.EXPO_PUBLIC_GOOGLE_SEARCH_KEY}&searchType=image&num=10`
+          `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(searchQuery)}&cx=${process.env.EXPO_PUBLIC_GOOGLE_SEARCH_CX}&key=${API_KEYS.GOOGLE_SEARCH}&searchType=image&num=10`
         );
         if (response.ok) {
           const data = await response.json();
@@ -68,7 +69,7 @@ export default function ImageSearchScreen() {
       // 2. Unsplash
       try {
         const response = await fetch(
-          `https://api.unsplash.com/search/photos?query=${encodeURIComponent(searchQuery)}&per_page=10&client_id=${process.env.EXPO_PUBLIC_UNSPLASH_ACCESS_KEY}`
+          `https://api.unsplash.com/search/photos?query=${encodeURIComponent(searchQuery)}&per_page=10&client_id=${API_KEYS.UNSPLASH}`
         );
         if (response.ok) {
           const data = await response.json();
@@ -91,7 +92,7 @@ export default function ImageSearchScreen() {
           `https://api.pexels.com/v1/search?query=${encodeURIComponent(searchQuery)}&per_page=10`,
           {
             headers: {
-              Authorization: process.env.EXPO_PUBLIC_PEXELS_API_KEY || '',
+              Authorization: API_KEYS.PEXELS || '',
             },
           }
         );
@@ -113,7 +114,7 @@ export default function ImageSearchScreen() {
       // 4. Pixabay
       try {
         const response = await fetch(
-          `https://pixabay.com/api/?key=36929191-e88a4a7bde67d1507a746c8a4&q=${encodeURIComponent(searchQuery)}&image_type=photo&per_page=10`
+          `https://pixabay.com/api/?key=${API_KEYS.PIXABAY}&q=${encodeURIComponent(searchQuery)}&image_type=photo&per_page=10`
         );
         if (response.ok) {
           const data = await response.json();
@@ -133,7 +134,7 @@ export default function ImageSearchScreen() {
       // 5. Flickr
       try {
         const response = await fetch(
-          `https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=4f2d98bae4e86009c9bdf4e26067b3f9&text=${encodeURIComponent(searchQuery)}&format=json&nojsoncallback=1&per_page=10&extras=url_l`
+          `https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=${API_KEYS.FLICKR}&text=${encodeURIComponent(searchQuery)}&format=json&nojsoncallback=1&per_page=10&extras=url_l`
         );
         if (response.ok) {
           const data = await response.json();
@@ -153,7 +154,7 @@ export default function ImageSearchScreen() {
       // 6. GIPHY
       try {
         const response = await fetch(
-          `https://api.giphy.com/v1/gifs/search?api_key=dc6zaTOxFJmzC&q=${encodeURIComponent(searchQuery)}&limit=10`
+          `https://api.giphy.com/v1/gifs/search?api_key=${API_KEYS.GIPHY}&q=${encodeURIComponent(searchQuery)}&limit=10`
         );
         if (response.ok) {
           const data = await response.json();
@@ -176,7 +177,7 @@ export default function ImageSearchScreen() {
           `https://api.bing.microsoft.com/v7.0/images/search?q=${encodeURIComponent(searchQuery)}&count=10`,
           {
             headers: {
-              'Ocp-Apim-Subscription-Key': '33a6c799daf44f0bb5daa0e75b6e362a',
+              'Ocp-Apim-Subscription-Key': API_KEYS.BING,
             },
           }
         );
@@ -201,7 +202,7 @@ export default function ImageSearchScreen() {
           `https://api.openverse.engineering/v1/images/?q=${encodeURIComponent(searchQuery)}&page_size=10&license_type=commercial,modification`,
           {
             headers: {
-              'Authorization': 'Bearer Mjg3NTI0Mjd8MThkM2YzYTNkZWE1MDk5ZDRmMDI1OTkzOTFlMDM0Zg',
+              'Authorization': `Bearer ${API_KEYS.OPENVERSE}`,
             },
           }
         );
@@ -307,7 +308,7 @@ export default function ImageSearchScreen() {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${OPENAI_API_KEY}`,
+              'Authorization': `Bearer ${AI_SUPPORT_KEY}`,
             },
             body: JSON.stringify({
               model: 'dall-e-3',
@@ -347,7 +348,7 @@ export default function ImageSearchScreen() {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'api-key': 'quickstart-QUdJIGlzIGNvbWluZy4uLi4K', // Free tier key
+              'api-key': API_KEYS.STABLE_DIFFUSION || 'quickstart-QUdJIGlzIGNvbWluZy4uLi4K', // Fallback to free tier
             },
             body: JSON.stringify({
               text: prompt,

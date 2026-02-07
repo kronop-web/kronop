@@ -10,8 +10,8 @@ const getBaseUrl = () => {
     return apiUrl;
   }
 
-  // Fallback to Railway
-  return 'https://web-production-dc9f.up.railway.app/api';
+  // No fallback - environment variable is required
+  throw new Error('EXPO_PUBLIC_API_URL environment variable is required');
 };
 
 export const BASE_URL = getBaseUrl();

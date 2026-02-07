@@ -1,6 +1,7 @@
 const axios = require('axios');
 const mongoose = require('mongoose');
 const DatabaseService = require('./databaseService');
+const { LIBRARY_ID_MAP } = require('../constants/Config');
 require('dotenv').config();
 
 let redisClient = null;
@@ -109,17 +110,9 @@ class BunnyContentService {
     
     console.log(`🔍 Identifying category for: "${title}" (Library: ${libraryId})`);
     
-    // Library ID based identification - THIS IS THE PRIMARY METHOD
-    const libraryMap = {
-      '584910': 'Reel',
-      '584911': 'Video', 
-      '584916': 'Live',
-      '584913': 'Story',
-      'photos': 'Photo' // For photos storage zone
-    };
-    
-    if (libraryMap[libraryId]) {
-      const category = libraryMap[libraryId];
+    // Library ID based identification - USING CENTRALIZED CONFIG
+    if (LIBRARY_ID_MAP[libraryId]) {
+      const category = LIBRARY_ID_MAP[libraryId];
       console.log(`✅ Library-based category: ${category}`);
       return category;
     }

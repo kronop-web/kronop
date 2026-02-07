@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
-import { uploadToBunny, validateFileType, validateFileSize } from '../../services/api';
+import { bridgeManager } from '../../services/bridges';
 
 interface VideoData {
   title: string;
@@ -62,10 +62,10 @@ export default function VideoUpload({ onClose }: VideoUploadProps) {
           return;
         }
 
-        // Validate file size
-        const sizeValidation = validateFileSize(file, 'video');
-        if (!sizeValidation.valid) {
-          Alert.alert('File Too Large', sizeValidation.error || 'File too large');
+        // Basic file size validation
+        const MAX_SIZE = 2 * 1024 * 1024 * 1024; // 2GB for videos
+        if (file.size && file.size > MAX_SIZE) {
+          Alert.alert('File Too Large', 'Video files must be less than 2GB');
           return;
         }
 
@@ -118,7 +118,7 @@ export default function VideoUpload({ onClose }: VideoUploadProps) {
       setUploading(true);
       setUploadProgress(0);
 
-      const result = await uploadToBunny(selectedFile, 'video', {
+      const result = await bridgeManager.upload('VIDEO', selectedFile, {
         title: videoData.title.trim(),
         description: videoData.description.trim(),
         tags: videoData.tags,

@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
-import { uploadToBunny, validateFileType, validateFileSize } from '../../services/api';
+import { bridgeManager } from '../../services/bridges';
 
 interface ReelData {
   title: string;
@@ -55,10 +55,10 @@ export default function ReelsUpload({ onClose }: ReelsUploadProps) {
           return;
         }
 
-        // Validate file size
-        const sizeValidation = validateFileSize(file, 'reels');
-        if (!sizeValidation.valid) {
-          Alert.alert('File Too Large', sizeValidation.error || 'File too large');
+        // Basic file size validation
+        const MAX_SIZE = 500 * 1024 * 1024; // 500MB for reels
+        if (file.size && file.size > MAX_SIZE) {
+          Alert.alert('File Too Large', 'Reel files must be less than 500MB');
           return;
         }
 
@@ -106,7 +106,7 @@ export default function ReelsUpload({ onClose }: ReelsUploadProps) {
       setUploading(true);
       setUploadProgress(0);
 
-      const result = await uploadToBunny(selectedFile, 'reels', {
+      const result = await bridgeManager.upload('REELS', selectedFile, {
         title: reelData.title.trim(),
         description: reelData.description.trim(),
         tags: reelData.tags

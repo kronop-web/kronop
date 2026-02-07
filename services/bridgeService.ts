@@ -3,7 +3,7 @@ import { reelsService } from './reelsService';
 import { liveService } from './liveService';
 import { storyService } from './storyService';
 import { getPhotosByCategory, getRelatedPhotos } from './photoService';
-import { apiCall } from './cnv_config';
+import { apiCall } from './api';
 
 // Bridge Service acting as a Facade
 export const bridgeService = {

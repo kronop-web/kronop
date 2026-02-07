@@ -13,7 +13,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import { uploadToBunny, validateFileType, validateFileSize } from '../../services/api';
+import { bridgeManager } from '../../services/bridges';
 
 interface StoryData {
   title: string;
@@ -83,17 +83,20 @@ export default function StoryUpload({ onClose }: StoryUploadProps) {
       if (!result.canceled && result.assets[0]) {
         const file = result.assets[0];
         
-        // Validate file type
-        const typeValidation = validateFileType(file, 'story');
-        if (!typeValidation.valid) {
-          Alert.alert('Invalid File', typeValidation.error || 'Invalid file type');
+        // Basic file type validation
+        const fileName = file.fileName || '';
+        const extension = fileName.split('.').pop()?.toLowerCase();
+        const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov', 'avi'];
+        
+        if (!extension || !allowedExtensions.includes(extension)) {
+          Alert.alert('Invalid File', `Please select a valid file. Allowed: ${allowedExtensions.join(', ')}`);
           return;
         }
 
-        // Validate file size
-        const sizeValidation = validateFileSize(file, 'story');
-        if (!sizeValidation.valid) {
-          Alert.alert('File Too Large', sizeValidation.error || 'File too large');
+        // Basic file size validation
+        const MAX_SIZE = 50 * 1024 * 1024; // 50MB for stories
+        if (file.fileSize && file.fileSize > MAX_SIZE) {
+          Alert.alert('File Too Large', 'Story files must be less than 50MB');
           return;
         }
 
@@ -120,17 +123,20 @@ export default function StoryUpload({ onClose }: StoryUploadProps) {
       if (!result.canceled && result.assets[0]) {
         const file = result.assets[0];
         
-        // Validate file type
-        const typeValidation = validateFileType(file, 'story');
-        if (!typeValidation.valid) {
-          Alert.alert('Invalid File', typeValidation.error || 'Invalid file type');
+        // Basic file type validation (DocumentPicker uses different properties)
+        const fileName = file.name || '';
+        const extension = fileName.split('.').pop()?.toLowerCase();
+        const allowedExtensions = ['mp4', 'mov', 'avi'];
+        
+        if (!extension || !allowedExtensions.includes(extension)) {
+          Alert.alert('Invalid File', `Please select a valid video file. Allowed: ${allowedExtensions.join(', ')}`);
           return;
         }
 
-        // Validate file size
-        const sizeValidation = validateFileSize(file, 'story');
-        if (!sizeValidation.valid) {
-          Alert.alert('File Too Large', sizeValidation.error || 'File too large');
+        // Basic file size validation (DocumentPicker uses size)
+        const MAX_SIZE = 50 * 1024 * 1024; // 50MB for stories
+        if (file.size && file.size > MAX_SIZE) {
+          Alert.alert('File Too Large', 'Story files must be less than 50MB');
           return;
         }
 
@@ -162,7 +168,7 @@ export default function StoryUpload({ onClose }: StoryUploadProps) {
       setUploading(true);
       setUploadProgress(0);
 
-      const result = await uploadToBunny(selectedFile, 'story', {
+      const result = await bridgeManager.upload('STORY', selectedFile, {
         title: storyData.title.trim(),
         type: storyData.type,
         duration: storyData.duration,

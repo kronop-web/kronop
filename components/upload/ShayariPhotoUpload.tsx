@@ -13,7 +13,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { uploadToBunny, validateFileType, validateFileSize } from '../../services/api';
+import { bridgeManager } from '../../services/bridges';
 
 interface ShayariPhotoData {
   shayari_text: string;
@@ -64,17 +64,20 @@ export default function ShayariPhotoUpload({ onClose }: ShayariPhotoUploadProps)
       if (!result.canceled && result.assets[0]) {
         const file = result.assets[0];
         
-        // Validate file type
-        const typeValidation = validateFileType(file, 'photo');
-        if (!typeValidation.valid) {
-          Alert.alert('Invalid File', typeValidation.error || 'Invalid file type');
+        // Basic file type validation
+        const fileName = file.fileName || '';
+        const extension = fileName.split('.').pop()?.toLowerCase();
+        const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        
+        if (!extension || !allowedExtensions.includes(extension)) {
+          Alert.alert('Invalid File', `Please select a valid image file. Allowed: ${allowedExtensions.join(', ')}`);
           return;
         }
 
-        // Validate file size
-        const sizeValidation = validateFileSize(file, 'photo');
-        if (!sizeValidation.valid) {
-          Alert.alert('File Too Large', sizeValidation.error || 'File too large');
+        // Basic file size validation
+        const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+        if (file.fileSize && file.fileSize > MAX_SIZE) {
+          Alert.alert('File Too Large', 'Image files must be less than 10MB');
           return;
         }
 
@@ -105,17 +108,20 @@ export default function ShayariPhotoUpload({ onClose }: ShayariPhotoUploadProps)
       if (!result.canceled && result.assets[0]) {
         const file = result.assets[0];
         
-        // Validate file type
-        const typeValidation = validateFileType(file, 'photo');
-        if (!typeValidation.valid) {
-          Alert.alert('Invalid File', typeValidation.error || 'Invalid file type');
+        // Basic file type validation
+        const fileName = file.fileName || '';
+        const extension = fileName.split('.').pop()?.toLowerCase();
+        const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        
+        if (!extension || !allowedExtensions.includes(extension)) {
+          Alert.alert('Invalid File', `Please select a valid image file. Allowed: ${allowedExtensions.join(', ')}`);
           return;
         }
 
-        // Validate file size
-        const sizeValidation = validateFileSize(file, 'photo');
-        if (!sizeValidation.valid) {
-          Alert.alert('File Too Large', sizeValidation.error || 'File too large');
+        // Basic file size validation
+        const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+        if (file.fileSize && file.fileSize > MAX_SIZE) {
+          Alert.alert('File Too Large', 'Image files must be less than 10MB');
           return;
         }
 
@@ -166,9 +172,10 @@ export default function ShayariPhotoUpload({ onClose }: ShayariPhotoUploadProps)
       try {
         setUploading(true);
         
-        const result = await uploadToBunny(selectedFile, 'shayari-photos', {
-          shayari_text: shayariData.shayari_text.trim(),
-          shayari_author: shayariData.shayari_author.trim(),
+        const result = await bridgeManager.upload('SHAYARI', selectedFile, {
+          title: shayariData.shayari_text.trim().substring(0, 50),
+          content: shayariData.shayari_text.trim(),
+          author: shayariData.shayari_author.trim(),
           tags: shayariData.tags,
           category: shayariData.category
         });

@@ -1,35 +1,7 @@
 const axios = require('axios');
 const Content = require('../models/Content');
 const RealtimeService = require('./realtimeService');
-
-// BunnyCDN Configuration
-const BUNNY_CONFIG = {
-  reels: {
-    libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_REELS || process.env.BUNNY_LIBRARY_ID_REELS || '584910',
-    host: process.env.EXPO_PUBLIC_BUNNY_HOST_REELS || process.env.BUNNY_HOST_REELS || 'vz-43e06bff-fc5.b-cdn.net',
-    apiKey: process.env.EXPO_PUBLIC_BUNNY_ACCESS_KEY_REELS || process.env.BUNNY_ACCESS_KEY_REELS || process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY
-  },
-  video: {
-    libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_VIDEO || process.env.BUNNY_LIBRARY_ID_VIDEO || '584911', 
-    host: process.env.EXPO_PUBLIC_BUNNY_HOST_VIDEO || process.env.BUNNY_HOST_VIDEO || 'vz-c9342ec7-688.b-cdn.net',
-    apiKey: process.env.EXPO_PUBLIC_BUNNY_ACCESS_KEY_VIDEO || process.env.BUNNY_ACCESS_KEY_VIDEO || process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY
-  },
-  live: {
-    libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_LIVE || process.env.BUNNY_LIBRARY_ID_LIVE || '584916',
-    host: process.env.EXPO_PUBLIC_BUNNY_HOST_LIVE || process.env.BUNNY_HOST_LIVE || 'vz-abea507d-489.b-cdn.net', 
-    apiKey: process.env.EXPO_PUBLIC_BUNNY_ACCESS_KEY_LIVE || process.env.BUNNY_ACCESS_KEY_LIVE || process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY
-  },
-  story: {
-    libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_STORY || process.env.BUNNY_LIBRARY_ID_STORY || '584913',
-    host: process.env.EXPO_PUBLIC_BUNNY_HOST_STORY || process.env.BUNNY_HOST_STORY || 'vz-0f58fe48-df9.b-cdn.net',
-    apiKey: process.env.EXPO_PUBLIC_BUNNY_ACCESS_KEY_STORY || process.env.BUNNY_ACCESS_KEY_STORY || process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY
-  },
-  photos: {
-    storageZoneName: process.env.EXPO_PUBLIC_BUNNY_STORAGE_ZONE || process.env.BUNNY_STORAGE_ZONE || 'photosusar',
-    host: process.env.EXPO_PUBLIC_BUNNY_HOST_PHOTOS || process.env.BUNNY_HOST_PHOTOS || 'storage.bunnycdn.com',
-    apiKey: process.env.EXPO_PUBLIC_BUNNY_ACCESS_KEY || process.env.BUNNY_ACCESS_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY
-  }
-};
+const { BUNNY_CONFIG } = require('../constants/Config');
 
 class AutoSyncService {
   constructor() {
@@ -246,8 +218,8 @@ class AutoSyncService {
         description: '',
         type: 'Photo',
         bunny_id: photoData.Guid || photoData.ObjectName,
-        url: `https://kronop.b-cdn.net/${photoData.ObjectName}`,
-        thumbnail: `https://kronop.b-cdn.net/${photoData.ObjectName}`,
+        url: `https://${BUNNY_CONFIG.photos.host}/${BUNNY_CONFIG.photos.storageZoneName}/${photoData.ObjectName}`,
+        thumbnail: `https://${BUNNY_CONFIG.photos.host}/${BUNNY_CONFIG.photos.storageZoneName}/${photoData.ObjectName}`,
         tags: [],
         category: 'general',
         views: 0,

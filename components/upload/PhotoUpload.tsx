@@ -15,7 +15,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { uploadToBunny, validateFileType, validateFileSize } from '../../services/api';
+import { bridgeManager } from '../../services/bridges';
 
 interface PhotoData {
   title: string;
@@ -69,17 +69,20 @@ export default function PhotoUpload({ onClose, isShayari = false }: PhotoUploadP
         const validFiles: any[] = [];
         
         for (const asset of result.assets) {
-          // Validate file type
-          const typeValidation = validateFileType(asset, 'photo');
-          if (!typeValidation.valid) {
-            Alert.alert('Invalid File', `${asset.fileName} - ${typeValidation.error || 'Invalid file type'}`);
+          // Basic file type validation
+          const fileName = asset.fileName || '';
+          const extension = fileName.split('.').pop()?.toLowerCase();
+          const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+          
+          if (!extension || !allowedExtensions.includes(extension)) {
+            Alert.alert('Invalid File', `${asset.fileName} - Please select a valid image file. Allowed: ${allowedExtensions.join(', ')}`);
             continue;
           }
 
-          // Validate file size
-          const sizeValidation = validateFileSize(asset, 'photo');
-          if (!sizeValidation.valid) {
-            Alert.alert('File Too Large', `${asset.fileName} - ${sizeValidation.error || 'File too large'}`);
+          // Basic file size validation
+          const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+          if (asset.fileSize && asset.fileSize > MAX_SIZE) {
+            Alert.alert('File Too Large', `${asset.fileName} - Image files must be less than 10MB`);
             continue;
           }
 
@@ -121,17 +124,20 @@ export default function PhotoUpload({ onClose, isShayari = false }: PhotoUploadP
       if (!result.canceled && result.assets[0]) {
         const file = result.assets[0];
         
-        // Validate file type
-        const typeValidation = validateFileType(file, 'photo');
-        if (!typeValidation.valid) {
-          Alert.alert('Invalid File', typeValidation.error || 'Invalid file type');
+        // Basic file type validation
+        const fileName = file.fileName || '';
+        const extension = fileName.split('.').pop()?.toLowerCase();
+        const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        
+        if (!extension || !allowedExtensions.includes(extension)) {
+          Alert.alert('Invalid File', `Please select a valid image file. Allowed: ${allowedExtensions.join(', ')}`);
           return;
         }
 
-        // Validate file size
-        const sizeValidation = validateFileSize(file, 'photo');
-        if (!sizeValidation.valid) {
-          Alert.alert('File Too Large', sizeValidation.error || 'File too large');
+        // Basic file size validation
+        const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+        if (file.fileSize && file.fileSize > MAX_SIZE) {
+          Alert.alert('File Too Large', 'Image files must be less than 10MB');
           return;
         }
 
@@ -191,12 +197,13 @@ export default function PhotoUpload({ onClose, isShayari = false }: PhotoUploadP
     (async () => {
       try {
         const uploadPromises = selectedFiles.map(async (file) => {
-          return await uploadToBunny(file, 'photos', {
+          // Use appropriate bridge based on type
+          const bridgeType = isShayari ? 'SHAYARI' : 'PHOTO';
+          return await bridgeManager.upload(bridgeType, file, {
             title: photoData.title.trim(),
             description: photoData.description.trim(),
             tags: [...photoData.tags, ...(isShayari ? ['shayari', 'poetry'] : [])],
-            category: photoData.category,
-            contentType: isShayari ? 'shayari' : 'photo'
+            category: photoData.category
           });
         });
 

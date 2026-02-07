@@ -1,4 +1,5 @@
-import { apiCall, BUNNY_CONFIG } from './cnv_config';
+import { apiCall } from './api';
+import { BUNNY_CONFIG } from '../constants/Config';
 
 export const reelsService = {
   getConfig: () => BUNNY_CONFIG.reels,

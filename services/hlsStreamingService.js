@@ -1,14 +1,14 @@
 // Advanced HLS Streaming Service with Bunny CDN Integration
-const ffmpeg = require('fluent-ffmpeg');
+const fs = require('fs').promises;
 const path = require('path');
-const fs = require('fs');
+const axios = require('axios');
+const { BUNNY_CONFIG } = require('../constants/Config');
 
 class HLSStreamingService {
   constructor() {
     this.uploadDir = path.resolve(process.cwd(), 'uploads');
     this.hlsDir = path.resolve(process.cwd(), 'hls');
-    this.bunnyCDNUrl = process.env.BUNNY_CDN_URL;
-    this.bunnyApiKey = process.env.BUNNY_API_KEY;
+    this.bunnyApiKey = BUNNY_CONFIG.photos.apiKey;
     
     // Ensure directories exist
     [this.uploadDir, this.hlsDir].forEach(dir => {
@@ -149,7 +149,7 @@ class HLSStreamingService {
   async uploadFileToBunny(filename, filePath) {
     const fileContent = fs.readFileSync(filePath);
     
-    const response = await fetch(`https://storage.bunnycdn.com/${process.env.BUNNY_STORAGE_ZONE}/${filename}`, {
+    const response = await fetch(`https://${BUNNY_CONFIG.photos.host}/${BUNNY_CONFIG.photos.storageZoneName}/${filename}`, {
       method: 'PUT',
       headers: {
         'AccessKey': this.bunnyApiKey,

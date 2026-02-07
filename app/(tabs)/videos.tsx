@@ -1431,7 +1431,6 @@ function VideoPlayerModal({
             style={[styles.videoPlayer, !playerReady && { display: 'none' }]}
             contentFit="cover"
             nativeControls={!isLandscape}
-            allowsFullscreen={false}
             allowsPictureInPicture={true}
           />
         </View>

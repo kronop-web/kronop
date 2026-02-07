@@ -1,33 +1,6 @@
 const axios = require('axios');
 const DatabaseService = require('./databaseService');
-
-const BUNNY_CONFIG = {
-  reels: {
-    libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_REELS,
-    host: process.env.EXPO_PUBLIC_BUNNY_HOST_REELS,
-    apiKey: process.env.EXPO_PUBLIC_BUNNY_ACCESS_KEY_REELS
-  },
-  video: {
-    libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_VIDEO, 
-    host: process.env.EXPO_PUBLIC_BUNNY_HOST_VIDEO,
-    apiKey: process.env.EXPO_PUBLIC_BUNNY_ACCESS_KEY_VIDEO
-  },
-  live: {
-    libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_LIVE,
-    host: process.env.EXPO_PUBLIC_BUNNY_HOST_LIVE, 
-    apiKey: process.env.EXPO_PUBLIC_BUNNY_ACCESS_KEY_LIVE
-  },
-  story: {
-    libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_STORY,
-    host: process.env.EXPO_PUBLIC_BUNNY_HOST_STORY,
-    apiKey: process.env.EXPO_PUBLIC_BUNNY_ACCESS_KEY_STORY
-  },
-  photos: {
-    storageZoneName: process.env.EXPO_PUBLIC_BUNNY_STORAGE_ZONE,
-    host: process.env.EXPO_PUBLIC_BUNNY_HOST_PHOTOS,
-    apiKey: process.env.EXPO_PUBLIC_BUNNY_ACCESS_KEY
-  }
-};
+const { BUNNY_CONFIG } = require('../constants/Config');
 
 class BunnySyncService {
   static async verifyVideoExists(videoGuid, type) {
@@ -247,7 +220,7 @@ class BunnySyncService {
       const photoData = bunnyData.map(item => ({
         guid: item.Guid,
         title: item.ObjectName,
-        url: `https://kronop.b-cdn.net/${item.ObjectName}`,
+        url: `https://${BUNNY_CONFIG.photos.host}/${BUNNY_CONFIG.photos.storageZoneName}/${item.ObjectName}`,
         thumbnailUrl: null,
         dateUploaded: item.LastChanged,
         description: '',

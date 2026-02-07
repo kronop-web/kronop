@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
-import { uploadToBunny, validateFileType, validateFileSize } from '../../services/api';
+import { bridgeManager } from '../../services/bridges';
 
 interface LiveData {
   title: string;
@@ -56,10 +56,10 @@ export default function LiveUpload({ onClose }: LiveUploadProps) {
           return;
         }
 
-        // Validate file size
-        const sizeValidation = validateFileSize(file, 'live');
-        if (!sizeValidation.valid) {
-          Alert.alert('File Too Large', sizeValidation.error || 'File too large');
+        // File size validation (basic check)
+        const MAX_SIZE = 2 * 1024 * 1024 * 1024; // 2GB
+        if (file.size > MAX_SIZE) {
+          Alert.alert('File Too Large', 'Live stream files must be less than 2GB');
           return;
         }
 
@@ -90,7 +90,7 @@ export default function LiveUpload({ onClose }: LiveUploadProps) {
       setUploading(true);
       setUploadProgress(0);
 
-      const result = await uploadToBunny(selectedFile, 'live', {
+      const result = await bridgeManager.upload('LIVE', selectedFile, {
         title: liveData.title.trim(),
         description: liveData.description.trim(),
         scheduledTime: liveData.scheduledTime,

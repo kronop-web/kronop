@@ -20,7 +20,7 @@ const googleMapsService = {
   async getUserLocation(): Promise<{ address: string } | null> {
     try {
       const BACKEND_URL = API_BASE_URL;
-      const token = await AsyncStorage.getItem('user_token');
+      const token = await AsyncStorage.getItem('supabase_token') || await AsyncStorage.getItem('user_token');
       const response = await fetch(`${BACKEND_URL}/maps/location`, {
         method: 'GET',
         headers: {
@@ -43,7 +43,7 @@ const googleMapsService = {
   async updateLocation(address: string): Promise<{ success: boolean }> {
     try {
       const BACKEND_URL = API_BASE_URL;
-      const token = await AsyncStorage.getItem('user_token');
+      const token = await AsyncStorage.getItem('supabase_token') || await AsyncStorage.getItem('user_token');
       
       const response = await fetch(`${BACKEND_URL}/maps/update-location`, {
         method: 'POST',

@@ -1,4 +1,5 @@
 import { Video, Comment } from '../types/video';
+import { getBunnyConfigByType, BunnyConfigType } from '../constants/Config';
 import { videosApi } from './api';
 
 // Fallback mock data if API fails or is empty
@@ -15,25 +16,12 @@ export const videoService = {
         // Construct Direct HLS Link logic
         const guid = item.guid || (item.url && item.url.split('/')[3]) || item.bunny_id || ''; // Extract GUID if possible
         
-        // Determine content type and host mapping
+        // Determine content type and host mapping using centralized config
         const contentType = item.type || item.contentType || 'video';
-        let host = '';
-        let libraryId = '';
+        const bunnyConfig = getBunnyConfigByType(contentType);
         
-        if (contentType === 'Reel' || contentType === 'reels') {
-          host = process.env.EXPO_PUBLIC_BUNNY_HOST_REELS || 'vz-43e06bff-fc5.b-cdn.net';
-          libraryId = '584910';
-        } else if (contentType === 'Video' || contentType === 'video') {
-          host = process.env.EXPO_PUBLIC_BUNNY_HOST_VIDEO || 'vz-c9342ec7-688.b-cdn.net';
-          libraryId = '584911';
-        } else if (contentType === 'Live' || contentType === 'live') {
-          host = process.env.EXPO_PUBLIC_BUNNY_HOST_LIVE || 'vz-abea507d-489.b-cdn.net';
-          libraryId = '584916';
-        } else {
-          // Default to video host
-          host = process.env.EXPO_PUBLIC_BUNNY_HOST_VIDEO || 'vz-c9342ec7-688.b-cdn.net';
-          libraryId = '584911';
-        }
+        const host = bunnyConfig.host || '';
+        const libraryId = bunnyConfig.libraryId || '';
 
         // Force .m3u8 playlist format for videos, use iframe for long videos
         let finalVideoUrl = item.url || item.videoUrl || '';

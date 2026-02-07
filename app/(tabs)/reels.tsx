@@ -454,7 +454,6 @@ function ReelItem({
           style={styles.reelVideo}
           contentFit="cover"
           nativeControls={false}
-          allowsFullscreen={false}
           allowsPictureInPicture={false}
         />
         
