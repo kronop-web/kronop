@@ -16,6 +16,9 @@ export const API_KEYS = {
   // AI Supporter Key (for AI Image Generation)
   AI_SUPPORT: process.env.EXPO_PUBLIC_AI_SUPPORT_KEY || '',
   
+  // Groq AI API Key (for Support Chat)
+  GROQ: process.env.EXPO_PUBLIC_GROQ_API_KEY || '',
+  
   // Additional API Keys
   PIXABAY: process.env.EXPO_PUBLIC_PIXABAY_KEY || '',
   FLICKR: process.env.EXPO_PUBLIC_FLICKR_KEY || '',

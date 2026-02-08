@@ -48,6 +48,9 @@ const getRailwayConfig = () => {
     // AI Supporter
     AI_SUPPORT_KEY: process.env.EXPO_PUBLIC_AI_SUPPORT_KEY || '',
     
+    // Groq AI API Key
+    GROQ_API_KEY: process.env.EXPO_PUBLIC_GROQ_API_KEY || '',
+    
     // External APIs
     GOOGLE_SEARCH_KEY: process.env.EXPO_PUBLIC_GOOGLE_SEARCH_KEY || '',
     GOOGLE_SEARCH_CX: process.env.EXPO_PUBLIC_GOOGLE_SEARCH_CX || '',

@@ -16,10 +16,11 @@ import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SafeScreen } from '../components/layout';
 import { theme } from '../constants/theme';
+import { groqAI, GroqMessage } from '../services/groqAIService';
 
 interface Message {
   id: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
 }
@@ -35,7 +36,7 @@ export default function HelpCenterScreen() {
     {
       id: '1',
       role: 'assistant',
-      content: 'Hello! I am your AI assistant. How can I help you with your profile or any issues today?',
+      content: '🤖 Hello! I am your Kronop AI assistant, powered by Groq. I can help you with profile management, video uploads, settings, and any questions about the app. How can I assist you today? 💜',
       timestamp: new Date(),
     },
   ]);
@@ -63,13 +64,46 @@ export default function HelpCenterScreen() {
     }, 100);
 
     try {
+      // Convert messages to Groq format (exclude system messages)
+      const groqMessages: GroqMessage[] = messages
+        .filter(msg => msg.role !== 'system')
+        .map(msg => ({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content
+        }));
+
+      // Add current user message
+      groqMessages.push({
+        role: 'user',
+        content: inputText.trim()
+      });
+
+      // Get AI response
+      const aiResponse = await groqAI.sendMessage(groqMessages);
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Our support will contact you shortly. You can also call or email from the buttons above.',
+        content: aiResponse,
         timestamp: new Date(),
       };
+
       setMessages((prev) => [...prev, assistantMessage]);
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    } catch (error) {
+      console.error('AI Response Error:', error);
+      
+      // Fallback message
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: '🔧 I apologize, but I\'m having trouble connecting right now. Please try again or contact our support team at 9039012335. 💜',
+        timestamp: new Date(),
+      };
+      
+      setMessages((prev) => [...prev, errorMessage]);
       setTimeout(() => {
         scrollViewRef.current?.scrollToEnd({ animated: true });
       }, 100);
@@ -97,10 +131,12 @@ export default function HelpCenterScreen() {
   };
 
   const quickQuestions = [
-    'How do I complete my profile?',
-    'How do I change my settings?',
-    'How do I upload a video?',
-    'How do I manage privacy?',
+    '💜 How do I complete my profile?',
+    '📤 How do I upload videos/reels?',
+    '⚙️ How do I change settings?',
+    '🔒 How do I manage privacy?',
+    '💰 How do I earn from content?',
+    '🎥 How do I go live?',
   ];
 
   const handleQuickQuestion = (question: string) => {
@@ -202,7 +238,7 @@ export default function HelpCenterScreen() {
           {loading && (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="small" color={theme.colors.primary.main} />
-              <Text style={styles.loadingText}>AI is thinking...</Text>
+              <Text style={styles.loadingText}>🤖 Kronop AI is thinking...</Text>
             </View>
           )}
         </ScrollView>
@@ -212,7 +248,7 @@ export default function HelpCenterScreen() {
           <View style={styles.inputWrapper}>
             <TextInput
               style={styles.input}
-              placeholder="Ask me anything about your profile..."
+              placeholder="💜 Ask me anything about Kronop..."
               placeholderTextColor={theme.colors.text.tertiary}
               value={inputText}
               onChangeText={setInputText}
@@ -330,10 +366,12 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: theme.colors.background.tertiary,
+    backgroundColor: '#7c3aed',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: theme.spacing.xs,
+    borderWidth: 2,
+    borderColor: theme.colors.primary.main,
   },
   messageContent: {
     flex: 1,
@@ -352,12 +390,14 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 4,
   },
   assistantText: {
-    color: theme.colors.text.primary,
-    backgroundColor: theme.colors.background.secondary,
+    color: '#fff',
+    backgroundColor: '#7c3aed',
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
     borderRadius: theme.borderRadius.lg,
     borderBottomLeftRadius: 4,
+    borderLeftWidth: 3,
+    borderLeftColor: theme.colors.primary.main,
   },
   messageTime: {
     fontSize: theme.typography.fontSize.xs,
@@ -370,16 +410,20 @@ const styles = StyleSheet.create({
   assistantTime: {
     color: theme.colors.text.tertiary,
   },
+  loadingText: {
+    color: theme.colors.text.secondary,
+    fontSize: theme.typography.fontSize.sm,
+    fontStyle: 'italic',
+  },
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.sm,
     paddingVertical: theme.spacing.sm,
-  },
-  loadingText: {
-    color: theme.colors.text.secondary,
-    fontSize: theme.typography.fontSize.sm,
-    fontStyle: 'italic',
+    backgroundColor: '#f3f4f6',
+    borderRadius: theme.borderRadius.lg,
+    marginHorizontal: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.md,
   },
   inputContainer: {
     borderTopWidth: 1,
