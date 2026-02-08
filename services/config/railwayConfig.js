@@ -4,7 +4,7 @@
 
 const getRailwayConfig = () => {
   // Railway automatically provides these
-  const railwayUrl = process.env.RAILWAY_PUBLIC_DOMAIN || process.env.ROOT_URL || 'https://web-production-9afbe.up.railway.app';
+  const railwayUrl = process.env.RAILWAY_PUBLIC_DOMAIN || process.env.ROOT_URL || 'https://web-production-44afa.up.railway.app';
   
   return {
     // API Base URL

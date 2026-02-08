@@ -2,7 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_KEYS, BUNNY_CONFIG, getBunnyConfigByType, BunnyConfigType } from '../constants/Config';
 
-const base = process.env.EXPO_PUBLIC_API_URL || 'https://web-production-9afbe.up.railway.app';
+const base = process.env.EXPO_PUBLIC_API_URL || 'https://web-production-44afa.up.railway.app';
 const cleanBase = base.replace(/\/+$/, ''); 
 export const API_URL = cleanBase.endsWith('/api') ? cleanBase : `${cleanBase}/api`;
 console.log('🔗 API Base URL set to:', API_URL);
