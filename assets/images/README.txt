@@ -10,10 +10,9 @@ Current Status:
 - Web and iOS icons configured
 
 Files Updated:
-- logo.svg (main logo with gradient)
-- app.json (icon, favicon, splash screen)
-- android/app/src/main/res/drawable/ (launcher icons)
-- app/login.tsx (login screen)
+- logo_final.png (main logo)
+- app.json (icon, favicon, splash screen updated to logo_final.png)
+- app/login.tsx (login screen updated to use logo_final.png)
 
 Next Steps:
 1. Run: npx expo start -c
