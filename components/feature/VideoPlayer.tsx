@@ -1,0 +1,439 @@
+
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity, 
+  ActivityIndicator, 
+  Dimensions, 
+  Animated, 
+  Modal
+} from 'react-native';
+import { PanGestureHandler, State } from 'react-native-gesture-handler';
+import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import Slider from '@react-native-community/slider';
+
+// Inline theme to avoid import issues
+const theme = {
+  colors: {
+    primary: { main: '#FF0000' }
+  },
+  spacing: {
+    xs: 4,
+    sm: 8,
+    md: 12,
+    lg: 16
+  },
+  borderRadius: {
+    md: 8
+  }
+};
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
+interface VideoPlayerProps {
+  videoUrl: string;
+  thumbnail?: string;
+  title?: string;
+  onClose?: () => void;
+  autoPlay?: boolean;
+}
+
+export default function VideoPlayer({ 
+  videoUrl, 
+  thumbnail, 
+  title, 
+  onClose, 
+  autoPlay = true 
+}: VideoPlayerProps) {
+  const videoRef = useRef<Video>(null);
+  const [status, setStatus] = useState<AVPlaybackStatus>();
+  const [isPlaying, setIsPlaying] = useState(autoPlay);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showControls, setShowControls] = useState(true);
+  const [duration, setDuration] = useState(0);
+  const [position, setPosition] = useState(0);
+  const [isBuffering, setIsBuffering] = useState(true);
+  const [isSeeking, setIsSeeking] = useState(false);
+  const [showLoadingIndicator, setShowLoadingIndicator] = useState(true);
+  
+  const controlsOpacity = useRef(new Animated.Value(1)).current;
+  const hideControlsTimeout = useRef<number>();
+
+  // Auto-hide controls after 3 seconds
+  const hideControls = useCallback(() => {
+    Animated.timing(controlsOpacity, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowControls(false);
+    });
+  }, [controlsOpacity]);
+
+  const showControlsAnimation = useCallback(() => {
+    setShowControls(true);
+    Animated.timing(controlsOpacity, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+
+    // Clear existing timeout and set new one
+    if (hideControlsTimeout.current) {
+      clearTimeout(hideControlsTimeout.current);
+    }
+    hideControlsTimeout.current = setTimeout(() => {
+      if (isPlaying) {
+        hideControls();
+      }
+    }, 3000);
+  }, [controlsOpacity, hideControls, isPlaying]);
+
+  // Handle video status updates
+  const handleVideoStatusUpdate = useCallback((status: AVPlaybackStatus) => {
+    setStatus(status);
+    
+    if (status.isLoaded) {
+      setDuration(status.durationMillis || 0);
+      setPosition(status.positionMillis || 0);
+      setIsPlaying(status.isPlaying || false);
+      setIsBuffering(false);
+      setShowLoadingIndicator(false);
+      
+      // Auto-play logic
+      if (autoPlay && !status.isPlaying && !status.isBuffering) {
+        videoRef.current?.playAsync();
+      }
+    } else {
+      setIsBuffering(true);
+    }
+  }, [autoPlay]);
+
+  // Toggle play/pause
+  const togglePlayPause = useCallback(async () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        await videoRef.current.pauseAsync();
+      } else {
+        await videoRef.current.playAsync();
+      }
+      setIsPlaying(!isPlaying);
+      showControlsAnimation();
+    }
+  }, [isPlaying, showControlsAnimation]);
+
+  // Handle seek
+  const handleSeek = useCallback(async (value: number) => {
+    if (videoRef.current && duration > 0) {
+      setIsSeeking(true);
+      const position = (value / 100) * duration;
+      await videoRef.current.setPositionAsync(position);
+      setPosition(position);
+      setIsSeeking(false);
+      showControlsAnimation();
+    }
+  }, [duration, showControlsAnimation]);
+
+  // Toggle fullscreen
+  const toggleFullscreen = useCallback(() => {
+    setIsFullscreen(!isFullscreen);
+    showControlsAnimation();
+  }, [isFullscreen, showControlsAnimation]);
+
+  // Handle video tap
+  const handleVideoTap = useCallback(() => {
+    if (showControls) {
+      hideControls();
+    } else {
+      showControlsAnimation();
+    }
+  }, [showControls, hideControls, showControlsAnimation]);
+
+  // Format time
+  const formatTime = (milliseconds: number) => {
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hideControlsTimeout.current) {
+        clearTimeout(hideControlsTimeout.current);
+      }
+    };
+  }, []);
+
+  // Auto-hide controls when playing
+  useEffect(() => {
+    if (isPlaying && showControls) {
+      hideControlsTimeout.current = setTimeout(() => {
+        hideControls();
+      }, 3000);
+    }
+    return () => {
+      if (hideControlsTimeout.current) {
+        clearTimeout(hideControlsTimeout.current);
+      }
+    };
+  }, [isPlaying, showControls, hideControls]);
+
+  const videoHeight = isFullscreen ? screenHeight : (screenWidth * 9) / 16;
+
+  return (
+    <View style={[styles.container, { height: videoHeight }]}>
+      <Video
+        ref={videoRef}
+        style={[styles.video, { height: videoHeight }]}
+        source={{ uri: videoUrl }}
+        useNativeControls={false}
+        resizeMode={ResizeMode.CONTAIN}
+        shouldPlay={autoPlay}
+        isLooping={false}
+        onPlaybackStatusUpdate={handleVideoStatusUpdate}
+        posterSource={thumbnail ? { uri: thumbnail } : undefined}
+        posterStyle={styles.poster}
+      />
+
+      {/* Loading Indicator */}
+      {showLoadingIndicator && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#fff" />
+        </View>
+      )}
+
+      {/* Buffering Indicator */}
+      {isBuffering && !showLoadingIndicator && (
+        <View style={styles.bufferingOverlay}>
+          <ActivityIndicator size="small" color="#fff" />
+          <Text style={styles.bufferingText}>Buffering...</Text>
+        </View>
+      )}
+
+      {/* Video Tap Area */}
+      <TouchableOpacity 
+        style={styles.videoTapArea} 
+        activeOpacity={1} 
+        onPress={handleVideoTap}
+      />
+
+      {/* Controls Overlay */}
+      <Animated.View 
+        style={[
+          styles.controlsOverlay, 
+          { opacity: controlsOpacity }
+        ]}
+      >
+        {/* Top Controls */}
+        <View style={styles.topControls}>
+          {title && (
+            <Text style={styles.videoTitle} numberOfLines={1}>
+              {title}
+            </Text>
+          )}
+          <View style={styles.topButtons}>
+            <TouchableOpacity onPress={toggleFullscreen}>
+              <MaterialIcons 
+                name={isFullscreen ? "fullscreen-exit" : "fullscreen"} 
+                size={24} 
+                color="#fff" 
+              />
+            </TouchableOpacity>
+            {onClose && (
+              <TouchableOpacity onPress={onClose}>
+                <MaterialIcons name="close" size={24} color="#fff" />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
+        {/* Center Play Button */}
+        <TouchableOpacity 
+          style={styles.centerPlayButton} 
+          onPress={togglePlayPause}
+        >
+          <View style={styles.playButtonCircle}>
+            <MaterialIcons 
+              name={isPlaying ? "pause" : "play-arrow"} 
+              size={40} 
+              color="#fff" 
+            />
+          </View>
+        </TouchableOpacity>
+
+        {/* Bottom Controls */}
+        <View style={styles.bottomControls}>
+          {/* Progress Bar */}
+          <View style={styles.progressContainer}>
+            <Text style={styles.timeText}>
+              {formatTime(isSeeking ? position : (status?.isLoaded ? status.positionMillis || 0 : 0))}
+            </Text>
+            
+            <Slider
+              style={styles.progressBar}
+              minimumValue={0}
+              maximumValue={100}
+              value={duration > 0 ? (position / duration) * 100 : 0}
+              onSlidingStart={() => setIsSeeking(true)}
+              onSlidingComplete={handleSeek}
+              minimumTrackTintColor={theme.colors.primary.main}
+              maximumTrackTintColor="rgba(255, 255, 255, 0.3)"
+              thumbStyle={styles.sliderThumb}
+            />
+            
+            <Text style={styles.timeText}>
+              {formatTime(duration)}
+            </Text>
+          </View>
+
+          {/* Control Buttons */}
+          <View style={styles.controlButtons}>
+            <TouchableOpacity style={styles.controlButton}>
+              <MaterialIcons name="skip-previous" size={24} color="#fff" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.controlButton}>
+              <MaterialIcons name="skip-next" size={24} color="#fff" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.controlButton}>
+              <Ionicons name="volume-high" size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Animated.View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: '#000',
+    position: 'relative',
+  },
+  video: {
+    width: '100%',
+    backgroundColor: '#000',
+  },
+  poster: {
+    resizeMode: 'cover',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  bufferingOverlay: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -50 }, { translateY: -50 }],
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  bufferingText: {
+    color: '#fff',
+    marginLeft: 8,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  videoTapArea: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
+  },
+  controlsOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    justifyContent: 'space-between',
+    zIndex: 2,
+  },
+  topControls: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 40,
+    paddingBottom: 16,
+  },
+  videoTitle: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    flex: 1,
+    marginRight: 16,
+  },
+  topButtons: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  centerPlayButton: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -50 }, { translateY: -50 }],
+    zIndex: 3,
+  },
+  playButtonCircle: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bottomControls: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+    paddingTop: 16,
+  },
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  timeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '500',
+    minWidth: 40,
+  },
+  progressBar: {
+    flex: 1,
+    marginHorizontal: 12,
+    height: 40,
+  },
+  sliderThumb: {
+    width: 12,
+    height: 12,
+    backgroundColor: theme.colors.primary.main,
+  },
+  controlButtons: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 32,
+  },
+  controlButton: {
+    padding: 8,
+  },
+});

@@ -238,11 +238,13 @@ function ReelItem({
   onLikeChange,
   onCommentPress,
   onShareChange,
+  onSaveChange,
   onSupportChange,
   likes,
   comments,
   shares,
   starred,
+  saved,
   supported
 }: any) {
   const [isPaused, setIsPaused] = useState(false);
@@ -511,9 +513,11 @@ function ReelItem({
             comments={comments[item.id] || []}
             shares={shares[item.id] || 0}
             isLiked={starred[item.id]}
+            isSaved={saved[item.id]}
             onLikeChange={onLikeChange}
             onCommentPress={onCommentPress}
             onShareChange={onShareChange}
+            onSaveChange={onSaveChange}
             size="medium"
             showCounts={true}
           />
@@ -533,6 +537,7 @@ export default function ReelsScreen() {
   
   // Simplified state - only essential data
   const [starred, setStarred] = useState<Record<string, boolean>>({});
+  const [saved, setSaved] = useState<Record<string, boolean>>({});
   const [supported, setSupported] = useState<Record<string, boolean>>({});
   const [likes, setLikes] = useState<Record<string, number>>({});
   const [comments, setComments] = useState<Record<string, Comment[]>>({});
@@ -754,6 +759,10 @@ export default function ReelsScreen() {
     setSupported(prev => ({ ...prev, [itemId]: isSupported }));
   }, []);
 
+  const handleSaveChange = useCallback((itemId: string, isSaved: boolean) => {
+    setSaved(prev => ({ ...prev, [itemId]: isSaved }));
+  }, []);
+
   const handleChannelPress = useCallback((reel: Reel) => {
     // Channel modal logic can be added here
   }, []);
@@ -837,11 +846,13 @@ export default function ReelsScreen() {
         onLikeChange={handleLikeChange}
         onCommentPress={handleCommentPress}
         onShareChange={handleShareChange}
+        onSaveChange={handleSaveChange}
         onSupportChange={handleSupportChange}
         likes={likes}
         comments={comments}
         shares={shares}
         starred={starred}
+        saved={saved}
         supported={supported}
       />
     );
@@ -1023,7 +1034,7 @@ const styles = StyleSheet.create({
   },
   bottomContainer: {
     position: 'absolute',
-    bottom: 50, // और नीचे लाया
+    bottom: 70, // और ऊपर लाया बटनों को दिखाने के लिए
     left: 0,
     right: 0,
     zIndex: 2,
@@ -1106,7 +1117,7 @@ const styles = StyleSheet.create({
   },
   actionGroup: {
     alignItems: 'center',
-    marginBottom: 12, // कम किया
+    marginBottom: 8, // और कम किया बटनों को पास लाने के लिए
   },
   actionButtonWrap: {
     width: CIRCLE,

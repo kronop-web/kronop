@@ -10,8 +10,7 @@ const PORT = 3000;
 const getApiBaseUrl = () => {
   const envUrl = Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL || process.env.EXPO_PUBLIC_API_URL;
   if (!envUrl) {
-    // Default to Railway URL for production
-    return 'https://web-production-44afa.up.railway.app';
+    throw new Error('EXPO_PUBLIC_API_URL environment variable is required');
   }
   
   // Remove trailing slashes and add /api

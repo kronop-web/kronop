@@ -3,6 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { LikeButton } from './LikeButton';
 import { CommentButton } from './CommentButton';
 import { ShareButton } from './ShareButton';
+import { SaveButton } from './SaveButton';
 import { theme } from '../../constants/theme';
 
 interface InteractionBarProps {
@@ -11,10 +12,12 @@ interface InteractionBarProps {
   comments?: any[];
   shares?: number;
   isLiked?: boolean;
+  isSaved?: boolean;
   isSupported?: boolean;
   onLikeChange?: (itemId: string, isLiked: boolean, count: number) => void;
   onCommentPress?: (itemId: string) => void;
   onShareChange?: (itemId: string, count: number) => void;
+  onSaveChange?: (itemId: string, isSaved: boolean) => void;
   size?: 'small' | 'medium' | 'large';
   showCounts?: boolean;
 }
@@ -25,10 +28,12 @@ export const InteractionBar: React.FC<InteractionBarProps> = ({
   comments = [],
   shares = 0,
   isLiked = false,
+  isSaved = false,
   isSupported = false,
   onLikeChange,
   onCommentPress,
   onShareChange,
+  onSaveChange,
   size = 'medium',
   showCounts = true
 }) => {
@@ -55,6 +60,15 @@ export const InteractionBar: React.FC<InteractionBarProps> = ({
         itemId={itemId}
         initialCount={shares}
         onShareChange={onShareChange}
+        size={size}
+        showCount={showCounts}
+      />
+
+      <SaveButton
+        itemId={itemId}
+        itemType="reel"
+        isInitiallySaved={isSaved}
+        onSaveChange={onSaveChange}
         size={size}
         showCount={showCounts}
       />

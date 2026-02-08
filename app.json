@@ -5,7 +5,7 @@
     "slug": "kronop",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logo.svg",
+    "icon": "./assets/images/logo_final.png",
     "scheme": "kronop",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -19,7 +19,7 @@
     "android": {
       "package": "com.anonymous.kronop",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/logo.svg",
+        "foregroundImage": "./assets/images/logo_final.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
@@ -36,14 +36,14 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/logo.svg"
+      "favicon": "./assets/images/logo_final.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/logo.svg",
+          "image": "./assets/images/logo_final.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
@@ -74,7 +74,6 @@
       "typedRoutes": true
     },
     "extra": {
-      "EXPO_PUBLIC_API_URL": "https://web-production-44afa.up.railway.app",
       "router": {},
       "eas": {
         "projectId": "6dc9b76b-95bf-4c94-a09f-e4481b97cac2"

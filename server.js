@@ -303,6 +303,38 @@ app.get('/notifications/list', async (_req, res) => {
 app.use('/users', userRouteNew);
 app.use('/content', contentRouteNew);
 
+// New GET route for user profile (Basic Data)
+app.get('/api/users/profile', async (req, res) => {
+  try {
+    const { userId, phone } = req.query;
+    const User = require('./models/User');
+    
+    let query = {};
+    if (userId) query._id = userId;
+    else if (phone) query.phone = phone;
+    else {
+      // If no identifier, try to return the first user or handle accordingly
+      // For now, consistent with other endpoints, we might return a default or error
+      // But user asked for "users collection", likely implying the current user or specific user.
+      // Given the prompt "Mere MongoDB mein...", I'll assume query params are passed or we fetch one.
+      // Let's fallback to finding *any* user if no param, or strict?
+      // "Return basic user data". Let's stick to query if present, else first user (dev mode often does this)
+       const firstUser = await User.findOne({}, 'username bio profile_pic');
+       if (!firstUser) return res.status(404).json({ error: 'User not found' });
+       return res.json({ success: true, data: firstUser });
+    }
+
+    const user = await User.findOne(query, 'username bio profile_pic');
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.json({ success: true, data: user });
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({ error: 'Failed to fetch user profile' });
+  }
+});
+
 // Cache middleware for API routes
 const cacheMiddleware = (cacheKey, ttl = 300) => {
   return async (req, res, next) => {
