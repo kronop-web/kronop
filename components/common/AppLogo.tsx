@@ -1,5 +1,6 @@
 import React from 'react';
 import { Image, View, StyleSheet } from 'react-native';
+import LogoImage from '../../assets/images/logo.png';
 
 export default function AppLogo({ size = 60 }: { size?: number | 'small' | 'medium' | 'large' }) {
   const sizeValue = typeof size === 'string' ? 
@@ -8,7 +9,7 @@ export default function AppLogo({ size = 60 }: { size?: number | 'small' | 'medi
   return (
     <View style={[styles.container, { width: sizeValue, height: sizeValue }]}>
       <Image
-        source={require('../../assets/images/logo_final.png')}
+        source={LogoImage}
         style={[styles.logo, { width: sizeValue, height: sizeValue }]}
         resizeMode="contain"
       />

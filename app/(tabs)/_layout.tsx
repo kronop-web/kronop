@@ -35,6 +35,7 @@ export default function TabLayout() {
           fontSize: 0,
           fontWeight: theme.typography.fontWeight.medium,
           marginTop: 0,
+          marginBottom: 0,
         },
         tabBarIconStyle: {
           marginTop: 0,
@@ -57,10 +58,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="videos"
+        name="video"
         options={{
-          title: 'Videos',
-          tabBarIcon: ({ color }) => <Ionicons name="play-circle" size={24} color={color} />,
+          title: 'Video',
+          tabBarIcon: ({ color }) => <Ionicons name="videocam" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -73,15 +74,15 @@ export default function TabLayout() {
       <Tabs.Screen
         name="userdata"
         options={{
-          title: 'Database',
+          title: 'Dashboard',
           tabBarIcon: ({ color }) => <Ionicons name="server" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="settings"
+        name="profile"
         options={{
-          title: 'Settings',
-          tabBarIcon: ({ color }) => <Ionicons name="settings" size={24} color={color} />,
+          title: 'Profile',
+          tabBarIcon: ({ color }) => <Ionicons name="person" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -106,13 +107,6 @@ export default function TabLayout() {
         name="image-search"
         options={{
           href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'You',
-          tabBarIcon: ({ color }) => <Ionicons name="person" size={24} color={color} />,
         }}
       />
     </Tabs>

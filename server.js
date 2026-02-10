@@ -3,6 +3,7 @@ require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
+const multer = require('multer');
 const ffmpeg = require('fluent-ffmpeg');
 const { mongoose, connectToDatabase } = require('./config/db');
 const cors = require('cors');
@@ -52,6 +53,23 @@ process.on('uncaughtException', (err) => {
 
 // ==================== MIDDLEWARE ====================
 app.set('trust proxy', true);
+
+// Configure multer for file uploads
+const storage = multer.memoryStorage();
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  }
+});
+
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

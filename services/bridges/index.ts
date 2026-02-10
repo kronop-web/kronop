@@ -12,6 +12,10 @@ import { storyBridge, StoryBridge } from './StoryBridge';
 import { photoBridge, PhotoBridge } from './PhotoBridge';
 import { shayariBridge, ShayariBridge } from './ShayariBridge';
 
+// MongoDB Services
+import { reelsService } from '../reelsService';
+import { videosService } from '../videosService';
+
 // Type exports for better TypeScript support
 export type { ReelUploadResult, ReelMetadata } from './ReelsBridge';
 export type { VideoUploadResult, VideoMetadata } from './VideoBridge';
@@ -76,9 +80,11 @@ export class BridgeManager {
 
       switch (type) {
         case 'REELS':
-          return await reelsBridge.uploadReel(file, metadata);
+          // Use MongoDB service for complete flow (auth + BunnyCDN + metadata)
+          return await reelsService.uploadReel(file, metadata);
         case 'VIDEO':
-          return await videoBridge.uploadVideo(file, metadata);
+          // Use MongoDB service for videos
+          return await videosService.uploadVideo(file, metadata);
         case 'LIVE':
           return await liveBridge.uploadLiveContent(file, metadata);
         case 'STORY':

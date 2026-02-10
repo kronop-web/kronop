@@ -1,6 +1,7 @@
 // ==================== REELS BRIDGE ====================
 // Library ID: 593793 - BunnyCDN Stream API
 // Dedicated service for Reels upload and management
+// NOTE: This bridge only handles BunnyCDN uploads, authentication is handled by MongoDB API
 
 import { BUNNY_CONFIG } from '../../constants/Config';
 

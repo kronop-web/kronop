@@ -3,13 +3,11 @@ import { View, StyleSheet, TouchableOpacity, Text, TextInput, ActivityIndicator,
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { theme } from '../constants/theme';
-import AppLogo from '../components/common/AppLogo';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useAuth } from '../template';
+import { authService } from '../services/authService';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login } = useAuth();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -58,8 +56,8 @@ export default function LoginScreen() {
       setLoginError('');
       
       
-      // Use Supabase authentication
-      const result = await login(email, password);
+      // Use authService authentication
+      const result = await authService.login(email, password);
       
       
       if (result.success) {
@@ -79,7 +77,6 @@ export default function LoginScreen() {
     <View style={styles.container}>
       <View style={styles.content}>
         <View style={styles.header}>
-          <AppLogo size="large" />
           <Text style={styles.title}>Welcome to Kronop</Text>
           <Text style={styles.subtitle}>Watch, Share, and Earn.</Text>
         </View>

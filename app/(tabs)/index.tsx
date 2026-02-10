@@ -291,7 +291,7 @@ export default function HomeScreen() {
       <StatusBarOverlay style="light" backgroundColor="#000000" />
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-          <AppLogo size="medium" />
+          <Text style={styles.appTitle}>Kronop</Text>
           <View style={styles.headerActions}>
             <TouchableOpacity 
               onPress={handleImageSearch}
@@ -626,6 +626,11 @@ const styles = StyleSheet.create({
   photoUser: {
     color: 'rgba(255,255,255,0.8)',
     fontSize: theme.typography.fontSize.xs,
+  },
+  appTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: theme.colors.text.primary,
   },
   listContent: {
     paddingBottom: theme.spacing.lg,

@@ -95,7 +95,7 @@ export default function SettingsScreen() {
       //   body: JSON.stringify({ category, settings })
       // });
       
-      Alert.alert('Success', 'Settings saved successfully!');
+      // Settings saved successfully - no alert needed for better UX
     } catch (error) {
       console.error('Error saving settings:', error);
       Alert.alert('Error', 'Failed to save settings');
@@ -190,7 +190,13 @@ export default function SettingsScreen() {
         
         {/* Notifications Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Notifications</Text>
+          <TouchableOpacity 
+            style={styles.sectionHeader}
+            onPress={() => router.push('/notifications')}
+          >
+            <Text style={styles.sectionTitle}>Notifications</Text>
+            <MaterialIcons name="chevron-right" size={24} color={theme.colors.text.secondary} />
+          </TouchableOpacity>
           
           <View style={styles.settingItem}>
             <View style={styles.settingInfo}>
@@ -234,7 +240,13 @@ export default function SettingsScreen() {
 
         {/* Privacy Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Privacy</Text>
+          <TouchableOpacity 
+            style={styles.sectionHeader}
+            onPress={() => router.push('/privacy' as any)}
+          >
+            <Text style={styles.sectionTitle}>Privacy</Text>
+            <MaterialIcons name="chevron-right" size={24} color={theme.colors.text.secondary} />
+          </TouchableOpacity>
           
           <View style={styles.settingItem}>
             <View style={styles.settingInfo}>
@@ -494,11 +506,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
   },
   section: {
-    backgroundColor: '#1a1a1a',
-    marginTop: 20,
-    paddingVertical: 10,
+    backgroundColor: theme.colors.background.secondary,
+    marginVertical: theme.spacing.sm,
+    paddingVertical: theme.spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#333333',
+    borderBottomColor: theme.colors.border.primary,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
   },
   sectionTitle: {
     fontSize: 16,

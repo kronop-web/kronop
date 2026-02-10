@@ -50,27 +50,27 @@ class BunnyContentService {
       reels: {
         libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_REELS || process.env.BUNNY_LIBRARY_ID_REELS || '',
         host: process.env.EXPO_PUBLIC_BUNNY_HOST_REELS || process.env.BUNNY_HOST_REELS || '',
-        apiKey: BUNNY_ACCESS_KEY_REELS || BUNNY_API_KEY
+        apiKey: process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || ''
       },
       video: {
         libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_VIDEO || process.env.BUNNY_LIBRARY_ID_VIDEO || '', 
         host: process.env.EXPO_PUBLIC_BUNNY_HOST_VIDEO || process.env.BUNNY_HOST_VIDEO || '',
-        apiKey: BUNNY_ACCESS_KEY_VIDEO || BUNNY_API_KEY
+        apiKey: process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || ''
       },
       live: {
         libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_LIVE || process.env.BUNNY_LIBRARY_ID_LIVE || '',
         host: process.env.EXPO_PUBLIC_BUNNY_HOST_LIVE || process.env.BUNNY_HOST_LIVE || '', 
-        apiKey: BUNNY_ACCESS_KEY_LIVE || BUNNY_API_KEY
+        apiKey: process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || ''
       },
       story: {
         libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_STORY || process.env.BUNNY_LIBRARY_ID_STORY || '',
         host: process.env.EXPO_PUBLIC_BUNNY_HOST_STORY || process.env.BUNNY_HOST_STORY || '',
-        apiKey: BUNNY_ACCESS_KEY_STORY || BUNNY_API_KEY
+        apiKey: process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || ''
       },
       photos: {
         storageZoneName: process.env.EXPO_PUBLIC_BUNNY_STORAGE_ZONE || process.env.BUNNY_STORAGE_ZONE || '',
         host: process.env.EXPO_PUBLIC_BUNNY_HOST_PHOTOS || process.env.BUNNY_HOST_PHOTOS || '',
-        apiKey: BUNNY_ACCESS_KEY
+        apiKey: process.env.EXPO_PUBLIC_BUNNY_PHOTO_STORAGE_KEY || process.env.BUNNY_PHOTO_STORAGE_KEY || ''
       }
     };
   }
@@ -81,27 +81,27 @@ class BunnyContentService {
       reels: {
         libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_REELS || process.env.BUNNY_LIBRARY_ID_REELS || '',
         host: process.env.EXPO_PUBLIC_BUNNY_HOST_REELS || process.env.BUNNY_HOST_REELS || '',
-        apiKey: BUNNY_ACCESS_KEY_REELS || BUNNY_API_KEY
+        apiKey: process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || ''
       },
       video: {
         libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_VIDEO || process.env.BUNNY_LIBRARY_ID_VIDEO || '', 
         host: process.env.EXPO_PUBLIC_BUNNY_HOST_VIDEO || process.env.BUNNY_HOST_VIDEO || '',
-        apiKey: BUNNY_ACCESS_KEY_VIDEO || BUNNY_API_KEY
+        apiKey: process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || ''
       },
       live: {
         libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_LIVE || process.env.BUNNY_LIBRARY_ID_LIVE || '',
         host: process.env.EXPO_PUBLIC_BUNNY_HOST_LIVE || process.env.BUNNY_HOST_LIVE || '', 
-        apiKey: BUNNY_ACCESS_KEY_LIVE || BUNNY_API_KEY
+        apiKey: process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || ''
       },
       story: {
         libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_STORY || process.env.BUNNY_LIBRARY_ID_STORY || '',
         host: process.env.EXPO_PUBLIC_BUNNY_HOST_STORY || process.env.BUNNY_HOST_STORY || '',
-        apiKey: BUNNY_ACCESS_KEY_STORY || BUNNY_API_KEY
+        apiKey: process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || ''
       },
       photos: {
         storageZoneName: process.env.EXPO_PUBLIC_BUNNY_STORAGE_ZONE || process.env.BUNNY_STORAGE_ZONE || '',
         host: process.env.EXPO_PUBLIC_BUNNY_HOST_PHOTOS || process.env.BUNNY_HOST_PHOTOS || '',
-        apiKey: BUNNY_ACCESS_KEY
+        apiKey: process.env.EXPO_PUBLIC_BUNNY_PHOTO_STORAGE_KEY || process.env.BUNNY_PHOTO_STORAGE_KEY || ''
       }
     };
   }

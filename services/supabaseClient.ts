@@ -1,19 +1,10 @@
-// Placeholder for Supabase Client
-// Currently used to satisfy imports in the application
-// Can be expanded later with actual Supabase initialization if needed
+// ==================== SUPABASE CLIENT ====================
+// Supabase client for authentication
+// Only used for login/logout, not for data operations
 
-const supabase = {
-  auth: {
-    signIn: async () => ({ data: {}, error: null }),
-    signOut: async () => ({ error: null }),
-    onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
-  },
-  from: (table: string) => ({
-    select: () => ({ data: [], error: null }),
-    insert: () => ({ data: [], error: null }),
-    update: () => ({ data: [], error: null }),
-    delete: () => ({ data: [], error: null }),
-  }),
-};
+import { createClient } from '@supabase/supabase-js';
+import { API_KEYS } from '../constants/Config';
+
+const supabase = createClient(API_KEYS.SUPABASE_URL, API_KEYS.SUPABASE_ANON_KEY);
 
 export default supabase;

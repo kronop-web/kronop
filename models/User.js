@@ -44,6 +44,14 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  avatar_url: {
+    type: String,
+    default: ''
+  },
+  cover_image_url: {
+    type: String,
+    default: ''
+  },
   followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   verified: {

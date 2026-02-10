@@ -1,20 +1,13 @@
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_KEYS, BUNNY_CONFIG, getBunnyConfigByType, BunnyConfigType } from '../constants/Config';
+import { reelsService } from './reelsService';
+import { videosService } from './videosService';
+import { authService } from './authService';
 
 // Get base URL from environment
 const getBaseUrl = () => {
-  // Check for Koyeb URL first (priority)
-  if (process.env.KOYEB_API_URL) {
-    return process.env.KOYEB_API_URL;
-  }
-  
-  // Check for fallback environment variable
-  if (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
-  }
-
-  throw new Error('KOYEB_API_URL environment variable is required');
+  // Use hardcoded URL for now
+  return 'https://kronop-api.koyeb.app';
 };
 
 const base = getBaseUrl();
@@ -56,24 +49,36 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     const fullUrl = `${API_URL}${endpoint}`;
     console.log(`📡 Fetching: ${fullUrl}`);
     
-    // Get authentication token - check both for compatibility
-    const token = await AsyncStorage.getItem('supabase_token') || await AsyncStorage.getItem('user_token');
-    console.log(`🔐 Token present: ${!!token}, Token length: ${token?.length || 0}`);
+    // Use authService for authentication headers
+    const headers = await authService.createAuthHeaders();
     
-    const headers = {
+    // Ensure we have proper headers even without token
+    let finalHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
-      ...options.headers,
+      ...headers,
     };
     
-    console.log(`📤 Request headers:`, JSON.stringify(headers, null, 2));
+    // Handle body serialization
+    let finalBody = options.body;
+    if (options.body && typeof options.body === 'object' && !(options.body instanceof FormData)) {
+      finalBody = JSON.stringify(options.body);
+    }
+    
+    // Remove Content-Type for FormData or no body
+    if (finalBody instanceof FormData || !finalBody) {
+      const { 'Content-Type': _, ...headersWithoutContentType } = finalHeaders;
+      finalHeaders = headersWithoutContentType;
+    }
+    
+    console.log(`📤 Request headers:`, JSON.stringify(finalHeaders, null, 2));
     console.log(`📤 Request options:`, JSON.stringify({
       method: options.method || 'GET',
-      body: options.body,
+      body: finalBody ? (finalBody instanceof FormData ? '[FormData]' : finalBody) : 'no body',
     }, null, 2));
     
     const response = await fetch(fullUrl, {
-      headers,
+      headers: finalHeaders,
+      body: finalBody,
       ...options,
     });
 
@@ -264,44 +269,73 @@ export const shayariPhotosApi = {
 
 export const reelsApi = {
   getReels: async (page = 1, limit = 20) => {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-    });
-    
-    return await apiCall(`/reels?${params}`);
+    try {
+      console.log('🎬 Calling reelsService.getPublicReels...');
+      return await reelsService.getPublicReels(page, limit);
+    } catch (error) {
+      console.error('🎬 reelsApi.getReels error:', error);
+      return [];
+    }
   },
 
   getAllReels: async (page = 1, limit = 20) => {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-    });
-    
-    return await apiCall(`/reels?${params}`);
+    try {
+      console.log('🎬 Calling reelsService.getPublicReels...');
+      return await reelsService.getPublicReels(page, limit);
+    } catch (error) {
+      console.error('🎬 reelsApi.getAllReels error:', error);
+      return [];
+    }
   },
 
   getUserReels: async () => {
-    // Remove hardcoded userId - let backend use default
-    console.log('📡 Calling getUserReels API...');
-    return await apiCall('/reels/user');
+    try {
+      console.log('🎬 Calling reelsService.getUserReels...');
+      return await reelsService.getUserReels();
+    } catch (error) {
+      console.error('🎬 reelsApi.getUserReels error:', error);
+      return [];
+    }
   },
 
   uploadReel: async (file: any, metadata: any) => {
-    return await uploadReel(file, metadata);
+    try {
+      console.log('🎬 Calling reelsService.uploadReel...');
+      return await reelsService.uploadReel(file, metadata);
+    } catch (error) {
+      console.error('🎬 reelsApi.uploadReel error:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
   },
 
   updateReel: async (reelId: string, updates: any) => {
-    return await apiCall(`/reels/${reelId}`, {
-      method: 'PUT',
-      body: JSON.stringify(updates),
-    });
+    try {
+      console.log('🎬 Calling reelsService.updateReel...');
+      return await reelsService.updateReel(reelId, updates);
+    } catch (error) {
+      console.error('🎬 reelsApi.updateReel error:', error);
+      return null;
+    }
   },
 
   deleteReel: async (reelId: string) => {
-    return await apiCall(`/reels/${reelId}`, {
-      method: 'DELETE',
-    });
+    try {
+      console.log('🎬 Calling reelsService.deleteReel...');
+      return await reelsService.deleteReel(reelId);
+    } catch (error) {
+      console.error('🎬 reelsApi.deleteReel error:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  },
+
+  toggleLike: async (reelId: string) => {
+    try {
+      console.log('🎬 Calling reelsService.toggleReelLike...');
+      return await reelsService.toggleReelLike(reelId);
+    } catch (error) {
+      console.error('🎬 reelsApi.toggleLike error:', error);
+      throw error;
+    }
   },
 
   getReelStats: async () => {
@@ -311,35 +345,69 @@ export const reelsApi = {
 
 export const videosApi = {
   getVideos: async (page = 1, limit = 20) => {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-    });
-    
-    return await apiCall(`/videos?${params}`);
+    try {
+      console.log('🎥 Calling videosService.getPublicVideos...');
+      return await videosService.getPublicVideos(page, limit);
+    } catch (error) {
+      console.error('🎥 videosApi.getVideos error:', error);
+      return [];
+    }
+  },
+
+  getAllVideos: async (page = 1, limit = 20) => {
+    try {
+      console.log('🎥 Calling videosService.getPublicVideos...');
+      return await videosService.getPublicVideos(page, limit);
+    } catch (error) {
+      console.error('🎥 videosApi.getAllVideos error:', error);
+      return [];
+    }
   },
 
   getUserVideos: async () => {
-    // Remove hardcoded userId - let backend use default
-    console.log('📡 Calling getUserVideos API...');
-    return await apiCall('/videos/user');
+    try {
+      console.log('🎥 Calling videosService.getUserVideos...');
+      return await videosService.getUserVideos();
+    } catch (error) {
+      console.error('🎥 videosApi.getUserVideos error:', error);
+      return [];
+    }
   },
 
   uploadVideo: async (file: any, metadata: any) => {
-    return await uploadVideo(file, metadata);
+    // TODO: Implement video upload similar to reels
+    console.log('🎥 Video upload not yet implemented');
+    return { success: false, error: 'Video upload not yet implemented' };
   },
 
   updateVideo: async (videoId: string, updates: any) => {
-    return await apiCall(`/content/${videoId}`, {
-      method: 'PUT',
-      body: JSON.stringify(updates),
-    });
+    try {
+      console.log('🎥 Calling videosService.updateVideo...');
+      return await videosService.updateVideo(videoId, updates);
+    } catch (error) {
+      console.error('🎥 videosApi.updateVideo error:', error);
+      return null;
+    }
   },
 
   deleteVideo: async (videoId: string) => {
-    return await apiCall(`/content/${videoId}`, {
-      method: 'DELETE',
-    });
+    try {
+      console.log('🎥 Calling videosService.deleteVideo...');
+      return await videosService.deleteVideo(videoId);
+    } catch (error) {
+      console.error('🎥 videosApi.deleteVideo error:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  },
+
+  toggleLike: async (videoId: string) => {
+    try {
+      console.log('🎥 Calling videosService.toggleVideoLike...');
+      return await videosService.toggleVideoLike(videoId);
+    } catch (error) {
+      console.error('🎥 videosApi.toggleLike error:', error);
+      throw error;
+    }
   },
 
   getVideoStats: async () => {
@@ -382,15 +450,33 @@ export const liveApi = {
 
 export const savedApi = {
   getSaved: async (page = 1, limit = 20) => {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString()
-    });
-    
-    const endpoint = `/content/saved?${params}`;
-    console.log('🔍 Calling savedApi.getSaved with endpoint:', endpoint);
-    
-    return await apiCall(endpoint);
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString()
+      });
+      
+      const endpoint = `/content/saved?${params}`;
+      console.log('🔍 Calling savedApi.getSaved with endpoint:', endpoint);
+      
+      const result = await apiCall(endpoint);
+      
+      // Handle different response formats
+      if (result && result.data && Array.isArray(result.data)) {
+        return result.data;
+      } else if (result && Array.isArray(result)) {
+        return result;
+      } else if (result && result.success && result.data) {
+        return Array.isArray(result.data) ? result.data : [];
+      } else {
+        console.warn('🔍 savedApi: Unexpected response format:', result);
+        return [];
+      }
+    } catch (error) {
+      console.error('🔍 savedApi.getSaved error:', error);
+      // Return empty array on error to prevent app crashes
+      return [];
+    }
   },
   
   saveItem: async (itemId: string, itemType: string) => {

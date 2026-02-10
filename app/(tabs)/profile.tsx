@@ -98,6 +98,8 @@ export default function ProfileScreen() {
   const [showEarningsSection, setShowEarningsSection] = useState(false);
   const [supportersList, setSupportersList] = useState<any[]>([]);
   const [supportingList, setSupportingList] = useState<any[]>([]);
+  const [showBankModal, setShowBankModal] = useState(false);
+  const [showDepartmentModal, setShowDepartmentModal] = useState(false);
 
   const [photos, setPhotos] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
@@ -812,6 +814,25 @@ export default function ProfileScreen() {
               <View style={activeTab === tab.key && styles.activeTabIndicator} />
             </TouchableOpacity>
           ))}
+        </View>
+
+        {/* Quick Actions */}
+        <View style={styles.quickActionsContainer}>
+          <TouchableOpacity 
+            style={styles.quickActionButton}
+            onPress={() => setShowBankModal(true)}
+          >
+            <MaterialIcons name="account-balance-wallet" size={20} color={theme.colors.primary.main} />
+            <Text style={styles.quickActionText}>Bank Details</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.quickActionButton}
+            onPress={() => setShowDepartmentModal(true)}
+          >
+            <MaterialIcons name="storage" size={20} color={theme.colors.primary.main} />
+            <Text style={styles.quickActionText}>Department Database</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Content Grid */}
@@ -1880,5 +1901,85 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
+  },
+  quickActionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: theme.colors.background.secondary,
+    marginVertical: 8,
+    borderRadius: 12,
+  },
+  quickActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.background.primary,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: theme.colors.border.primary,
+  },
+  quickActionText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+    marginLeft: 6,
+  },
+  bankSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border.primary,
+  },
+  bankLabel: {
+    fontSize: 14,
+    color: theme.colors.text.secondary,
+    flex: 1,
+  },
+  bankValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+    flex: 2,
+    textAlign: 'right',
+  },
+  departmentSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border.primary,
+  },
+  departmentLabel: {
+    fontSize: 14,
+    color: theme.colors.text.secondary,
+    flex: 1,
+  },
+  departmentValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+    flex: 2,
+    textAlign: 'right',
+  },
+  syncButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.primary.main,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  syncButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+    marginLeft: 8,
   },
 });

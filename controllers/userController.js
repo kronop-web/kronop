@@ -116,8 +116,57 @@ const syncSupabaseUser = async (req, res) => {
     }
 };
 
+const uploadImage = async (req, res) => {
+    try {
+        // Get user from token (assuming auth middleware is implemented)
+        const userId = req.user?.id || req.body.userId;
+        
+        if (!userId) {
+            return res.status(401).json({ error: 'User authentication required' });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ error: 'No image file provided' });
+        }
+
+        const image = req.file;
+        const type = req.body.type || 'profile'; // 'profile' or 'cover'
+        
+        // Get user from MongoDB
+        const user = await User.findOne({ _id: userId });
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        // For now, we'll store image data as base64 in MongoDB
+        // In production, you might want to use a CDN like BunnyCDN
+        const imageBase64 = image.buffer.toString('base64');
+        const imageUrl = `data:${image.mimetype};base64,${imageBase64}`;
+        
+        // Update user profile with image URL
+        if (type === 'profile') {
+            user.avatar_url = imageUrl;
+        } else if (type === 'cover') {
+            user.cover_image_url = imageUrl;
+        }
+        
+        await user.save();
+        
+        res.json({ 
+            success: true, 
+            data: imageUrl,
+            message: `${type === 'profile' ? 'Profile' : 'Cover'} image updated successfully`
+        });
+        
+    } catch (error) {
+        console.error('Upload Image Error:', error);
+        res.status(500).json({ error: 'Failed to upload image' });
+    }
+};
+
 module.exports = {
     getProfile,
     saveProfile,
-    syncSupabaseUser
+    syncSupabaseUser,
+    uploadImage
 };
