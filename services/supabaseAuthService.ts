@@ -3,8 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 import 'react-native-url-polyfill/auto';
 import Constants from 'expo-constants';
 
-const supabaseUrl = Constants.expoConfig?.extra?.EXPO_PUBLIC_SUPABASE_URL || 'https://sduyduumnvkuxqhjhjof.supabase.co';
-const supabaseAnonKey = Constants.expoConfig?.extra?.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkdXlkdXVtbnZrdXhxaGpoam9mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2MjI5OTMsImV4cCI6MjA4NTE5ODk5M30.RoDPoo3mqJccDUpERr_lnEGHjiJXQXhOouzqhuDXtkE';
+const supabaseUrl = Constants.expoConfig?.extra?.EXPO_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
+const supabaseAnonKey = Constants.expoConfig?.extra?.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
 
 console.log('🔗 Supabase URL:', supabaseUrl);
 console.log('🔐 Using REAL Supabase Auth - No Mock Authentication!');

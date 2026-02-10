@@ -49,22 +49,24 @@ const CATEGORIES = [
 
 // ==================== BUNNY.NET API CONFIGURATION ====================
 const BUNNY_CONFIG = {
-  LIBRARY_ID: '571408',
-  ACCESS_KEY: '17c248cf-fbc2-4a52-b5e05cb7f989-9785-4e4b',
-  CDN_HOSTNAME: 'vz-1a90bde8-399.b-cdn.net',
-  TOKEN_KEY: '8ae8b058-62d7-4c3b-9a2e-0e95450723d4',
+  LIBRARY_ID: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_VIDEO || process.env.BUNNY_LIBRARY_ID_VIDEO || '',
+  ACCESS_KEY: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ACCESS_KEY_VIDEO || process.env.BUNNY_LIBRARY_ACCESS_KEY_VIDEO || process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || '',
+  CDN_HOSTNAME: process.env.EXPO_PUBLIC_BUNNY_HOST_VIDEO || process.env.BUNNY_HOST_VIDEO || '',
+  TOKEN_KEY: process.env.EXPO_PUBLIC_BUNNY_TOKEN_KEY || process.env.BUNNY_TOKEN_KEY || '',
   
   // API URLs
-  LIST_VIDEOS_URL: 'https://video.bunny.net/library/571408/videos',
+  LIST_VIDEOS_URL: `https://video.bunny.net/library/${process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_VIDEO || process.env.BUNNY_LIBRARY_ID_VIDEO || ''}/videos`,
   
   // Get video URL for player
   getVideoUrl: (videoId: string) => {
-    return `https://${BUNNY_CONFIG.CDN_HOSTNAME}/${videoId}/play_720p.mp4`;
+    const host = process.env.EXPO_PUBLIC_BUNNY_HOST_VIDEO || process.env.BUNNY_HOST_VIDEO || '';
+    return host ? `https://${host}/${videoId}/play_720p.mp4` : '';
   },
   
   // Get thumbnail URL
   getThumbnailUrl: (videoId: string) => {
-    return `https://${BUNNY_CONFIG.CDN_HOSTNAME}/${videoId}/thumbnail.jpg`;
+    const host = process.env.EXPO_PUBLIC_BUNNY_HOST_VIDEO || process.env.BUNNY_HOST_VIDEO || '';
+    return host ? `https://${host}/${videoId}/thumbnail.jpg` : '';
   },
   
   // API headers
@@ -136,11 +138,11 @@ class BunnyVideosService {
   // Get sample videos for fallback
   getSampleVideos() {
     const videoUrls = [
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    ];
+      process.env.EXPO_PUBLIC_SAMPLE_VIDEO_1 || '',
+      process.env.EXPO_PUBLIC_SAMPLE_VIDEO_2 || '',
+      process.env.EXPO_PUBLIC_SAMPLE_VIDEO_3 || '',
+      process.env.EXPO_PUBLIC_SAMPLE_VIDEO_4 || '',
+    ].filter(url => url !== '');
 
     return Array.from({ length: 12 }, (_, index) => ({
       id: `video_${Date.now()}_${index}`,

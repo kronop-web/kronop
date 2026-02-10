@@ -770,7 +770,7 @@ apiRouter.get('/content/story', async (req, res) => {
 const originalOneSignalClient = require('./services/oneSignalClient');
 
 originalOneSignalClient.createNotification = async (notification) => {
-  const url = 'https://onesignal.com/api/v1/notifications';
+  const url = process.env.EXPO_PUBLIC_ONESIGNAL_API_URL || process.env.ONESIGNAL_API_URL || 'https://onesignal.com/api/v1/notifications';
   const apiKey = (
     process.env.ONESIGNAL_REST_API_KEY ||
     process.env.ONE_SIGNAL_REST_API_KEY ||

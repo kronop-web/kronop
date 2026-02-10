@@ -87,7 +87,7 @@ export default function YouTubePlayerScreen() {
       const mockVideo: VideoData = {
         id: id as string,
         title: "Amazing Long Video Content - YouTube Style",
-        videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+        videoUrl: process.env.EXPO_PUBLIC_SAMPLE_VIDEO_BIGBUCK || '',
         thumbnailUrl: "https://picsum.photos/1280x720?random=" + id,
         channelName: "Kronop Creator",
         description: "This is an amazing long video content created for Kronop platform. Experience the best video quality with our new YouTube-style player.",

@@ -1,8 +1,7 @@
 // ==================== GROQ AI SERVICE ====================
 // AI-powered support chat using Groq API
-import { API_KEYS } from '../constants/Config';
 
-const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_API_URL = process.env.EXPO_PUBLIC_GROQ_API_URL || process.env.GROQ_API_URL || 'https://api.groq.com/openai/v1/chat/completions';
 
 export interface GroqMessage {
   role: 'system' | 'user' | 'assistant';
@@ -28,7 +27,7 @@ class GroqAIService {
   private model: string = 'llama-3.3-70b-versatile'; // Using current Llama 3.3 70B model
 
   constructor() {
-    this.apiKey = API_KEYS.GROQ;
+    this.apiKey = process.env.EXPO_PUBLIC_GROQ_API_KEY || process.env.GROQ_API_KEY || '';
     if (!this.apiKey) {
       console.warn('⚠️ Groq API key not found in configuration');
     }

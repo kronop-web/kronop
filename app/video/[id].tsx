@@ -33,7 +33,7 @@ export default function VideoPlayerScreen() {
         const mockVideo: VideoData = {
           id: Array.isArray(id) ? id[0] : id,
           title: 'Amazing Video Title',
-          videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+          videoUrl: process.env.EXPO_PUBLIC_SAMPLE_VIDEO_BIGBUCK || '',
           channelName: 'Channel Name',
           description: 'This is an amazing video description that tells you all about this incredible content.'
         };
@@ -67,7 +67,7 @@ export default function VideoPlayerScreen() {
       const mockVideo: VideoData = {
         id: Array.isArray(id) ? id[0] : id,
         title: 'Amazing Video Title',
-        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+        videoUrl: process.env.EXPO_PUBLIC_SAMPLE_VIDEO_BIGBUCK || '',
         channelName: 'Channel Name',
         description: 'This is an amazing video description that tells you all about this incredible content.'
       };

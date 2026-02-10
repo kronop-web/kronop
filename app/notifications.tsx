@@ -78,14 +78,14 @@ export default function NotificationsScreen() {
       }
 
       // Send a test notification via OneSignal API
-      const response = await fetch('https://onesignal.com/api/v1/notifications', {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_ONESIGNAL_API_URL || process.env.ONESIGNAL_API_URL || 'https://onesignal.com/api/v1/notifications'}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Basic YOUR_REST_API_KEY`, // You'll need to add this to your .env
+          'Authorization': `Basic ${process.env.EXPO_PUBLIC_ONESIGNAL_REST_API_KEY || process.env.ONESIGNAL_REST_API_KEY || ''}`,
         },
         body: JSON.stringify({
-          app_id: 'cd687278-406c-460c-8092-02948324192f',
+          app_id: process.env.EXPO_PUBLIC_ONESIGNAL_APP_ID || process.env.ONESIGNAL_APP_ID || '',
           included_segments: ['All'],
           headings: { en: 'Test Notification' },
           contents: { en: 'This is a test notification from your app!' },

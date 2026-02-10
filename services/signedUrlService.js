@@ -48,7 +48,7 @@ class SignedUrlService {
     try {
       const config = this.BUNNY_CONFIG.photos;
       if (config && config.storageZoneName) {
-        return `https://${config.storageZoneName}.b-cdn.net/${fileName}`;
+        return `https://${config.host || config.storageZoneName + '.b-cdn.net'}/${fileName}`;
       }
       return null;
     } catch (error) {
