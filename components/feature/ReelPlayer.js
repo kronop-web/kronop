@@ -392,6 +392,7 @@ const ReelPlayer = ({
     const isZeroDataReWatch = cachedPaths[reel.id] && cachedPaths[reel.id] !== (reel.signedUrl || reel.videoUrl || reel.url);
     
     // EMERGENCY CHECK: Log video URL and data structure
+    console.log('🎥 Reel video data:', {
       id: reel.id,
       hasSignedUrl: !!reel.signedUrl,
       hasVideoUrl: !!reel.videoUrl,
@@ -440,6 +441,7 @@ const ReelPlayer = ({
             onPlaybackStatusUpdate={(status) => handleVideoStatusUpdate(status, reel.id)}
             onError={(error) => {
               console.error('❌ Video playback error:', error);
+              console.log('🎥 Video URLs available:', {
                 signedUrl: reel.signedUrl,
                 videoUrl: reel.videoUrl,
                 url: reel.url

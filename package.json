@@ -184,6 +184,7 @@
     "concurrently": "^9.2.1",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
+    "expo-module-scripts": "^5.0.8",
     "metro": "^0.83.1",
     "metro-config": "^0.82.5",
     "metro-resolver": "^0.82.5",

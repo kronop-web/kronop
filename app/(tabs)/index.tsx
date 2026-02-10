@@ -14,6 +14,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { photosApi, storiesApi } from '../../services/api';
 import StatusBarOverlay from '../../components/common/StatusBarOverlay';
+import AppLogo from '../../components/common/AppLogo';
 
 // Photo categories - TEXT ONLY, HORIZONTAL SCROLL WITH PROPER FILTERING
 const PHOTO_CATEGORIES = [
@@ -290,7 +291,7 @@ export default function HomeScreen() {
       <StatusBarOverlay style="light" backgroundColor="#000000" />
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-          <Text style={styles.logo}>Kronop</Text>
+          <AppLogo size="medium" />
           <View style={styles.headerActions}>
             <TouchableOpacity 
               onPress={handleImageSearch}
@@ -473,11 +474,6 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border.primary,
-  },
-  logo: {
-    color: theme.colors.text.primary,
-    fontSize: theme.typography.fontSize.xxl,
-    fontWeight: theme.typography.fontWeight.bold,
   },
   headerActions: {
     flexDirection: 'row',

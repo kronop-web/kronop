@@ -21,7 +21,7 @@ export const videoService = {
         const bunnyConfig = getBunnyConfigByType(contentType);
         
         const host = bunnyConfig.host || '';
-        const libraryId = bunnyConfig.libraryId || '';
+        const libraryId = (bunnyConfig as any).libraryId || '';
 
         // Force .m3u8 playlist format for videos, use iframe for long videos
         let finalVideoUrl = item.url || item.videoUrl || '';

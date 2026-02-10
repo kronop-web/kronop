@@ -1,5 +1,5 @@
 import { videoService } from './videoService';
-import { reelsService } from './reelsService';
+import { reelService } from './reelService';
 import { liveService } from './liveService';
 import { storyService } from './storyService';
 import { getPhotosByCategory, getRelatedPhotos } from './photoService';
@@ -9,7 +9,7 @@ import { apiCall } from './api';
 export const bridgeService = {
   // Content Services
   video: videoService,
-  reels: reelsService,
+  reels: reelService,
   live: liveService,
   story: storyService,
   photos: {

@@ -121,7 +121,7 @@ class BunnyVideosService {
             avatar_url: 'https://i.pravatar.cc/150'
           }
         };
-      })?.filter(video => video.video_url !== null) || []; // Filter out inaccessible videos
+      })?.filter((video: any) => video.video_url !== null) || []; // Filter out inaccessible videos
       
       console.log(`✅ Successfully loaded ${videos.length} videos from Bunny CDN`);
       return { data: videos, error: null };
@@ -555,7 +555,7 @@ export default function VideosScreen() {
   // Handle close button press - Go to home and show tab bar
   const handleClose = () => {
     // showTabBar(); // TabBarContext not available
-    router.push('/(tabs)/index');
+    router.push('/');
   };
 
   const triggerStarAnimation = (videoId: string) => {

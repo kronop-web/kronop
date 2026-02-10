@@ -60,7 +60,7 @@ export default function VideoPlayer({
   const [showLoadingIndicator, setShowLoadingIndicator] = useState(true);
   
   const controlsOpacity = useRef(new Animated.Value(1)).current;
-  const hideControlsTimeout = useRef<number>();
+  const hideControlsTimeout = useRef<number | null>(null);
 
   // Auto-hide controls after 3 seconds
   const hideControls = useCallback(() => {
@@ -283,7 +283,6 @@ export default function VideoPlayer({
               onSlidingComplete={handleSeek}
               minimumTrackTintColor={theme.colors.primary.main}
               maximumTrackTintColor="rgba(255, 255, 255, 0.3)"
-              thumbStyle={styles.sliderThumb}
             />
             
             <Text style={styles.timeText}>

@@ -2,7 +2,7 @@ import React, { createContext, useState, useCallback, ReactNode } from 'react';
 import { Video, Comment } from '../types/video';
 import { videoService } from '../services/videoService';
 
-interface VideoContextType {
+export interface VideoContextType {
   videos: Video[];
   loading: boolean;
   fetchVideos: () => Promise<void>;
@@ -111,10 +111,3 @@ export function VideoProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export const useVideo = () => {
-  const context = React.useContext(VideoContext);
-  if (context === undefined) {
-    throw new Error('useVideo must be used within a VideoProvider');
-  }
-  return context;
-};

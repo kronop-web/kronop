@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ActivityIndicator, TextInput } from 'react-native';
-import { AntDesign, Ionicons } from '@expo/vector-icons';
-import { theme } from '../constants/theme';
+import { View, StyleSheet, TouchableOpacity, Text, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { theme } from '../constants/theme';
+import AppLogo from '../components/common/AppLogo';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../template';
 
@@ -78,11 +79,7 @@ export default function LoginScreen() {
     <View style={styles.container}>
       <View style={styles.content}>
         <View style={styles.header}>
-          <Image 
-            source={require('../assets/images/logo_final.png')} 
-            style={styles.logo}
-            resizeMode="contain" 
-          />
+          <AppLogo size="large" />
           <Text style={styles.title}>Welcome to Kronop</Text>
           <Text style={styles.subtitle}>Watch, Share, and Earn.</Text>
         </View>

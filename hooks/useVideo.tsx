@@ -1,7 +1,7 @@
 import { useContext } from 'react';
-import { VideoContext } from '../context/VideoContext';
+import { VideoContext, VideoContextType } from '../context/VideoContext';
 
-export function useVideo() {
+export function useVideo(): VideoContextType {
   const context = useContext(VideoContext);
   if (!context) {
     throw new Error('useVideo must be used within VideoProvider');

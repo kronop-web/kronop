@@ -58,7 +58,7 @@ export default function LiveUpload({ onClose }: LiveUploadProps) {
 
         // File size validation (basic check)
         const MAX_SIZE = 2 * 1024 * 1024 * 1024; // 2GB
-        if (file.size > MAX_SIZE) {
+        if (file.size && file.size > MAX_SIZE) {
           Alert.alert('File Too Large', 'Live stream files must be less than 2GB');
           return;
         }

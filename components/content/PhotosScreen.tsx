@@ -8,6 +8,7 @@ export default function PhotosScreen() {
 
   const renderPhoto = ({ item }: { item: any }) => {
     // Log photo URLs for debugging
+    console.log('📸 Photo URLs:', {
       title: item.title,
       originalUrl: item.originalUrl,
       signedUrl: item.signedUrl,
