@@ -25,7 +25,7 @@ export interface GroqResponse {
 
 class GroqAIService {
   private apiKey: string;
-  private model: string = 'llama3-70b-8192'; // Using Llama 3 70B model
+  private model: string = 'llama-3.3-70b-versatile'; // Using current Llama 3.3 70B model
 
   constructor() {
     this.apiKey = API_KEYS.GROQ;
