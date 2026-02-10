@@ -40,7 +40,8 @@ class GroqAIService {
   async sendMessage(messages: GroqMessage[]): Promise<string> {
     try {
       if (!this.apiKey) {
-        throw new Error('Groq API key not configured');
+        console.warn('⚠️ Groq API key not configured - using fallback mode');
+        return this.getFallbackResponse();
       }
 
       // Add system prompt with Kronop branding and personality
@@ -79,6 +80,12 @@ Kronop is a video sharing platform where users can upload reels, videos, photos,
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.warn(`⚠️ Groq API ${response.status}:`, errorData);
+        
+        if (response.status === 401) {
+          return this.getAuthErrorResponse();
+        }
+        
         throw new Error(`Groq API error: ${response.status} - ${errorData.error?.message || response.statusText}`);
       }
 
@@ -93,12 +100,32 @@ Kronop is a video sharing platform where users can upload reels, videos, photos,
       console.error('❌ Groq AI Error:', error);
       
       // Fallback response for API errors
-      if (error instanceof Error && error.message.includes('API key')) {
-        return '🔧 AI service is currently being configured. Please contact support at 9039012335 for immediate assistance.';
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      if (errorMessage.includes('API key') || errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
+        return this.getAuthErrorResponse();
+      }
+      
+      if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+        return '🌐 Network issue detected. Please check your internet connection and try again.';
       }
       
       return '🤖 I apologize, but I\'m having trouble connecting right now. Please try again or contact our support team at 9039012335.';
     }
+  }
+
+  /**
+   * Get fallback response when API is not available
+   */
+  private getFallbackResponse(): string {
+    return '🤖 Hi! I\'m currently in maintenance mode. For immediate assistance:\n\n📞 Call: 9039012335\n📧 Email: angoriyaarun311@gmail.com\n\nI can help you with:\n• Profile updates\n• Video uploads\n• Settings configuration\n• Account issues\n\nPlease describe your issue and I\'ll guide you through the solution!';
+  }
+
+  /**
+   * Get authentication error response
+   */
+  private getAuthErrorResponse(): string {
+    return '🔐 AI service authentication required. Our team is working on this!\n\nFor immediate help:\n📞 Call: 9039012335\n📧 Email: angoriyaarun311@gmail.com\n\nI apologize for the inconvenience. Please try again in a few minutes.';
   }
 
   /**

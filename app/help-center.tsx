@@ -36,7 +36,7 @@ export default function HelpCenterScreen() {
     {
       id: '1',
       role: 'assistant',
-      content: '🤖 Hello! I am your Kronop AI assistant, powered by Groq. I can help you with profile management, video uploads, settings, and any questions about the app. How can I assist you today? 💜',
+      content: '🤖 Hello! I am your Kronop AI assistant. I can help you with:\n\n• Profile management\n• Video uploads and content\n• Settings and privacy\n• Account issues\n• General app questions\n\nFor immediate support, you can always call us at 9039012335. How can I help you today? 💜',
       timestamp: new Date(),
     },
   ]);
