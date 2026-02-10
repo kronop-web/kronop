@@ -12,6 +12,9 @@ const connectToDatabase = async () => {
     throw new Error('MONGODB_URI is not defined');
   }
 
+  console.log('🔗 Connecting to MongoDB...');
+  console.log('📍 MongoDB URI:', mongoUri.replace(/:([^:@]+)@/, ':***@')); // Hide password in logs
+
   isConnecting = true;
   try {
     await mongoose.connect(mongoUri, {
@@ -23,7 +26,12 @@ const connectToDatabase = async () => {
       maxIdleTimeMS: Number(process.env.MONGO_MAX_IDLE_TIME_MS) || 30000,
       waitQueueTimeoutMS: Number(process.env.MONGO_WAIT_QUEUE_TIMEOUT_MS) || 5000
     });
+    
+    console.log('✅ MongoDB connected successfully!');
     return mongoose.connection;
+  } catch (error) {
+    console.error('❌ MongoDB connection failed:', error.message);
+    throw error;
   } finally {
     isConnecting = false;
   }

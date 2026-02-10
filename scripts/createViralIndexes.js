@@ -199,23 +199,19 @@ async function createOptimizedIndexes() {
       console.log(`  - ${indexName}:`, JSON.stringify(contentIndexes[indexName].key));
     });
 
-    console.log('\n� User indexes:');
+    console.log('\n👤 User indexes:');
     const userIndexes = await User.collection.getIndexes();
     Object.keys(userIndexes).forEach(indexName => {
       console.log(`  - ${indexName}:`, JSON.stringify(userIndexes[indexName].key));
     });
 
-    // Analyze query performance for $nin operations
-    console.log('\n🔍 Analyzing $nin query performance...');
-    
     // Simulate a user with some seen reels
     const testUserId = 'test_user_123';
-    const testSeenReels = ['507f1f77bcf86cd799439011', '507f1f77bcf86cd799439012'];
+    const testSeenReels = [process.env.DEFAULT_USER_ID || '507f1f77bcf86cd799439011', '507f1f77bcf86cd799439012'];
     
     const explainResult = await Content.find({
       status: 'public',
-      type: 'reel',
-      _id: { $nin: testSeenReels }
+      _id: { $nin: testSeenReels.map(id => mongoose.Types.ObjectId(id)) }
     })
     .sort({ created_at: -1 })
     .limit(20)

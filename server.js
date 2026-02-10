@@ -38,7 +38,7 @@ const contentRouteNew = require('./routes/content');
 
 // ==================== APP INITIALIZATION ====================
 const app = express();
-const PORT = Number(process.env.PORT) || 10000;
+const PORT = Number(process.env.PORT) || 8000;
 const apiRouter = express.Router();
 
 // ==================== ERROR HANDLING ====================
@@ -88,7 +88,11 @@ const HLS_DIR = path.resolve(ROOT_DIR, 'hls');
 
 // Ensure directories exist
 [UPLOADS_DIR, HLS_DIR].forEach(dir => {
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  try {
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  } catch (error) {
+    console.warn(`Warning: Could not create directory ${dir}:`, error.message);
+  }
 });
 
 // CORS configuration (moved to top)

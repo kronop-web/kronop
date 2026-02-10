@@ -1,5 +1,6 @@
 // Advanced HLS Streaming Service with Bunny CDN Integration
-const fs = require('fs').promises;
+const fs = require('fs');
+const fsPromises = require('fs').promises;
 const path = require('path');
 const axios = require('axios');
 const { BUNNY_CONFIG } = require('./config/bunnyConfig');
@@ -12,7 +13,11 @@ class HLSStreamingService {
     
     // Ensure directories exist
     [this.uploadDir, this.hlsDir].forEach(dir => {
-      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      try {
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      } catch (error) {
+        console.warn(`Warning: Could not create directory ${dir}:`, error.message);
+      }
     });
   }
 

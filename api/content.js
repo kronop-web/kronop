@@ -124,7 +124,7 @@ router.get('/user/:userId', async (req, res) => {
 router.get('/video/user', async (req, res) => {
   try {
     const { userId, page = 1, limit = 20 } = req.query;
-    const effectiveUserId = userId || '507f1f77bcf86cd799439011';
+    const effectiveUserId = userId || process.env.DEFAULT_USER_ID || null;
     const content = await DatabaseService.getUserContent(effectiveUserId, 'Video', parseInt(page), parseInt(limit));
     res.json({ success: true, data: content });
   } catch (error) {
@@ -135,7 +135,7 @@ router.get('/video/user', async (req, res) => {
 router.get('/photo/user', async (req, res) => {
   try {
     const { userId, page = 1, limit = 20 } = req.query;
-    const effectiveUserId = userId || '507f1f77bcf86cd799439011';
+    const effectiveUserId = userId || process.env.DEFAULT_USER_ID || null;
     const content = await DatabaseService.getUserContent(effectiveUserId, 'Photo', parseInt(page), parseInt(limit));
     res.json({ success: true, data: content });
   } catch (error) {
@@ -146,7 +146,7 @@ router.get('/photo/user', async (req, res) => {
 router.get('/reels/user', async (req, res) => {
   try {
     const { userId, page = 1, limit = 20 } = req.query;
-    const effectiveUserId = userId || '507f1f77bcf86cd799439011';
+    const effectiveUserId = userId || process.env.DEFAULT_USER_ID || null;
     const content = await DatabaseService.getUserContent(effectiveUserId, 'Reel', parseInt(page), parseInt(limit));
     res.json({ success: true, data: content });
   } catch (error) {

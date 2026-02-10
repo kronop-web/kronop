@@ -465,7 +465,7 @@ class BunnyContentService {
               duration: 0,
               tags: item.tags || [],
               created_at: createdAt, // Fixed: Use validated date
-              user_id: '507f1f77bcf86cd799439011' // Default guest user ID
+              user_id: process.env.DEFAULT_USER_ID || null // Default user ID from environment
             };
 
             console.log(`💾 Saving photo: ${contentData.title}`);
@@ -525,7 +525,7 @@ class BunnyContentService {
             duration: item.duration || 0,
             tags: item.tags || [],
             created_at: createdAt, // Fixed: Use validated date
-            user_id: '507f1f77bcf86cd799439011' // Default guest user ID
+            user_id: process.env.DEFAULT_USER_ID || null // Default user ID from environment
           };
 
           // Add expiration for stories
@@ -663,6 +663,7 @@ class BunnyContentService {
         console.log('✅ Scheduled sync completed');
       } catch (error) {
         console.error('❌ Scheduled sync failed:', error.message);
+        // Don't throw error to prevent sync from stopping
       }
     }, intervalMinutes * 60 * 1000);
   }

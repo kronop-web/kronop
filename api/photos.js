@@ -153,7 +153,7 @@ router.get('/', async (req, res) => {
 router.get('/user', async (req, res) => {
   try {
     const { userId, page = 1, limit = 20 } = req.query;
-    const effectiveUserId = userId || '507f1f77bcf86cd799439011';
+    const effectiveUserId = userId || process.env.DEFAULT_USER_ID || null;
     
     const content = await DatabaseService.getUserContent(effectiveUserId, 'Photo', parseInt(page), parseInt(limit));
     const contentWithUrls = SignedUrlService.generateSignedUrlsForContent(content);

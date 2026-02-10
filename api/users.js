@@ -21,8 +21,12 @@ router.post('/sync', async (req, res) => {
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const uploadDir = path.join(process.cwd(), 'uploads');
-    if (!fs.existsSync(uploadDir)){
-        fs.mkdirSync(uploadDir, { recursive: true });
+    try {
+      if (!fs.existsSync(uploadDir)){
+          fs.mkdirSync(uploadDir, { recursive: true });
+      }
+    } catch (error) {
+      console.warn(`Warning: Could not create directory ${uploadDir}:`, error.message);
     }
     cb(null, uploadDir);
   },
