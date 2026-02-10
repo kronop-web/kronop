@@ -7,18 +7,18 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://web-production-44afa.up.railway.app"
+        "EXPO_PUBLIC_API_URL": "${EXPO_PUBLIC_RAILWAY_URL}"
       }
     },
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://web-production-44afa.up.railway.app"
+        "EXPO_PUBLIC_API_URL": "${EXPO_PUBLIC_RAILWAY_URL}"
       }
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://web-production-44afa.up.railway.app"
+        "EXPO_PUBLIC_API_URL": "${EXPO_PUBLIC_RAILWAY_URL}"
       }
     }
   }
