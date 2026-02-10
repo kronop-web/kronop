@@ -2,10 +2,22 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_KEYS, BUNNY_CONFIG, getBunnyConfigByType, BunnyConfigType } from '../constants/Config';
 
-const base = process.env.EXPO_PUBLIC_API_URL;
-if (!base) {
-  throw new Error('EXPO_PUBLIC_API_URL environment variable is required');
-}
+// Get base URL from environment
+const getBaseUrl = () => {
+  // Check for Koyeb URL first (priority)
+  if (process.env.KOYEB_API_URL) {
+    return process.env.KOYEB_API_URL;
+  }
+  
+  // Check for fallback environment variable
+  if (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+
+  throw new Error('KOYEB_API_URL environment variable is required');
+};
+
+const base = getBaseUrl();
 const cleanBase = base.replace(/\/+$/, ''); 
 export const API_URL = cleanBase.endsWith('/api') ? cleanBase : `${cleanBase}/api`;
 console.log('🔗 API Base URL set to:', API_URL);

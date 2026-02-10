@@ -22,7 +22,7 @@ import { reelsApi , videosApi , photosApi , liveApi , storiesApi } from '../../s
 const shayariPhotosApi = {
   getShayariPhotos: async () => {
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/content/shayari-photos`);
+      const response = await fetch(`${process.env.KOYEB_API_URL || process.env.EXPO_PUBLIC_API_URL}/content/shayari-photos`);
       return response.json();
     } catch (error) {
       console.error('Error fetching shayari photos:', error);

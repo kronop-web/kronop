@@ -1,17 +1,19 @@
 // Global API Configuration for Kronop App
-// Updated for Railway Deployment
+// Updated for Koyeb Deployment
 
-// Dynamic base URL that works in all environments
+// Get base URL from environment
 const getBaseUrl = () => {
-  // Check for environment variable (server-side)
+  // Check for Koyeb URL first (priority)
+  if (process.env.KOYEB_API_URL) {
+    return process.env.KOYEB_API_URL;
+  }
+  
+  // Fallback to environment variable (server-side)
   if (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_API_URL) {
-    // Don't add /api if it's already there
-    const apiUrl = process.env.EXPO_PUBLIC_API_URL;
-    return apiUrl;
+    return process.env.EXPO_PUBLIC_API_URL;
   }
 
-  // No fallback - environment variable is required
-  throw new Error('EXPO_PUBLIC_API_URL environment variable is required');
+  throw new Error('KOYEB_API_URL environment variable is required');
 };
 
 export const BASE_URL = getBaseUrl();

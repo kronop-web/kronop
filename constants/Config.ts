@@ -42,8 +42,8 @@ export const API_KEYS = {
   // Database
   MONGODB_URI: process.env.MONGODB_URI || '',
   
-  // Railway URL
-  RAILWAY_URL: process.env.EXPO_PUBLIC_API_URL,
+  // Koyeb URL
+  KOYEB_URL: process.env.KOYEB_API_URL || process.env.EXPO_PUBLIC_API_URL,
 };
 
 // Type definitions for better TypeScript support

@@ -1,7 +1,7 @@
 const axios = require('axios');
 const mongoose = require('mongoose');
 const DatabaseService = require('./databaseService');
-const { config } = require('./config/railwayConfig');
+const { config } = require('./config/koyebConfig');
 require('dotenv').config();
 
 let redisClient = null;

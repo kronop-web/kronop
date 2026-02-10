@@ -2,7 +2,7 @@
 // Backend-compatible BunnyCDN configuration for Node.js
 // Matches the frontend Config.ts structure
 
-const { config } = require('./railwayConfig');
+const { config } = require('./koyebConfig');
 
 // BunnyCDN Stream Configuration (Video Content)
 const BUNNY_CONFIG = {

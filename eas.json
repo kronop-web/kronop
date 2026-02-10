@@ -5,21 +5,11 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal",
-      "env": {
-        "EXPO_PUBLIC_API_URL": "${EXPO_PUBLIC_RAILWAY_URL}"
-      }
+      "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal",
-      "env": {
-        "EXPO_PUBLIC_API_URL": "${EXPO_PUBLIC_RAILWAY_URL}"
-      }
+      "distribution": "internal"
     },
-    "production": {
-      "env": {
-        "EXPO_PUBLIC_API_URL": "${EXPO_PUBLIC_RAILWAY_URL}"
-      }
-    }
+    "production": {}
   }
 }

@@ -22,7 +22,7 @@ export const RealtimeIntegrationExample: React.FC = () => {
     try {
       
       // Your existing content loading logic
-      const API_URL = process.env.EXPO_PUBLIC_API_URL || '';
+      const API_URL = process.env.KOYEB_API_URL || process.env.EXPO_PUBLIC_API_URL;
       const [photosRes, videosRes, reelsRes, liveRes, storiesRes] = await Promise.all([
         fetch(`${API_URL}/photos?page=1&limit=20`),
         fetch(`${API_URL}/videos?page=1&limit=20`),

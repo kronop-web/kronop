@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { VideoProvider } from '../context/VideoContext'; 
@@ -7,8 +7,6 @@ import { AuthProvider } from '../template';
 import StatusBarOverlay from '../components/common/StatusBarOverlay';
 
 export default function RootLayout() {
-  useEffect(() => {
-  }, []);
 
   return (
     <>

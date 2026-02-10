@@ -2,20 +2,25 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 // ==================== NETWORK CONFIGURATION ====================
-// Railway deployment URL configuration
+// Koyeb deployment URL configuration
 
 const PORT = 3000;
 
-// Use Railway URL for deployment
+// Use Koyeb URL for deployment
 const getApiBaseUrl = () => {
-  const envUrl = Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL || process.env.EXPO_PUBLIC_API_URL;
-  if (!envUrl) {
-    throw new Error('EXPO_PUBLIC_API_URL environment variable is required');
+  // Check for Koyeb URL first (priority)
+  if (process.env.KOYEB_API_URL) {
+    const cleanBase = process.env.KOYEB_API_URL.replace(/\/+$/, '');
+    return cleanBase.endsWith('/api') ? cleanBase : `${cleanBase}/api`;
   }
   
-  // Remove trailing slashes and add /api
-  const cleanBase = envUrl.replace(/\/+$/, '');
-  return cleanBase.endsWith('/api') ? cleanBase : `${cleanBase}/api`;
+  // Check for fallback environment variable
+  if (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_API_URL) {
+    const cleanBase = process.env.EXPO_PUBLIC_API_URL.replace(/\/+$/, '');
+    return cleanBase.endsWith('/api') ? cleanBase : `${cleanBase}/api`;
+  }
+
+  throw new Error('KOYEB_API_URL environment variable is required');
 };
 
 export const API_BASE_URL = getApiBaseUrl();

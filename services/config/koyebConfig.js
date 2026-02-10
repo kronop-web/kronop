@@ -1,17 +1,14 @@
-// ==================== RAILWAY CONFIGURATION ====================
-// Environment-based configuration for Railway deployment
+// ==================== KOYEB CONFIGURATION ====================
+// Environment-based configuration for Koyeb deployment
 // All values prioritize process.env over hardcoded values
 
-const getRailwayConfig = () => {
-  // Railway automatically provides these
-  const railwayUrl = process.env.RAILWAY_PUBLIC_DOMAIN || process.env.ROOT_URL;
-  
+const getKoyebConfig = () => {
   return {
     // API Base URL
-    API_BASE_URL: process.env.EXPO_PUBLIC_API_URL || railwayUrl,
+    API_BASE_URL: process.env.KOYEB_API_URL || process.env.EXPO_PUBLIC_API_URL,
     
-    // Railway Specific
-    RAILWAY_URL: railwayUrl,
+    // Koyeb Specific
+    KOYEB_URL: process.env.KOYEB_API_URL || process.env.EXPO_PUBLIC_API_URL,
     PORT: Number(process.env.PORT) || 10000,
     NODE_ENV: process.env.NODE_ENV || 'production',
     
@@ -66,9 +63,9 @@ const getRailwayConfig = () => {
 };
 
 // Export configuration
-const config = getRailwayConfig();
+const config = getKoyebConfig();
 
 module.exports = {
   config,
-  getRailwayConfig
+  getKoyebConfig
 };

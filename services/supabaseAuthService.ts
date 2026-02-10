@@ -117,7 +117,7 @@ export class SupabaseAuthService {
 
   static async syncUserWithMongoDB(user: any) {
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/sync`, {
+      const response = await fetch(`${process.env.KOYEB_API_URL || process.env.EXPO_PUBLIC_API_URL}/api/users/sync`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

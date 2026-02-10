@@ -71,7 +71,7 @@ const DATABASE_CONFIG = {
 const SERVER_CONFIG = {
   PORT: Number(process.env.PORT) || 10000,
   NODE_ENV: process.env.NODE_ENV || 'development',
-  API_BASE_URL: process.env.EXPO_PUBLIC_API_URL || ''
+  API_BASE_URL: process.env.KOYEB_API_URL || process.env.EXPO_PUBLIC_API_URL
 };
 
 // ==================== HELPER FUNCTIONS ====================
