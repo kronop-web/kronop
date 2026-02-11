@@ -2,6 +2,43 @@ const mongoose = require('mongoose');
 
 let isConnecting = false;
 
+// Helper function to validate and fix MongoDB URI for Koyeb
+const validateMongoUri = (uri) => {
+  if (!uri) return null;
+  
+  // Check for common URI format issues
+  const issues = [];
+  
+  if (!uri.startsWith('mongodb://') && !uri.startsWith('mongodb+srv://')) {
+    issues.push('URI must start with mongodb:// or mongodb+srv://');
+  }
+  
+  if (!uri.includes('@')) {
+    issues.push('URI must contain @ after credentials');
+  }
+  
+  if (uri.includes(' ') || uri.includes('\n') || uri.includes('\t')) {
+    issues.push('URI contains whitespace characters');
+  }
+  
+  // Check for unescaped special characters in password
+  const match = uri.match(/mongodb:\/\/[^:]+:([^@]+)@/);
+  if (match && match[1]) {
+    const password = match[1];
+    const specialChars = ['@', ':', '/', '?', '#', '[', ']', '%'];
+    const hasUnescaped = specialChars.some(char => password.includes(char) && !password.includes(char + '%'));
+    if (hasUnescaped) {
+      issues.push('Password contains unescaped special characters - need URL encoding');
+    }
+  }
+  
+  return {
+    isValid: issues.length === 0,
+    issues,
+    sanitizedUri: uri.replace(/:([^:@]+)@/, ':***@') // Hide password in logs
+  };
+};
+
 const connectToDatabase = async () => {
   if (mongoose.connection.readyState === 1 || isConnecting) {
     return mongoose.connection;
@@ -15,8 +52,17 @@ const connectToDatabase = async () => {
     throw new Error('MONGODB_URI is not defined - Please set in Koyeb Environment Variables');
   }
 
+  // Validate MongoDB URI for Koyeb deployment
+  const validation = validateMongoUri(mongoUri);
+  if (!validation.isValid) {
+    console.error('❌ MongoDB URI Validation Failed:');
+    validation.issues.forEach(issue => console.error(`   • ${issue}`));
+    console.error('🔧 Koyeb Solution: Fix MONGODB_URI in Koyeb Environment Variables');
+    throw new Error(`MongoDB URI validation failed: ${validation.issues.join(', ')}`);
+  }
+
   console.log('🔗 Connecting to MongoDB...');
-  console.log('📍 MongoDB URI:', mongoUri.replace(/:([^:@]+)@/, ':***@')); // Hide password in logs
+  console.log('📍 MongoDB URI:', validation.sanitizedUri); // Hide password in logs
   console.log('🌍 Deployment Environment:', process.env.NODE_ENV || 'development');
   console.log('🔧 Connection Timeout: 30s, Socket Timeout: 45s');
 
@@ -33,9 +79,7 @@ const connectToDatabase = async () => {
       waitQueueTimeoutMS: Number(process.env.MONGO_WAIT_QUEUE_TIMEOUT_MS) || 10000,
       retryWrites: true,
       w: 'majority',
-      readPreference: 'primaryPreferred',
-      bufferMaxEntries: 0, // Disable mongoose buffering
-      bufferCommands: false // Disable mongoose buffering
+      readPreference: 'primaryPreferred'
     });
     
     console.log('✅ MongoDB connected successfully!');
@@ -57,11 +101,15 @@ const connectToDatabase = async () => {
       console.error('   • DNS resolution problems');
       console.error('🔧 Solution: Check MongoDB Atlas Network Access');
     } else if (error.name === 'MongoParseError') {
-      console.error('📝 URI Format Error - Check MongoDB URI:');
+      console.error('📝 MongoDB URI Parse Error - Koyeb Deployment:');
+      console.error('   • Invalid MongoDB URI format');
+      console.error('   • Special characters in password not URL-encoded');
       console.error('   • Missing @ in connection string');
-      console.error('   • Invalid characters in password');
       console.error('   • Malformed URL parameters');
-      console.error('🔧 Solution: Verify MONGODB_URI in Koyeb Environment');
+      console.error('🔧 Koyeb Solution:');
+      console.error('   1. Check MONGODB_URI in Koyeb Environment Variables');
+      console.error('   2. URL-encode special characters in password');
+      console.error('   3. Verify URI format: mongodb://user:pass@host/db');
     } else if (error.code === 'AUTH_FAILED') {
       console.error('🔐 Authentication Failed - Check credentials:');
       console.error('   • Username or password incorrect');

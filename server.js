@@ -173,11 +173,16 @@ if (MONGO_URI) {
       console.error('   2. Add IP: 0.0.0.0/0 (Allow all access)');
       console.error('   3. Or add Koyeb\'s specific IP range');
     } else if (err.name === 'MongoParseError') {
-      console.error('📝 MongoDB URI Parse Error:');
+      console.error('📝 MongoDB URI Parse Error - Koyeb Deployment:');
+      console.error('   • Invalid MongoDB URI format in Koyeb Environment');
+      console.error('   • Special characters in password not URL-encoded');
       console.error('   • Missing @ in connection string');
-      console.error('   • Invalid characters in password');
-      console.error('   • Malformed URL parameters');
-      console.error('🔧 Solution: Check MONGODB_URI format in Koyeb');
+      console.error('   • Deprecated mongoose options (bufferMaxEntries, etc.)');
+      console.error('🔧 Koyeb Solution Steps:');
+      console.error('   1. Go to Koyeb Dashboard → Service → Environment Variables');
+      console.error('   2. Check MONGODB_URI format');
+      console.error('   3. URL-encode special characters: @ → %40, : → %3A');
+      console.error('   4. Remove deprecated options from code');
     } else if (err.code === 'AUTH_FAILED') {
       console.error('🔐 MongoDB Authentication Failed:');
       console.error('   • Username or password incorrect');
