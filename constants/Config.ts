@@ -65,19 +65,19 @@ export const BUNNY_CONFIG = {
   reels: {
     libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_REELS || '',
     host: process.env.EXPO_PUBLIC_BUNNY_HOST_REELS || '',
-    apiKey: API_KEYS.BUNNY,
+    apiKey: process.env.EXPO_PUBLIC_BUNNY_API_KEY || API_KEYS.BUNNY,
     streamKey: process.env.EXPO_PUBLIC_BUNNY_STREAM_KEY_REELS || '',
   },
   video: {
     libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_VIDEO || '',
     host: process.env.EXPO_PUBLIC_BUNNY_HOST_VIDEO || '',
-    apiKey: API_KEYS.BUNNY,
+    apiKey: process.env.EXPO_PUBLIC_BUNNY_API_KEY_VIDEO || API_KEYS.BUNNY,
     streamKey: process.env.EXPO_PUBLIC_BUNNY_STREAM_KEY_VIDEO || '',
   },
   live: {
     libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_LIVE || '',
     host: process.env.EXPO_PUBLIC_BUNNY_HOST_LIVE || '',
-    apiKey: API_KEYS.BUNNY,
+    apiKey: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ACCESS_KEY_LIVE || API_KEYS.BUNNY,
     streamKey: process.env.EXPO_PUBLIC_BUNNY_STREAM_KEY_LIVE || '',
   },
   story: {
