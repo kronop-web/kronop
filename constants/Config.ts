@@ -100,7 +100,7 @@ export const LIBRARY_ID_MAP: Record<string, string> = {
   [process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_REELS || '593793']: 'Reel',
   [process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_VIDEO || '593795']: 'Video',
   [process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_LIVE || '594452']: 'Live',
-  [process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_STORY || process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_REELS || '593793']: 'Story',
+  [process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_REELS || '593793']: 'Story',
   photos: 'Photo',
 };
 

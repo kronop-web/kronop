@@ -63,8 +63,8 @@ class BunnyContentService {
         apiKey: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ACCESS_KEY_LIVE || process.env.BUNNY_LIBRARY_ACCESS_KEY_LIVE || process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || ''
       },
       story: {
-        libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_STORY || process.env.BUNNY_LIBRARY_ID_STORY || '',
-        host: process.env.EXPO_PUBLIC_BUNNY_HOST_STORY || process.env.BUNNY_HOST_STORY || '',
+        libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_STORY || process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_REELS || '',
+        host: process.env.EXPO_PUBLIC_BUNNY_HOST_STORY || process.env.EXPO_PUBLIC_BUNNY_HOST_REELS || '',
         apiKey: process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || ''
       },
       photos: {
@@ -94,8 +94,8 @@ class BunnyContentService {
         apiKey: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ACCESS_KEY_LIVE || process.env.BUNNY_LIBRARY_ACCESS_KEY_LIVE || process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || ''
       },
       story: {
-        libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_STORY || process.env.BUNNY_LIBRARY_ID_STORY || '',
-        host: process.env.EXPO_PUBLIC_BUNNY_HOST_STORY || process.env.BUNNY_HOST_STORY || '',
+        libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_STORY || process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_REELS || '',
+        host: process.env.EXPO_PUBLIC_BUNNY_HOST_STORY || process.env.EXPO_PUBLIC_BUNNY_HOST_REELS || '',
         apiKey: process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || ''
       },
       photos: {

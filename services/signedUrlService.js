@@ -20,9 +20,9 @@ class SignedUrlService {
         apiKey: process.env.EXPO_PUBLIC_BUNNY_ACCESS_KEY_LIVE || process.env.BUNNY_ACCESS_KEY_LIVE || process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || ''
       },
       story: {
-        libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_STORY || process.env.BUNNY_LIBRARY_ID_STORY || '',
-        host: process.env.EXPO_PUBLIC_BUNNY_HOST_STORY || process.env.BUNNY_HOST_STORY || '',
-        apiKey: process.env.EXPO_PUBLIC_BUNNY_ACCESS_KEY_STORY || process.env.BUNNY_ACCESS_KEY_STORY || process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || ''
+        libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_STORY || process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_REELS || '',
+        host: process.env.EXPO_PUBLIC_BUNNY_HOST_STORY || process.env.EXPO_PUBLIC_BUNNY_HOST_REELS || '',
+        apiKey: process.env.EXPO_PUBLIC_BUNNY_ACCESS_KEY_STORY || process.env.EXPO_PUBLIC_BUNNY_ACCESS_KEY_REELS || process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || ''
       },
       photos: {
         storageZoneName: process.env.EXPO_PUBLIC_BUNNY_STORAGE_ZONE || process.env.BUNNY_STORAGE_ZONE || '',
