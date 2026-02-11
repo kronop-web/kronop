@@ -60,13 +60,13 @@ export class ReelsBridge {
       // Step 1: Create video entry in BunnyCDN Stream
       const createVideoUrl = `https://video.bunnycdn.com/library/${this.libraryId}/videos`;
       
-      // BYPASS AUTHENTICATION: Use dummy key for testing
-      const dummyApiKey = 'dummy_key_for_testing';
+      // Use actual API key from environment
+      const apiKey = this.config.apiKey;
       
       const createResponse = await fetch(createVideoUrl, {
         method: 'POST',
         headers: {
-          'AccessKey': dummyApiKey, // Bypass authentication
+          'AccessKey': apiKey,
           'Content-Type': 'application/json',
           'accept': 'application/json'
         },
@@ -136,13 +136,13 @@ export class ReelsBridge {
 
     const uploadUrl = `https://video.bunnycdn.com/library/${this.libraryId}/videos/${videoGuid}`;
     
-    // BYPASS AUTHENTICATION: Use dummy key for testing
-    const dummyApiKey = 'dummy_key_for_testing';
+    // Use actual API key from environment
+    const apiKey = this.config.apiKey;
     
     const uploadResponse = await fetch(uploadUrl, {
       method: 'PUT',
       headers: {
-        'AccessKey': dummyApiKey, // Bypass authentication
+        'AccessKey': apiKey,
         'Content-Type': 'application/octet-stream'
       },
       body: fileBlob

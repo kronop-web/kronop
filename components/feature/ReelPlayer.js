@@ -590,7 +590,7 @@ const ReelPlayer = ({
     <GestureHandlerRootView style={styles.container}>
       <PanGestureHandler onGestureEvent={gestureHandler}>
         <Animated.View style={[styles.container, containerStyle]}>
-          {memoizedReels.map((reel, index) => renderReel({ item: reel, index }))}
+          {memoizedReels.map((reel, index) => renderReel({ item: reel, index, key: reel.id || index }))}
         </Animated.View>
       </PanGestureHandler>
     </GestureHandlerRootView>
