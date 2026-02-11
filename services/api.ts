@@ -6,7 +6,17 @@ import { authService } from './authService';
 
 // Get base URL from environment
 const getBaseUrl = () => {
-  // Use hardcoded URL for now
+  // Check for environment variable first
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+  
+  // Universal development URL - works on all devices in the same network
+  if (__DEV__) {
+    return 'http://0.0.0.0:3000'; // Universal host for mobile compatibility
+  }
+  
+  // Production Koyeb URL
   return 'https://kronop-api.koyeb.app';
 };
 

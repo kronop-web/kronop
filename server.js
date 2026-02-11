@@ -39,7 +39,8 @@ const contentRouteNew = require('./routes/content');
 
 // ==================== APP INITIALIZATION ====================
 const app = express();
-const PORT = Number(process.env.PORT) || 8000;
+const PORT = process.env.PORT || 3000;
+const HOST = '0.0.0.0'; // Universal host - works on all networks and mobile devices
 const apiRouter = express.Router();
 
 // ==================== ERROR HANDLING ====================
@@ -70,25 +71,56 @@ const upload = multer({
   }
 });
 
+// Enhanced request logging middleware
+app.use((req, res, next) => {
+  const timestamp = new Date().toISOString();
+  const clientIP = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.connection.remoteAddress;
+  const userAgent = req.headers['user-agent'] || 'Unknown';
+  
+  console.log(`📡 ${timestamp} - ${req.method} ${req.originalUrl}`);
+  console.log(`🌐 Client IP: ${clientIP}`);
+  console.log(`📱 User-Agent: ${userAgent}`);
+  console.log(`🔗 Headers:`, JSON.stringify(req.headers, null, 2));
+  
+  // Log request body for POST/PUT requests
+  if (req.method === 'POST' || req.method === 'PUT') {
+    if (req.headers['content-type']?.includes('multipart/form-data')) {
+      console.log(`📤 Request: Multipart form data (size: ${req.headers['content-length'] || 'unknown'} bytes)`);
+    } else if (req.body && Object.keys(req.body).length > 0) {
+      console.log(`📤 Request Body:`, JSON.stringify(req.body, null, 2));
+    }
+  }
+  
+  // Capture response
+  const originalSend = res.send;
+  res.send = function(data) {
+    console.log(`📥 Response Status: ${res.statusCode}`);
+    if (res.statusCode >= 400) {
+      console.log(`❌ Error Response:`, data);
+    } else {
+      console.log(`✅ Success Response: ${data?.length || 0} bytes`);
+    }
+    originalSend.call(this, data);
+  };
+  
+  next();
+});
+
 app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  credentials: true
+  origin: '*', // Universal CORS - allow all origins for mobile compatibility
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Forwarded-For', 'X-Real-IP', 'Origin', 'Accept'],
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
+  maxAge: 86400 // Cache preflight for 24 hours
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ==================== UTILITIES ====================
 const getLocalIPv4 = () => {
-  const nets = os.networkInterfaces();
-  for (const name of Object.keys(nets)) {
-    for (const net of nets[name] || []) {
-      if (net.family === 'IPv4' && !net.internal) {
-        return net.address;
-      }
-    }
-  }
+  // Return universal host for mobile compatibility
   return '0.0.0.0';
 };
 
@@ -1166,8 +1198,7 @@ app.use((err, req, res, next) => {
   return res.status(status).send(err?.message || 'Server Error');
 });
 
-// const HOST = '0.0.0.0';
-const server = app.listen(PORT, '0.0.0.0', async () => {
+const server = app.listen(PORT, HOST, async () => {
   const ip = getLocalIPv4();
   console.log(`Kronop server listening on http://${ip}:${PORT}`);
   
@@ -1216,6 +1247,7 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
   setInterval(() => {
     RealtimeService.pingAllClients();
   }, 30000); // Ping every 30 seconds
-});
+}
+);
 
 
