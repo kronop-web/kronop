@@ -17,6 +17,10 @@ class RedisCacheService {
       console.log('⚠️ Redis explicitly disabled - running without cache');
       return;
     }
+    
+    // DISABLE REDIS completely to avoid errors
+    console.log('⚠️ Redis disabled for stability - running without cache');
+    return;
 
     try {
       this.client = redis.createClient({

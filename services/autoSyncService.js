@@ -268,35 +268,11 @@ class AutoSyncService {
             }
           }
         }
-      } else {
-        const config = BUNNY_CONFIG[type];
-        const response = await this.getBunnyStreamVideos(config.libraryId, config.apiKey, type);
-        
-        // Handle auth failures (null response) - skip this library but don't crash
-        if (response === null) {
-          console.log(`⚠️ Skipping ${type} sync due to authentication error`);
-          this.lastSyncTimes[type] = new Date();
-          return 0;
-        }
-        
-        const videos = response.items || response || []; // Handle both response formats
-        
-        for (const video of videos) {
-          if (video.guid) {
-            processedItems++;
-            if (!(await this.contentExists(video.guid, type))) {
-              const saved = await this.saveContentToDB(video, type);
-              if (saved) newItemsCount++;
-            } else {
-              skippedItems++;
-            }
-          }
-        }
       }
-
-      this.lastSyncTimes[type] = new Date();
-      console.log(`✅ ${type} sync completed. Processed: ${processedItems}, New: ${newItemsCount}, Existing: ${skippedItems}`);
-      return newItemsCount;
+    } else {
+      // Handle other content types (reels, videos, live)
+      const bunnyService = require('./bunnyContentService');
+      const config = bunnyService.BUNNY_CONFIG[type];
     } catch (error) {
       // SILENCED: Remove repetitive error logs
       // console.error(`❌ Error syncing ${type}:`, error.message);

@@ -62,7 +62,7 @@ class SignedUrlService {
       
       if (contentType.toLowerCase() === 'photos') {
         const response = await axios.get(
-          `https://api.bunny.net/storagezone/${config.storageZoneName}`,
+          `https://storage.bunnycdn.com/${config.storageZoneName}`,
           {
             headers: {
               'AccessKey': config.apiKey,
@@ -104,7 +104,7 @@ class SignedUrlService {
       
       if (contentType.toLowerCase() === 'photos') {
         await axios.post(
-          `https://api.bunny.net/storagezone/${config.storageZoneName}`,
+          `https://storage.bunnycdn.com/${config.storageZoneName}`,
           {
             EnableTokenAuthentication: true,
             TokenAuthenticationCountries: [] // Empty array means all countries allowed

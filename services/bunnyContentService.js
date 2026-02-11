@@ -155,36 +155,22 @@ class BunnyContentService {
       console.log(`🔍 Fetching from BunnyCDN: Library ${libraryId}, API Key: ${apiKey ? apiKey.substring(0, 20) + '...' : 'MISSING'}`);
       console.log(`🔗 Full API URL: https://video.bunnycdn.com/library/${libraryId}/videos`);
       
-      // Try different API endpoints and headers
+      // Try different API endpoints and headers - FIXED: Use correct bunny CDN domain
       const endpoints = [
         {
-          url: `https://api.bunny.net/video/library/${libraryId}/videos`,
-          headers: {
-            'AccessKey': apiKey,
-            'accept': 'application/json',
-            'Content-Type': 'application/json'
-          }
-        },
-        {
           url: `https://video.bunnycdn.com/library/${libraryId}/videos`,
           headers: {
             'AccessKey': apiKey,
             'accept': 'application/json',
-            'Content-Type': 'application/json'
-          }
-        },
-        {
-          url: `https://api.bunny.net/video/library/${libraryId}/videos`,
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'accept': 'application/json'
+            'content-type': 'application/json'
           }
         },
         {
           url: `https://video.bunnycdn.com/library/${libraryId}/videos`,
           headers: {
             'Authorization': `Bearer ${apiKey}`,
-            'accept': 'application/json'
+            'accept': 'application/json',
+            'content-type': 'application/json'
           }
         }
       ];
