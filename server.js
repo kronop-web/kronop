@@ -782,6 +782,204 @@ apiRouter.get('/content/story', async (req, res) => {
   }
 });
 
+// ==================== PUBLIC UPLOAD ENDPOINTS (NO LOGIN REQUIRED) ====================
+
+// Helper function to create dummy user if needed
+const getOrCreateDummyUser = async (userId = null) => {
+  const effectiveUserId = userId || 'guest_user_' + Date.now();
+  
+  let user = await User.findOne({ _id: effectiveUserId });
+  if (!user) {
+    user = new User({
+      _id: effectiveUserId,
+      displayName: 'Guest User',
+      email: 'guest@example.com',
+      phone: '0000000000'
+    });
+    await user.save();
+  }
+  return effectiveUserId;
+};
+
+// POST /upload/reel - Public Reel Upload (NO LOGIN)
+app.post('/upload/reel', async (req, res) => {
+  try {
+    const { title, url, bunny_id, thumbnail, description, tags, userId } = req.body;
+    const effectiveUserId = await getOrCreateDummyUser(userId);
+    
+    if (!url || !bunny_id) {
+      return res.status(400).json({ error: 'url and bunny_id are required' });
+    }
+
+    const newReel = new Content({
+      user_id: effectiveUserId,
+      type: 'Reel',
+      title: title || 'Untitled Reel (NO LOGIN)',
+      url,
+      bunny_id,
+      thumbnail,
+      description,
+      tags,
+      is_active: true
+    });
+
+    await newReel.save();
+    res.status(201).json({ success: true, data: newReel, message: 'Reel uploaded successfully (NO LOGIN)' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /upload/video - Public Video Upload (NO LOGIN)
+app.post('/upload/video', async (req, res) => {
+  try {
+    const { title, url, bunny_id, thumbnail, description, tags, userId } = req.body;
+    const effectiveUserId = await getOrCreateDummyUser(userId);
+    
+    if (!url || !bunny_id) {
+      return res.status(400).json({ error: 'url and bunny_id are required' });
+    }
+
+    const newVideo = new Content({
+      user_id: effectiveUserId,
+      type: 'Video',
+      title: title || 'Untitled Video (NO LOGIN)',
+      url,
+      bunny_id,
+      thumbnail,
+      description,
+      tags,
+      is_active: true
+    });
+
+    await newVideo.save();
+    res.status(201).json({ success: true, data: newVideo, message: 'Video uploaded successfully (NO LOGIN)' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /upload/live - Public Live Content Upload (NO LOGIN)
+app.post('/upload/live', async (req, res) => {
+  try {
+    const { title, url, bunny_id, thumbnail, description, tags, userId, streamKey } = req.body;
+    const effectiveUserId = await getOrCreateDummyUser(userId);
+    
+    if (!url || !bunny_id) {
+      return res.status(400).json({ error: 'url and bunny_id are required' });
+    }
+
+    const newLive = new Content({
+      user_id: effectiveUserId,
+      type: 'Live',
+      title: title || 'Untitled Live Stream (NO LOGIN)',
+      url,
+      bunny_id,
+      thumbnail,
+      description,
+      tags,
+      streamKey,
+      is_active: true
+    });
+
+    await newLive.save();
+    res.status(201).json({ success: true, data: newLive, message: 'Live content uploaded successfully (NO LOGIN)' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /upload/story - Public Story Upload (NO LOGIN)
+app.post('/upload/story', async (req, res) => {
+  try {
+    const { title, url, bunny_id, thumbnail, description, tags, userId } = req.body;
+    const effectiveUserId = await getOrCreateDummyUser(userId);
+    
+    if (!url || !bunny_id) {
+      return res.status(400).json({ error: 'url and bunny_id are required' });
+    }
+
+    const newStory = new Content({
+      user_id: effectiveUserId,
+      type: 'Story',
+      title: title || 'Untitled Story (NO LOGIN)',
+      url,
+      bunny_id,
+      thumbnail,
+      description,
+      tags,
+      is_active: true,
+      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000) // Stories expire in 24 hours
+    });
+
+    await newStory.save();
+    res.status(201).json({ success: true, data: newStory, message: 'Story uploaded successfully (NO LOGIN)' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /upload/shayari - Public Shayari Upload (NO LOGIN)
+app.post('/upload/shayari', async (req, res) => {
+  try {
+    const { title, url, bunny_id, thumbnail, description, tags, userId, shayari_text, shayari_author } = req.body;
+    const effectiveUserId = await getOrCreateDummyUser(userId);
+    
+    if (!url || !bunny_id) {
+      return res.status(400).json({ error: 'url and bunny_id are required' });
+    }
+
+    const newShayari = new Content({
+      user_id: effectiveUserId,
+      type: 'ShayariPhoto',
+      title: title || 'Untitled Shayari (NO LOGIN)',
+      url,
+      bunny_id,
+      thumbnail,
+      description,
+      tags,
+      shayari_text,
+      shayari_author,
+      is_active: true
+    });
+
+    await newShayari.save();
+    res.status(201).json({ success: true, data: newShayari, message: 'Shayari uploaded successfully (NO LOGIN)' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /upload/photo - Public Photo Upload (NO LOGIN) - Alternative to content save
+app.post('/upload/photo', async (req, res) => {
+  try {
+    const { title, url, bunny_id, thumbnail, description, tags, userId, category } = req.body;
+    const effectiveUserId = await getOrCreateDummyUser(userId);
+    
+    if (!url || !bunny_id) {
+      return res.status(400).json({ error: 'url and bunny_id are required' });
+    }
+
+    const newPhoto = new Content({
+      user_id: effectiveUserId,
+      type: 'Photo',
+      title: title || 'Untitled Photo (NO LOGIN)',
+      url,
+      bunny_id,
+      thumbnail,
+      description,
+      tags,
+      category,
+      is_active: true
+    });
+
+    await newPhoto.save();
+    res.status(201).json({ success: true, data: newPhoto, message: 'Photo uploaded successfully (NO LOGIN)' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ==================== ONESIGNAL AUTHORIZATION FIX ====================
 
 // Override OneSignal client to add proper Authorization header

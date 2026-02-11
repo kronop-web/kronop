@@ -23,6 +23,9 @@ export interface VideoMetadata {
   category?: string;
 }
 
+// BYPASS LOGIN: Default user ID for testing
+const DEFAULT_USER_ID = 'guest_user';
+
 /**
  * Video Bridge - Handles all Video upload operations
  * Uses BunnyCDN Stream API with Library ID: 593795
@@ -45,6 +48,12 @@ export class VideoBridge {
         throw new Error('No file provided for video upload');
       }
 
+      // BYPASS LOGIN: Add default user ID if not provided
+      const enhancedMetadata = {
+        ...metadata,
+        userId: metadata?.userId || DEFAULT_USER_ID
+      };
+
       const fileName = file.name || file.fileName || `video_${Date.now()}.mp4`;
       const fileSize = file.size || file.fileSize || 0;
 
@@ -59,7 +68,7 @@ export class VideoBridge {
           'accept': 'application/json'
         },
         body: JSON.stringify({ 
-          title: metadata?.title || fileName.split('.')[0] 
+          title: enhancedMetadata?.title || fileName.split('.')[0] 
         })
       });
 
@@ -83,8 +92,8 @@ export class VideoBridge {
       }
 
       // Step 3: Update metadata if provided
-      if (metadata && (metadata.description || metadata.tags)) {
-        await this.updateVideoMetadata(videoResult.guid, metadata);
+      if (enhancedMetadata && (enhancedMetadata.description || enhancedMetadata.tags)) {
+        await this.updateVideoMetadata(videoResult.guid, enhancedMetadata);
       }
 
       // Step 4: Return success result
@@ -95,8 +104,8 @@ export class VideoBridge {
         videoId: videoResult.guid,
         url: videoUrl,
         libraryId: this.libraryId,
-        title: metadata?.title || fileName.split('.')[0],
-        description: metadata?.description || ''
+        title: enhancedMetadata?.title || fileName.split('.')[0],
+        description: enhancedMetadata?.description || ''
       };
 
     } catch (error) {

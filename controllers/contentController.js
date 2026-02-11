@@ -16,16 +16,18 @@ const getUserPhotos = async (req, res) => {
 
 const saveUserPhoto = async (req, res) => {
     try {
+        // BYPASS LOGIN: Use dummy user ID for testing
         const { userId, title, url, bunny_id, thumbnail, description, tags, category } = req.body;
+        const effectiveUserId = userId || 'guest_user_' + Date.now();
         
-        if (!userId || !url || !bunny_id) {
-            return res.status(400).json({ error: 'userId, url, and bunny_id are required' });
+        if (!url || !bunny_id) {
+            return res.status(400).json({ error: 'url and bunny_id are required (userId optional for testing)' });
         }
 
         const newPhoto = new Content({
-            user_id: userId,
+            user_id: effectiveUserId,
             type: 'Photo',
-            title: title || 'Untitled Photo',
+            title: title || 'Untitled Photo (NO LOGIN)',
             url,
             bunny_id,
             thumbnail,

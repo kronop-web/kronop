@@ -23,6 +23,9 @@ export interface ReelMetadata {
   duration?: number;
 }
 
+// BYPASS LOGIN: Default user ID for testing
+const DEFAULT_USER_ID = 'guest_user';
+
 /**
  * Reels Bridge - Handles all Reels upload operations
  * Uses BunnyCDN Stream API with Library ID: 593793
@@ -45,6 +48,12 @@ export class ReelsBridge {
         throw new Error('No file provided for reel upload');
       }
 
+      // BYPASS LOGIN: Add default user ID if not provided
+      const enhancedMetadata = {
+        ...metadata,
+        userId: metadata?.userId || DEFAULT_USER_ID
+      };
+
       const fileName = file.name || file.fileName || `reel_${Date.now()}.mp4`;
       const fileSize = file.size || file.fileSize || 0;
 
@@ -59,7 +68,7 @@ export class ReelsBridge {
           'accept': 'application/json'
         },
         body: JSON.stringify({ 
-          title: metadata?.title || fileName.split('.')[0] 
+          title: enhancedMetadata?.title || fileName.split('.')[0] 
         })
       });
 
@@ -83,8 +92,8 @@ export class ReelsBridge {
       }
 
       // Step 3: Update metadata if provided
-      if (metadata && (metadata.description || metadata.tags)) {
-        await this.updateVideoMetadata(videoResult.guid, metadata);
+      if (enhancedMetadata && (enhancedMetadata.description || enhancedMetadata.tags)) {
+        await this.updateVideoMetadata(videoResult.guid, enhancedMetadata);
       }
 
       // Step 4: Return success result
@@ -95,8 +104,8 @@ export class ReelsBridge {
         videoId: videoResult.guid,
         url: videoUrl,
         libraryId: this.libraryId,
-        title: metadata?.title || fileName.split('.')[0],
-        description: metadata?.description || ''
+        title: enhancedMetadata?.title || fileName.split('.')[0],
+        description: enhancedMetadata?.description || ''
       };
 
     } catch (error) {

@@ -50,7 +50,13 @@ export class VideosService {
    * Create headers for MongoDB API calls
    */
   private async createHeaders(contentType: string = 'application/json'): Promise<Record<string, string>> {
-    return await authService.createAuthHeaders(contentType);
+    // BYPASS LOGIN: No authentication required for testing
+    return {
+      'Content-Type': contentType,
+      // 'Authorization': 'Bearer dummy_token_for_testing'
+    };
+    // Original code commented for testing:
+    // return await authService.createAuthHeaders(contentType);
   }
 
   /**

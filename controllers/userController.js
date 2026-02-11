@@ -63,37 +63,21 @@ const syncSupabaseUser = async (req, res) => {
     try {
         const { supabaseId, email, displayName } = req.body;
         
-        if (!supabaseId) {
-            return res.status(400).json({ 
-                success: false,
-                error: 'supabaseId is required' 
-            });
-        }
-
+        // BYPASS LOGIN: Create or find user without authentication
         let user = await User.findOne({ supabase_id: supabaseId });
         
         if (!user) {
-            // SECURITY: Only allow existing users to login
-            // Check if user exists by email as fallback
-            if (email) {
-                user = await User.findOne({ email: email });
-                if (user) {
-                    // Update existing user with supabase ID
-                    user.supabase_id = supabaseId;
-                    if (displayName) user.displayName = displayName;
-                    await user.save();
-                    return res.json({ 
-                        success: true, 
-                        data: user,
-                        message: 'User synced successfully'
-                    });
-                }
-            }
-            
-            // User not found in MongoDB - Access Denied
-            return res.status(403).json({ 
-                success: false,
-                error: 'Access Denied - User not found in database' 
+            // Create new user without access restrictions
+            user = new User({
+                supabase_id: supabaseId || 'guest_' + Date.now(),
+                email: email || 'guest@example.com',
+                displayName: displayName || 'Guest User (NO LOGIN)'
+            });
+            await user.save();
+            return res.json({ 
+                success: true, 
+                data: user,
+                message: 'User created successfully (NO LOGIN)'
             });
         }
 
@@ -105,7 +89,7 @@ const syncSupabaseUser = async (req, res) => {
         res.json({ 
             success: true, 
             data: user,
-            message: 'User synced successfully'
+            message: 'User synced successfully (NO LOGIN)'
         });
     } catch (error) {
         console.error('Sync Supabase User Error:', error);
@@ -118,11 +102,11 @@ const syncSupabaseUser = async (req, res) => {
 
 const uploadImage = async (req, res) => {
     try {
-        // Get user from token (assuming auth middleware is implemented)
-        const userId = req.user?.id || req.body.userId;
+        // BYPASS LOGIN: Use dummy user ID for testing
+        const userId = req.body.userId || 'guest_user_' + Date.now();
         
         if (!userId) {
-            return res.status(401).json({ error: 'User authentication required' });
+            return res.status(400).json({ error: 'User ID is required' });
         }
 
         if (!req.file) {
@@ -132,10 +116,16 @@ const uploadImage = async (req, res) => {
         const image = req.file;
         const type = req.body.type || 'profile'; // 'profile' or 'cover'
         
-        // Get user from MongoDB
-        const user = await User.findOne({ _id: userId });
+        // Create or find user in MongoDB
+        let user = await User.findOne({ _id: userId });
         if (!user) {
-            return res.status(404).json({ error: 'User not found' });
+            // Create dummy user for testing
+            user = new User({
+                _id: userId,
+                displayName: 'Guest User',
+                email: 'guest@example.com',
+                phone: '0000000000'
+            });
         }
         
         // For now, we'll store image data as base64 in MongoDB
@@ -155,7 +145,7 @@ const uploadImage = async (req, res) => {
         res.json({ 
             success: true, 
             data: imageUrl,
-            message: `${type === 'profile' ? 'Profile' : 'Cover'} image updated successfully`
+            message: `${type === 'profile' ? 'Profile' : 'Cover'} image updated successfully (NO LOGIN)`
         });
         
     } catch (error) {

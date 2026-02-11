@@ -52,7 +52,13 @@ export class ReelsService {
    * Create headers for MongoDB API calls
    */
   private async createHeaders(contentType: string = 'application/json'): Promise<Record<string, string>> {
-    return await authService.createAuthHeaders(contentType);
+    // BYPASS LOGIN: No authentication required for testing
+    return {
+      'Content-Type': contentType,
+      // 'Authorization': 'Bearer dummy_token_for_testing'
+    };
+    // Original code commented for testing:
+    // return await authService.createAuthHeaders(contentType);
   }
 
   /**
@@ -64,11 +70,12 @@ export class ReelsService {
 
       // Step 1: Upload to BunnyCDN via ReelsBridge
       console.log('🎬 Step 1: Uploading to BunnyCDN...');
+      // BYPASS LOGIN: Add dummy user ID if not provided
       const bunnyResult = await reelsBridge.uploadReel(file, {
         title: metadata.title,
         description: metadata.description,
         tags: metadata.tags,
-        userId: metadata.user_id
+        userId: metadata.user_id || 'guest_user'
       });
 
       if (!bunnyResult.success || !bunnyResult.videoId) {

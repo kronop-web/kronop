@@ -538,17 +538,17 @@ const ReelPlayer = ({
               {/* Action Buttons with Save - Save Button below Share button */}
               <View style={styles.actions}>
                 <View style={styles.action}>
-                  <MaterialIcons name="favorite-border" size={28} color="#fff" />
+                  <MaterialIcons name="favorite-border" size={32} color="#fff" />
                   <Text style={styles.actionText}>{reel.likes.toLocaleString()}</Text>
                 </View>
                 
                 <View style={styles.action}>
-                  <MaterialIcons name="chat-bubble-outline" size={28} color="#fff" />
+                  <MaterialIcons name="chat-bubble-outline" size={32} color="#fff" />
                   <Text style={styles.actionText}>...</Text>
                 </View>
                 
                 <View style={styles.action}>
-                  <MaterialIcons name="share" size={28} color="#fff" />
+                  <MaterialIcons name="share" size={32} color="#fff" />
                   <Text style={styles.actionText}>Share</Text>
                 </View>
                 
@@ -559,7 +559,7 @@ const ReelPlayer = ({
                 >
                   <MaterialIcons 
                     name={savedVideos.has(reel.id) ? "bookmark" : "bookmark-border"} 
-                    size={28} 
+                    size={32} 
                     color={savedVideos.has(reel.id) ? "#ff6b6b" : "#fff"} 
                   />
                   <Text style={styles.actionText}>
@@ -741,10 +741,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20, // LAYOUT FIX: Bottom margin to prevent border collision
+    paddingHorizontal: 8, // Added padding for better spacing
   },
   action: {
     alignItems: 'center',
-    marginHorizontal: 12,
+    marginHorizontal: 16, // Increased from 12 to 16 for better spacing
+    paddingVertical: 8, // Added vertical padding for increased height
+    paddingHorizontal: 4, // Added horizontal padding
+    minHeight: 60, // Set minimum height for buttons
   },
   actionText: {
     color: '#fff',

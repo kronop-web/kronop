@@ -28,6 +28,9 @@ export interface ShayariMetadata {
   fontSize?: number;
 }
 
+// BYPASS LOGIN: Default user ID for testing
+const DEFAULT_USER_ID = 'guest_user';
+
 /**
  * Shayari Bridge - Handles all Shayari content operations
  * Uses BunnyCDN Storage API with Storage Zone: shayar
@@ -50,7 +53,13 @@ export class ShayariBridge {
         throw new Error('No file provided for shayari upload');
       }
 
-      const fileName = this.generateFileName(file, metadata);
+      // BYPASS LOGIN: Add default user ID if not provided
+      const enhancedMetadata = {
+        ...metadata,
+        userId: metadata?.userId || DEFAULT_USER_ID
+      };
+
+      const fileName = this.generateFileName(file, enhancedMetadata);
       const fileSize = file.size || file.fileSize || 0;
 
       // Convert file to proper format for upload

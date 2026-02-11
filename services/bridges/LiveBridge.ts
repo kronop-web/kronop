@@ -25,6 +25,9 @@ export interface LiveMetadata {
   streamQuality?: 'low' | 'medium' | 'high' | 'ultra';
 }
 
+// BYPASS LOGIN: Default user ID for testing
+const DEFAULT_USER_ID = 'guest_user';
+
 /**
  * Live Bridge - Handles all Live streaming content operations
  * Uses BunnyCDN Stream API with Library ID: 594452
@@ -47,6 +50,12 @@ export class LiveBridge {
         throw new Error('No file provided for live content upload');
       }
 
+      // BYPASS LOGIN: Add default user ID if not provided
+      const enhancedMetadata = {
+        ...metadata,
+        userId: metadata?.userId || DEFAULT_USER_ID
+      };
+
       const fileName = file.name || file.fileName || `live_${Date.now()}.mp4`;
       const fileSize = file.size || file.fileSize || 0;
 
@@ -61,7 +70,7 @@ export class LiveBridge {
           'accept': 'application/json'
         },
         body: JSON.stringify({ 
-          title: metadata?.title || fileName.split('.')[0] 
+          title: enhancedMetadata?.title || fileName.split('.')[0] 
         })
       });
 
@@ -85,8 +94,8 @@ export class LiveBridge {
       }
 
       // Step 3: Update metadata if provided
-      if (metadata && (metadata.description || metadata.tags)) {
-        await this.updateVideoMetadata(videoResult.guid, metadata);
+      if (enhancedMetadata && (enhancedMetadata.description || enhancedMetadata.tags)) {
+        await this.updateVideoMetadata(videoResult.guid, enhancedMetadata);
       }
 
       // Step 4: Return success result
@@ -97,8 +106,8 @@ export class LiveBridge {
         videoId: videoResult.guid,
         url: videoUrl,
         libraryId: this.libraryId,
-        title: metadata?.title || fileName.split('.')[0],
-        description: metadata?.description || '',
+        title: enhancedMetadata?.title || fileName.split('.')[0],
+        description: enhancedMetadata?.description || '',
         streamKey: this.generateStreamKey(videoResult.guid)
       };
 

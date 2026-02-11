@@ -49,13 +49,14 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     const fullUrl = `${API_URL}${endpoint}`;
     console.log(`📡 Fetching: ${fullUrl}`);
     
-    // Use authService for authentication headers
-    const headers = await authService.createAuthHeaders();
+    // BYPASS LOGIN FOR TESTING: Use dummy headers instead of auth
+    // const headers = await authService.createAuthHeaders();
     
     // Ensure we have proper headers even without token
     let finalHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...headers,
+      // BYPASS LOGIN: No authentication required for testing
+      // 'Authorization': 'Bearer dummy_token_for_testing'
     };
     
     // Handle body serialization
@@ -125,63 +126,93 @@ const getUploadUrl = async (contentType: string, fileName: string, fileSize: num
 };
 
 export const uploadReel = async (file: any, metadata: any) => {
+  // BYPASS LOGIN: Add dummy user ID for testing
+  const enhancedMetadata = {
+    ...metadata,
+    userId: 'guest_user' // Dummy user ID for testing
+  };
+  
   const fileName = file.name || file.fileName || `reel_${Date.now()}.mp4`;
   const fileSize = file.size || file.fileSize || 0;
   
-  const { uploadUrl, videoId } = await getUploadUrl('reel', fileName, fileSize, metadata);
+  const { uploadUrl, videoId } = await getUploadUrl('reel', fileName, fileSize, enhancedMetadata);
   
   if (fileSize > 100 * 1024 * 1024) {
     const config = BUNNY_CONFIG.reels;
-    await uploadInChunks(file, config, videoId, metadata);
+    await uploadInChunks(file, config, videoId, enhancedMetadata);
   } else {
-    await uploadToBunny(file, 'reel', metadata);
+    await uploadToBunny(file, 'reel', enhancedMetadata);
   }
   
   return { success: true, videoId, url: uploadUrl };
 };
 
 export const uploadVideo = async (file: any, metadata: any) => {
+  // BYPASS LOGIN: Add dummy user ID for testing
+  const enhancedMetadata = {
+    ...metadata,
+    userId: 'guest_user' // Dummy user ID for testing
+  };
+  
   const fileName = file.name || file.fileName || `video_${Date.now()}.mp4`;
   const fileSize = file.size || file.fileSize || 0;
   
-  const { uploadUrl, videoId } = await getUploadUrl('video', fileName, fileSize, metadata);
+  const { uploadUrl, videoId } = await getUploadUrl('video', fileName, fileSize, enhancedMetadata);
   
   if (fileSize > 100 * 1024 * 1024) {
     const config = BUNNY_CONFIG.video;
-    await uploadInChunks(file, config, videoId, metadata);
+    await uploadInChunks(file, config, videoId, enhancedMetadata);
   } else {
-    await uploadToBunny(file, 'video', metadata);
+    await uploadToBunny(file, 'video', enhancedMetadata);
   }
   
   return { success: true, videoId, url: uploadUrl };
 };
 
 export const uploadPhoto = async (file: any, metadata: any) => {
+  // BYPASS LOGIN: Add dummy user ID for testing
+  const enhancedMetadata = {
+    ...metadata,
+    userId: 'guest_user' // Dummy user ID for testing
+  };
+  
   const fileName = file.name || file.fileName || `photo_${Date.now()}.jpg`;
   const fileSize = file.size || file.fileSize || 0;
   
-  const { uploadUrl } = await getUploadUrl('photo', fileName, fileSize, metadata);
-  await uploadToBunny(file, 'photos', metadata);
+  const { uploadUrl } = await getUploadUrl('photo', fileName, fileSize, enhancedMetadata);
+  await uploadToBunny(file, 'photos', enhancedMetadata);
   
   return { success: true, url: uploadUrl };
 };
 
 export const uploadStory = async (file: any, metadata: any) => {
+  // BYPASS LOGIN: Add dummy user ID for testing
+  const enhancedMetadata = {
+    ...metadata,
+    userId: 'guest_user' // Dummy user ID for testing
+  };
+  
   const fileName = file.name || file.fileName || `story_${Date.now()}.mp4`;
   const fileSize = file.size || file.fileSize || 0;
   
-  const { uploadUrl, videoId } = await getUploadUrl('story', fileName, fileSize, metadata);
-  await uploadToBunny(file, 'story', metadata);
+  const { uploadUrl, videoId } = await getUploadUrl('story', fileName, fileSize, enhancedMetadata);
+  await uploadToBunny(file, 'story', enhancedMetadata);
   
   return { success: true, videoId, url: uploadUrl };
 };
 
 export const uploadLive = async (file: any, metadata: any) => {
+  // BYPASS LOGIN: Add dummy user ID for testing
+  const enhancedMetadata = {
+    ...metadata,
+    userId: 'guest_user' // Dummy user ID for testing
+  };
+  
   const fileName = file.name || file.fileName || `live_${Date.now()}.mp4`;
   const fileSize = file.size || file.fileSize || 0;
   
-  const { uploadUrl, videoId } = await getUploadUrl('live', fileName, fileSize, metadata);
-  await uploadToBunny(file, 'live', metadata);
+  const { uploadUrl, videoId } = await getUploadUrl('live', fileName, fileSize, enhancedMetadata);
+  await uploadToBunny(file, 'live', enhancedMetadata);
   
   return { success: true, videoId, url: uploadUrl };
 };
