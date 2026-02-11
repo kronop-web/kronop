@@ -33,8 +33,8 @@ const DEFAULT_USER_ID = 'guest_user';
  * Uses BunnyCDN Stream API with Library ID: 594452
  */
 export class LiveBridge {
-  private readonly libraryId = '594452';
   private readonly config = BUNNY_CONFIG.live;
+  private readonly libraryId = this.config.libraryId;
 
   /**
    * Upload live stream content to BunnyCDN Stream
@@ -65,7 +65,7 @@ export class LiveBridge {
       const createResponse = await fetch(createVideoUrl, {
         method: 'POST',
         headers: {
-          'AccessKey': this.config.apiKey,
+          'AccessKey': this.config.streamKey || this.config.apiKey,
           'Content-Type': 'application/json',
           'accept': 'application/json'
         },
@@ -134,7 +134,7 @@ export class LiveBridge {
       const createResponse = await fetch(createVideoUrl, {
         method: 'POST',
         headers: {
-          'AccessKey': this.config.apiKey,
+          'AccessKey': this.config.streamKey || this.config.apiKey,
           'Content-Type': 'application/json',
           'accept': 'application/json'
         },
@@ -199,7 +199,7 @@ export class LiveBridge {
     const uploadResponse = await fetch(uploadUrl, {
       method: 'PUT',
       headers: {
-        'AccessKey': this.config.apiKey,
+        'AccessKey': this.config.streamKey || this.config.apiKey,
         'Content-Type': 'application/octet-stream'
       },
       body: fileBlob
@@ -227,7 +227,7 @@ export class LiveBridge {
     const initResponse = await fetch(`https://video.bunnycdn.com/library/${this.libraryId}/videos/${videoGuid}/uploads`, {
       method: 'POST',
       headers: {
-        'AccessKey': this.config.apiKey,
+        'AccessKey': this.config.streamKey || this.config.apiKey,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -264,7 +264,7 @@ export class LiveBridge {
             {
               method: 'POST',
               headers: {
-                'AccessKey': this.config.apiKey,
+                'AccessKey': this.config.streamKey || this.config.apiKey,
               },
               body: formData
             }
@@ -298,7 +298,7 @@ export class LiveBridge {
     const finalizeResponse = await fetch(`https://video.bunnycdn.com/library/${this.libraryId}/videos/${videoGuid}/uploads/${uploadSessionId}/complete`, {
       method: 'POST',
       headers: {
-        'AccessKey': this.config.apiKey,
+        'AccessKey': this.config.streamKey || this.config.apiKey,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -326,7 +326,7 @@ export class LiveBridge {
     const updateResponse = await fetch(`https://video.bunnycdn.com/library/${this.libraryId}/videos/${videoGuid}`, {
       method: 'POST',
       headers: {
-        'AccessKey': this.config.apiKey,
+        'AccessKey': this.config.streamKey || this.config.apiKey,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(updateData)

@@ -1,5 +1,5 @@
-// Advanced Video Pre-loading Service for Instagram-like Performance
-// Optimized for expo-video compatibility
+// Limited Video Pre-loading Service for Performance
+// Optimized for 3-video limit
 
 interface PreloadVideo {
   id: string;
@@ -12,9 +12,9 @@ interface PreloadVideo {
 class VideoPreloaderService {
   private preloadedVideos: Map<string, PreloadVideo> = new Map();
   private preloadQueue: string[] = [];
-  private maxPreloadCount = 5; // Aggressive: preload next 5 videos
+  private maxPreloadCount = 2; // LIMITED: preload only next 2 videos
   private isPreloading = false;
-  private aggressiveMode = true; // Enable aggressive pre-fetching
+  private aggressiveMode = false; // DISABLE aggressive pre-fetching
   private preloadingStatus: Map<string, 'preloading' | 'completed' | 'failed'> = new Map();
 
   // Initialize preloader with video URLs
@@ -33,7 +33,7 @@ class VideoPreloaderService {
     });
   }
 
-  // FIX 3: Aggressive pre-warming - keep next 2 videos fully ready
+  // LIMITED pre-warming - keep only next 1 video ready
   async preloadAroundIndex(currentIndex: number, totalVideos: { id: string; video_url: string }[]) {
     if (this.isPreloading) return;
     
@@ -43,10 +43,10 @@ class VideoPreloaderService {
       // Clear videos that are too far from current index
       this.clearDistantPreloads(currentIndex);
       
-      // AGGRESSIVE: Immediately start loading next 2 videos in parallel
+      // LIMITED: Load only next 1 video
       const preloadPromises: Promise<void>[] = [];
       
-      for (let i = 0; i <= 2; i++) { // Include current + next 2
+      for (let i = 0; i <= 1; i++) { // Include current + next 1
         const nextIndex = (currentIndex + i) % totalVideos.length;
         const video = totalVideos[nextIndex];
         
@@ -85,7 +85,7 @@ class VideoPreloaderService {
       }
 
       this.preloadingStatus.set(videoId, 'preloading');
-      console.log('🔥 AGGRESSIVE PRELOAD STARTING:', videoId);
+      console.log('🔥 LIMITED PRELOAD STARTING:', videoId);
 
       // Create AbortController for timeout
       const controller = new AbortController();
@@ -175,9 +175,9 @@ class VideoPreloaderService {
     return video?.loadTime || 0;
   }
 
-  // Clear videos that are too far from current index (more aggressive cleanup)
+  // Clear videos that are too far from current index (LIMITED cleanup for 3 videos)
   private clearDistantPreloads(currentIndex: number) {
-    const clearDistance = this.aggressiveMode ? 3 : this.maxPreloadCount + 2;
+    const clearDistance = 2; // Keep only current + next 1
     
     for (const [videoId, video] of this.preloadedVideos.entries()) {
       const distance = Math.abs(video.priority - currentIndex);

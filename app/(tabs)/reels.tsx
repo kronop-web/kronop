@@ -25,7 +25,6 @@ import { videoFeedService } from '../../services/videoFeedService';
 import { videoPreloaderService } from '../../services/videoPreloader';
 import { hlsOptimizerService } from '../../services/hlsOptimizer';
 import { memoryManagerService } from '../../services/memoryManager';
-import { audioManagerService } from '../../services/audioManagerService';
 import { uniqueViewTracker } from '../../services/uniqueViewTracker';
 import { slidingWindowManager } from '../../services/slidingWindowManager';
 import { videoChunkingService } from '../../services/videoChunkingService';
@@ -282,36 +281,25 @@ function ReelItem({
   const safePlayerPlay = useCallback(async () => {
     try {
       if (playerRef.current && isPlayerReadyRef.current) {
-        // Use audio manager to play this video
-        await audioManagerService.playVideo(item.id);
+        await playerRef.current.play();
       }
     } catch (error: any) {
-      if (error?.message?.includes('already released')) {
-      } else {
-        console.warn('Error playing video:', error);
-      }
+      console.warn('Error playing video:', error);
     }
-  }, [item.id]);
+  }, []);
 
   const safePlayerPause = useCallback(() => {
     try {
       if (playerRef.current && isPlayerReadyRef.current) {
-        // Use audio manager to pause
-        audioManagerService.pauseCurrentVideo();
+        playerRef.current.pause();
       }
     } catch (error: any) {
-      if (error?.message?.includes('already released')) {
-      } else {
-        console.warn('Error pausing video:', error);
-      }
+      console.warn('Error pausing video:', error);
     }
   }, []);
 
   const cleanupPlayer = useCallback(() => {
     try {
-      // Unregister from audio manager
-      audioManagerService.unregisterPlayer(item.id);
-      
       isPlayerReadyRef.current = false;
       if (playerRef.current) {
         try {
@@ -320,8 +308,9 @@ function ReelItem({
         playerRef.current = null;
       }
     } catch (error) {
+      console.warn('Error cleaning up player:', error);
     }
-  }, [item.id]);
+  }, []);
 
   const videoSource = getVideoSource();
   const sourceType = getSourceType(videoSource);
@@ -330,14 +319,13 @@ function ReelItem({
   const player = useVideoPlayer({
     uri: videoSource,
     headers: {
-      'User-Agent': 'KronopApp'
+      'User-Agent': 'KronopApp',
+      'Referer': 'https://kronop.app',
+      'Origin': 'https://kronop.app'
     }
   }, (playerInstance) => {
     // Store reference
     playerRef.current = playerInstance;
-    
-    // Register with audio manager
-    audioManagerService.registerPlayer(item.id, playerInstance);
     
     // Data-Centric: Log metadata on load
     console.log({
@@ -411,10 +399,10 @@ function ReelItem({
     if (isActive && !isPaused) {
       safePlayerPlay();
     } else if (!isActive) {
-      // When video becomes inactive, use audio manager to stop it
-      audioManagerService.stopCurrentVideo();
+      // When video becomes inactive, pause it
+      safePlayerPause();
     }
-  }, [isActive, isPaused, safePlayerPlay]);
+  }, [isActive, isPaused, safePlayerPlay, safePlayerPause]);
 
   const handleVideoTap = () => {
     const now = Date.now();
@@ -442,7 +430,7 @@ function ReelItem({
   };
 
   return (
-    <View style={styles.reelContainer}>
+    <View style={styles.reelContainer} key={item.id}>
       <DotAnimation isActive={false} />
       
       {/* Video Player */}
@@ -534,6 +522,19 @@ export default function ReelsScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isScreenFocused, setIsScreenFocused] = useState(true);
   const flatListRef = useRef<FlatList>(null);
+  
+  // Player control functions for scroll handling
+  const currentPlayerRef = useRef<any>(null);
+  
+  const safePlayerPause = useCallback(() => {
+    try {
+      if (currentPlayerRef.current) {
+        currentPlayerRef.current.pause();
+      }
+    } catch (error: any) {
+      console.warn('Error pausing video:', error);
+    }
+  }, []);
   
   // Simplified state - only essential data
   const [starred, setStarred] = useState<Record<string, boolean>>({});
@@ -632,7 +633,6 @@ export default function ReelsScreen() {
       slidingWindowManager.clearAll();
       videoChunkingService.cleanupAllStreams();
       memoryManagerService.clearAllMemory();
-      audioManagerService.cleanup();
     };
   }, []);
 
@@ -644,7 +644,7 @@ export default function ReelsScreen() {
       
       
       // Force cleanup if memory is high
-      if (memoryUsage > 150) { // 150MB threshold
+      if (memoryUsage > 50) { // 50MB threshold for 3-video limit
         slidingWindowManager.forceCleanup();
       }
     }, 30000); // Check every 30 seconds
@@ -656,7 +656,7 @@ export default function ReelsScreen() {
       const videoIds = reels.map(reel => reel.id);
       videoFeedService.initializeVideoPool(videoIds);
       
-      // Initialize sliding window with 50 reels buffer
+      // Initialize sliding window with LIMITED 3 reels buffer
       slidingWindowManager.initialize(reels, currentIndex);
       
       // Initialize video preloader
@@ -684,29 +684,20 @@ export default function ReelsScreen() {
     }
   }, [reels.length]);
 
-  // Auto-preload videos around current index with memory management
+  // Auto-preload videos around current index with LIMITED memory management
   useEffect(() => {
     if (reels.length > 0) {
-      // Preload next videos
-      videoPreloaderService.preloadAroundIndex(currentIndex, reels);
+      // LIMITED PRELOAD: Only preload current and next video (3 total)
+      const preloadIndexes = [currentIndex - 1, currentIndex, currentIndex + 1].filter(i => i >= 0 && i < reels.length);
       
-      // Manage memory (16-video limit)
-      memoryManagerService.manageVideoMemory(
-        reels[currentIndex]?.id || '',
-        reels[currentIndex]?.video_url || '',
-        currentIndex
-      );
-      
-      // Auto-cleanup old videos
-      memoryManagerService.autoCleanup(currentIndex);
-      
-      // Pre-fetch next 2 videos for super fast scroll
-      const prefetchIndexes = memoryManagerService.getPrefetchIndexes(currentIndex, reels.length);
-      prefetchIndexes.forEach(index => {
+      preloadIndexes.forEach(index => {
         if (reels[index]) {
           videoPreloaderService.forcePreload(reels[index].id, reels[index].video_url);
         }
       });
+      
+      // Aggressive cleanup for old videos
+      memoryManagerService.aggressiveCleanup(currentIndex, 3); // Keep only 3 videos
     }
   }, [currentIndex, reels.length]);
 
@@ -819,8 +810,6 @@ export default function ReelsScreen() {
         setIsScreenFocused(false);
         // Save current position for resume
         memoryManagerService.setCurrentIndex(currentIndex);
-        // Stop all audio when screen loses focus
-        audioManagerService.stopCurrentVideo();
       };
     }, [currentIndex])
   );
@@ -828,7 +817,7 @@ export default function ReelsScreen() {
   // Cleanup audio manager when component unmounts
   useEffect(() => {
     return () => {
-      audioManagerService.cleanup();
+      // No audio manager cleanup needed
     };
   }, []);
 
@@ -909,7 +898,7 @@ export default function ReelsScreen() {
         }}
         onScrollBeginDrag={() => {
           // Pause current video when user starts scrolling
-          audioManagerService.stopCurrentVideo();
+          safePlayerPause();
         }}
         onScrollEndDrag={(event) => {
           // Auto-play new video after scroll ends
@@ -926,9 +915,9 @@ export default function ReelsScreen() {
           index,
         })}
         initialNumToRender={1}
-        maxToRenderPerBatch={2}
+        maxToRenderPerBatch={1}
         windowSize={3}
-        removeClippedSubviews={false}
+        removeClippedSubviews={true}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />
         }

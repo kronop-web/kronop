@@ -34,7 +34,7 @@ export interface ReelUploadResult {
  * Upload flow: MongoDB API -> ReelsBridge (BunnyCDN) -> MongoDB API (save metadata)
  */
 export class ReelsService {
-  private readonly API_BASE = API_KEYS.KOYEB_URL || 'https://common-jesse-kronop-app-19cf0acc.koyeb.app';
+  private readonly API_BASE = process.env.EXPO_PUBLIC_API_URL || API_KEYS.KOYEB_URL || process.env.PRODUCTION_API_URL || 'http://localhost:3000';
 
   /**
    * Get authentication token for MongoDB API calls
@@ -99,7 +99,7 @@ export class ReelsService {
       };
 
       const headers = await this.createHeaders();
-      const response = await fetch(`${this.API_BASE}/api/reels`, {
+      const response = await fetch(`${this.API_BASE}/upload/reel`, {
         method: 'POST',
         headers,
         body: JSON.stringify(reelData)

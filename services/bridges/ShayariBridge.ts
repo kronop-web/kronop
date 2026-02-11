@@ -36,8 +36,8 @@ const DEFAULT_USER_ID = 'guest_user';
  * Uses BunnyCDN Storage API with Storage Zone: shayar
  */
 export class ShayariBridge {
-  private readonly storageZoneName = 'shayar';
   private readonly config = BUNNY_CONFIG.shayari;
+  private readonly storageZoneName = this.config.storageZoneName; // Use from config
 
   /**
    * Upload shayari image to BunnyCDN Storage

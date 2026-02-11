@@ -324,21 +324,6 @@ class VideoChunkingService {
     console.log(`🧹 Cleaned up stream for ${videoId}`);
   }
 
-  // Cleanup all streams
-  async cleanupAllStreams(): Promise<void> {
-    const streamIds = Array.from(this.activeStreams.keys());
-    
-    await Promise.all(
-      streamIds.map(id => this.cleanupStream(id))
-    );
-
-    console.log('🧹 Cleaned up all streams');
-  }
-
-  // Get memory usage
-  getMemoryUsage(): number {
-    return this.memoryUsage;
-  }
 
   // Update configuration
   updateConfig(newConfig: Partial<ChunkConfig>): void {
@@ -360,6 +345,23 @@ class VideoChunkingService {
 
     const bitrate = qualityBitrates[stream.quality as keyof typeof qualityBitrates] || 1000 * 1024;
     return (bitrate * duration) / 8; // Convert to bytes
+  }
+
+  // Get memory usage in MB
+  getMemoryUsage(): number {
+    return this.memoryUsage / (1024 * 1024); // Convert bytes to MB
+  }
+
+  // Cleanup all streams
+  cleanupAllStreams(): void {
+    console.log('🧹 Cleaning up all video streams...');
+    
+    for (const videoId of this.activeStreams.keys()) {
+      this.cleanupStream(videoId);
+    }
+    
+    this.memoryUsage = 0;
+    console.log('✅ All video streams cleaned up');
   }
 }
 

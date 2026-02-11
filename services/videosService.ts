@@ -33,7 +33,7 @@ export interface VideoUploadResult {
  * Videos Service - Handles all Videos operations through MongoDB API
  */
 export class VideosService {
-  private readonly API_BASE = API_KEYS.KOYEB_URL || 'https://common-jesse-kronop-app-19cf0acc.koyeb.app';
+  private readonly API_BASE = process.env.EXPO_PUBLIC_API_URL || API_KEYS.KOYEB_URL || process.env.PRODUCTION_API_URL || 'http://localhost:3000';
 
   /**
    * Get authentication token for MongoDB API calls
@@ -67,13 +67,48 @@ export class VideosService {
     try {
       console.log('🎥 VideosService: Starting video upload process...');
 
-      // TODO: Implement video upload similar to reels
-      // For now, return a placeholder response
-      console.log('🎥 Video upload not yet fully implemented');
+      // Use VideoBridge for BunnyCDN upload
+      const { VideoBridge } = await import('./bridges/VideoBridge');
+      const bridge = new VideoBridge();
       
+      const bunnyResult = await bridge.uploadVideo(file, metadata);
+      
+      if (!bunnyResult.success) {
+        throw new Error(bunnyResult.error || 'BunnyCDN upload failed');
+      }
+
+      // Save metadata to MongoDB
+      const videoData = {
+        title: metadata.title || bunnyResult.title,
+        description: metadata.description || bunnyResult.description,
+        bunny_video_id: bunnyResult.videoId,
+        video_url: bunnyResult.url,
+        thumbnail_url: `https://${BUNNY_CONFIG.video.host}/${bunnyResult.videoId}/thumbnail.jpg`,
+        views_count: 0,
+        likes_count: 0,
+        comments_count: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const headers = await this.createHeaders();
+      const response = await fetch(`${this.API_BASE}/upload/video`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(videoData)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to save video metadata: ${response.status} - ${errorText}`);
+      }
+
+      const savedVideo = await response.json();
+      console.log('🎥 Video metadata saved to MongoDB:', savedVideo);
+
       return {
-        success: false,
-        error: 'Video upload not yet implemented - please use reels for now'
+        success: true,
+        video: savedVideo.data || savedVideo
       };
 
     } catch (error) {
@@ -114,8 +149,8 @@ export class VideosService {
   async getPublicVideos(page: number = 1, limit: number = 20): Promise<VideoData[]> {
     try {
       const headers = await this.createHeaders();
-      // Fixed: Use correct route /content/videos instead of /api/videos/public
-      const response = await fetch(`${this.API_BASE}/content/videos?page=${page}&limit=${limit}`, {
+      // Fixed: Use correct route /api/videos instead of /content/videos
+      const response = await fetch(`${this.API_BASE}/api/videos?page=${page}&limit=${limit}`, {
         method: 'GET',
         headers
       });

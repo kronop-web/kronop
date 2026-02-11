@@ -826,6 +826,59 @@ app.get('/stream/:filename', (req, res) => {
   }
 });
 
+// Upload endpoints
+// POST /upload/url - Get upload URL for any content type
+app.post('/upload/url', async (req, res) => {
+  try {
+    const { contentType, fileName, fileSize, metadata } = req.body;
+    
+    console.log(`🔗 Upload URL requested for ${contentType}:`, { fileName, fileSize });
+    
+    // Generate upload URL based on content type
+    let uploadUrl, contentId;
+    
+    switch (contentType?.toLowerCase()) {
+      case 'reel':
+      case 'video':
+      case 'live':
+        // Stream API - generate video ID
+        const libraryId = contentType === 'reel' ? '593793' : 
+                       contentType === 'video' ? '593795' : '594452';
+        contentId = `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        uploadUrl = `https://video.bunnycdn.com/library/${libraryId}/videos/${contentId}`;
+        break;
+        
+      case 'photo':
+      case 'shayari':
+      case 'story':
+        // Storage API - generate direct upload URL
+        const storageZone = contentType === 'photo' ? 'photu' : 
+                         contentType === 'shayari' ? 'shayar' : 'storiy';
+        contentId = `${contentType}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        uploadUrl = `https://storage.bunnycdn.com/${storageZone}/${contentId}`;
+        break;
+        
+      default:
+        throw new Error(`Unsupported content type: ${contentType}`);
+    }
+    
+    res.json({
+      success: true,
+      uploadUrl,
+      contentId,
+      contentType,
+      fileName,
+      fileSize
+    });
+    
+  } catch (error) {
+    console.error('❌ Upload URL generation failed:', error);
+    res.status(500).json({ 
+      error: error.message || 'Failed to generate upload URL' 
+    });
+  }
+});
+
 // Upload and transcode endpoint
 app.post('/upload', express.raw({ type: 'video/*', limit: '100mb' }), (req, res) => {
   const inputPath = path.join(UPLOADS_DIR, `input_${Date.now()}.mp4`);
@@ -1255,5 +1308,115 @@ const server = app.listen(PORT, HOST, async () => {
   }, 30000); // Ping every 30 seconds
 }
 );
+
+// ==================== AUTO-SYNC CLEANUP ENDPOINTS ====================
+// DELETE endpoints for auto-sync cleanup
+
+// DELETE /api/reels/:id - Delete broken reel
+app.delete('/api/reels/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await Content.deleteOne({ 
+      _id: id, 
+      type: 'Reel' 
+    });
+    
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Reel not found' });
+    }
+    
+    res.json({ success: true, message: 'Reel deleted successfully' });
+  } catch (error) {
+    console.error('❌ Delete reel error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/videos/:id - Delete broken video
+app.delete('/api/videos/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await Content.deleteOne({ 
+      _id: id, 
+      type: 'Video' 
+    });
+    
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Video not found' });
+    }
+    
+    res.json({ success: true, message: 'Video deleted successfully' });
+  } catch (error) {
+    console.error('❌ Delete video error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/photos/:id - Delete broken photo
+app.delete('/api/photos/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await Content.deleteOne({ 
+      _id: id, 
+      type: 'Photo' 
+    });
+    
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Photo not found' });
+    }
+    
+    res.json({ success: true, message: 'Photo deleted successfully' });
+  } catch (error) {
+    console.error('❌ Delete photo error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/shayari/:id - Delete broken shayari
+app.delete('/api/shayari/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await Content.deleteOne({ 
+      _id: id, 
+      type: 'Shayari' 
+    });
+    
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Shayari not found' });
+    }
+    
+    res.json({ success: true, message: 'Shayari deleted successfully' });
+  } catch (error) {
+    console.error('❌ Delete shayari error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/stories/:id - Delete broken story
+app.delete('/api/stories/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await Content.deleteOne({ 
+      _id: id, 
+      type: 'Story' 
+    });
+    
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Story not found' });
+    }
+    
+    res.json({ success: true, message: 'Story deleted successfully' });
+  } catch (error) {
+    console.error('❌ Delete story error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+console.log('🚀 Auto-Sync cleanup endpoints loaded');
 
 

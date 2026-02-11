@@ -10,7 +10,7 @@ interface VideoMemorySlot {
 }
 
 class MemoryManagerService {
-  private readonly MAX_VIDEOS_IN_MEMORY = 16;
+  private readonly MAX_VIDEOS_IN_MEMORY = 3; // LIMITED to 3 videos for performance
   private videoSlots: Map<number, VideoMemorySlot> = new Map();
   private currentIndex = 0;
   private lastResumeIndex = 0;
@@ -185,19 +185,21 @@ class MemoryManagerService {
     });
   }
 
-  // Force cleanup to free memory
-  forceCleanup(): void {
-    // Keep only current and next 2 videos
-    const toKeep = new Set<number>();
+  // Aggressive cleanup for 3-video limit
+  aggressiveCleanup(currentIndex: number, keepCount: number = 3): void {
+    const toDelete: number[] = [];
     
-    for (let i = 0; i <= 2; i++) {
-      const index = (this.currentIndex + i) % this.MAX_VIDEOS_IN_MEMORY;
-      toKeep.add(index);
+    // Keep only current, previous, and next videos
+    const keepIndexes = new Set<number>();
+    for (let i = -1; i <= 1; i++) {
+      const index = currentIndex + i;
+      if (index >= 0) {
+        keepIndexes.add(index);
+      }
     }
     
-    const toDelete: number[] = [];
-    for (const index of this.videoSlots.keys()) {
-      if (!toKeep.has(index)) {
+    for (const [index, slot] of this.videoSlots.entries()) {
+      if (!keepIndexes.has(index)) {
         toDelete.push(index);
       }
     }
@@ -207,10 +209,11 @@ class MemoryManagerService {
       if (slot) {
         this.clearVideoCache(slot.id);
         this.videoSlots.delete(index);
+        console.log(`🗑️ Aggressive cleanup: Removed video ${slot.id} (Index ${index})`);
       }
     });
     
-    console.log(`🧹 Force cleanup: removed ${toDelete.length} videos`);
+    console.log(`� Memory: Now keeping ${this.videoSlots.size}/3 videos`);
   }
 }
 

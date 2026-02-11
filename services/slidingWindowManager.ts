@@ -1,5 +1,5 @@
-// Sliding Window Manager for 50 Reels Buffer
-// Optimized for 100M+ users with zero memory leaks
+// Sliding Window Manager for 3 Reels Buffer
+// Optimized for performance with minimal memory usage
 
 interface ReelItem {
   id: string;
@@ -12,9 +12,9 @@ interface ReelItem {
 }
 
 interface WindowConfig {
-  windowSize: number; // 50 reels
-  preloadAhead: number; // Preload next 5
-  unloadBehind: number; // Unload last 10
+  windowSize: number; // 3 reels only
+  preloadAhead: number; // Preload next 1
+  unloadBehind: number; // Unload last 1
   memoryThreshold: number; // MB
 }
 
@@ -23,10 +23,10 @@ class SlidingWindowManager {
   private window: Map<string, ReelItem> = new Map();
   private currentIndex: number = 0;
   private config: WindowConfig = {
-    windowSize: 50,
-    preloadAhead: 5,
-    unloadBehind: 10,
-    memoryThreshold: 200 // 200MB
+    windowSize: 3,
+    preloadAhead: 1,
+    unloadBehind: 1,
+    memoryThreshold: 50 // 50MB
   };
   
   private memoryUsage: number = 0;
@@ -40,11 +40,16 @@ class SlidingWindowManager {
     return SlidingWindowManager.instance;
   }
 
-  // Initialize sliding window
-  initialize(reels: any[], startIndex: number = 0) {
+  // Initialize sliding window with custom window size
+  initialize(reels: any[], startIndex: number = 0, windowSize: number = 3) {
     this.currentIndex = startIndex;
     this.window.clear();
     this.memoryUsage = 0;
+    
+    // Override config with custom window size
+    this.config.windowSize = windowSize;
+    this.config.preloadAhead = 1;
+    this.config.unloadBehind = 1;
 
     // Load initial window
     const endIndex = Math.min(startIndex + this.config.windowSize, reels.length);
@@ -187,27 +192,6 @@ class SlidingWindowManager {
     }
   }
 
-  // Get memory usage estimate
-  getMemoryUsage(): number {
-    return this.memoryUsage;
-  }
-
-  // Force cleanup based on memory threshold
-  async forceCleanup(): Promise<void> {
-    if (this.memoryUsage > this.config.memoryThreshold) {
-      console.log(`⚠️ Memory threshold exceeded: ${this.memoryUsage}MB`);
-      
-      // Sort by last accessed time
-      const sortedReels = Array.from(this.window.entries())
-        .sort(([, a], [, b]) => a.lastAccessed - b.lastAccessed);
-
-      // Cleanup oldest 20 reels
-      const toCleanup = sortedReels.slice(0, 20);
-      for (const [reelId] of toCleanup) {
-        await this.cleanupReel(reelId);
-      }
-    }
-  }
 
   // Get window statistics
   getStats(): any {
@@ -291,6 +275,33 @@ class SlidingWindowManager {
     this.isCleanupRunning = false;
     
     console.log('✅ Sliding window cleared');
+  }
+
+  // Get memory usage in MB
+  getMemoryUsage(): number {
+    return this.memoryUsage;
+  }
+
+  // Force cleanup to free memory
+  forceCleanup(): void {
+    console.log('🧹 Force cleanup triggered...');
+    
+    // Keep only current video
+    const toDelete: string[] = [];
+    for (const [reelId, reel] of this.window.entries()) {
+      const distance = Math.abs(reel.lastAccessed - Date.now());
+      
+      // Remove videos not accessed in last 30 seconds
+      if (distance > 30000) {
+        toDelete.push(reelId);
+      }
+    }
+    
+    toDelete.forEach(reelId => {
+      this.cleanupReel(reelId);
+    });
+    
+    console.log(`🧹 Force cleanup: removed ${toDelete.length} reels`);
   }
 
   // Update configuration

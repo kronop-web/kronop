@@ -51,6 +51,7 @@ export interface BunnyConfigType {
   libraryId: string;
   host: string;
   apiKey: string;
+  streamKey: string;
 }
 
 export interface BunnyPhotosConfigType {
@@ -65,33 +66,38 @@ export const BUNNY_CONFIG = {
     libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_REELS || '',
     host: process.env.EXPO_PUBLIC_BUNNY_HOST_REELS || '',
     apiKey: API_KEYS.BUNNY,
+    streamKey: process.env.EXPO_PUBLIC_BUNNY_STREAM_KEY_REELS || '',
   },
   video: {
     libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_VIDEO || '',
     host: process.env.EXPO_PUBLIC_BUNNY_HOST_VIDEO || '',
     apiKey: API_KEYS.BUNNY,
+    streamKey: process.env.EXPO_PUBLIC_BUNNY_STREAM_KEY_VIDEO || '',
   },
   live: {
     libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_LIVE || '',
     host: process.env.EXPO_PUBLIC_BUNNY_HOST_LIVE || '',
     apiKey: API_KEYS.BUNNY,
+    streamKey: process.env.EXPO_PUBLIC_BUNNY_STREAM_KEY_LIVE || '',
   },
   story: {
     libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_STORY || '',
     host: process.env.EXPO_PUBLIC_BUNNY_HOST_STORY || '',
     apiKey: API_KEYS.BUNNY,
+    streamKey: process.env.EXPO_PUBLIC_BUNNY_STREAM_KEY_STORY || '',
+    storageKey: process.env.EXPO_PUBLIC_BUNNY_STORY_STORAGE_KEY || '',
   },
   
   // Storage API Configuration (Image/Document Content)
   photos: {
     storageZoneName: process.env.EXPO_PUBLIC_BUNNY_STORAGE_NAME_PHOTO || '',
     host: process.env.EXPO_PUBLIC_BUNNY_STORAGE_HOST_PHOTO || '',
-    apiKey: process.env.EXPO_PUBLIC_BUNNY_STORAGE_KEY_PHOTO || '',
+    apiKey: process.env.EXPO_PUBLIC_BUNNY_PHOTO_STORAGE_KEY || '',
   },
   shayari: {
     storageZoneName: process.env.EXPO_PUBLIC_BUNNY_STORAGE_NAME_SHAYARI || '',
     host: process.env.EXPO_PUBLIC_BUNNY_STORAGE_HOST_SHAYARI || '',
-    apiKey: process.env.EXPO_PUBLIC_BUNNY_STORAGE_KEY_SHAYARI || '',
+    apiKey: process.env.EXPO_PUBLIC_BUNNY_SHAYARI_STORAGE_KEY || '',
   },
 };
 

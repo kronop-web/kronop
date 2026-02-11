@@ -31,8 +31,8 @@ const DEFAULT_USER_ID = 'guest_user';
  * Uses BunnyCDN Storage API with Storage Zone: storiy
  */
 export class StoryBridge {
-  private readonly storageZoneName = 'storiy';
   private readonly config = BUNNY_CONFIG.story;
+  private readonly storageZoneName = process.env.EXPO_PUBLIC_BUNNY_STORAGE_NAME_STORY || 'storiy'; // Use from env
 
   /**
    * Upload story content to BunnyCDN Storage
@@ -73,7 +73,7 @@ export class StoryBridge {
       const uploadResponse = await fetch(uploadUrl, {
         method: 'PUT',
         headers: {
-          'AccessKey': this.config.apiKey,
+          'AccessKey': (this.config as any).storageKey || this.config.apiKey,
           'Content-Type': file.type || 'application/octet-stream'
         },
         body: fileBlob

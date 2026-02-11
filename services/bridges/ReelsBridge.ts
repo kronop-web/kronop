@@ -31,8 +31,8 @@ const DEFAULT_USER_ID = 'guest_user';
  * Uses BunnyCDN Stream API with Library ID: 593793
  */
 export class ReelsBridge {
-  private readonly libraryId = '593793';
   private readonly config = BUNNY_CONFIG.reels;
+  private readonly libraryId = this.config.libraryId;
 
   /**
    * Upload a reel to BunnyCDN Stream
@@ -60,8 +60,8 @@ export class ReelsBridge {
       // Step 1: Create video entry in BunnyCDN Stream
       const createVideoUrl = `https://video.bunnycdn.com/library/${this.libraryId}/videos`;
       
-      // Use actual API key from environment
-      const apiKey = this.config.apiKey;
+      // Use proper Stream API key from environment
+      const apiKey = this.config.streamKey || this.config.apiKey;
       
       const createResponse = await fetch(createVideoUrl, {
         method: 'POST',
@@ -137,7 +137,8 @@ export class ReelsBridge {
     const uploadUrl = `https://video.bunnycdn.com/library/${this.libraryId}/videos/${videoGuid}`;
     
     // Use actual API key from environment
-    const apiKey = this.config.apiKey;
+    // Use proper Stream API key from environment
+    const apiKey = this.config.streamKey || this.config.apiKey;
     
     const uploadResponse = await fetch(uploadUrl, {
       method: 'PUT',
@@ -170,7 +171,7 @@ export class ReelsBridge {
     const initResponse = await fetch(`https://video.bunnycdn.com/library/${this.libraryId}/videos/${videoGuid}/uploads`, {
       method: 'POST',
       headers: {
-        'AccessKey': this.config.apiKey,
+        'AccessKey': this.config.streamKey || this.config.apiKey,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -207,7 +208,7 @@ export class ReelsBridge {
             {
               method: 'POST',
               headers: {
-                'AccessKey': this.config.apiKey,
+                'AccessKey': this.config.streamKey || this.config.apiKey,
               },
               body: formData
             }
@@ -241,7 +242,7 @@ export class ReelsBridge {
     const finalizeResponse = await fetch(`https://video.bunnycdn.com/library/${this.libraryId}/videos/${videoGuid}/uploads/${uploadSessionId}/complete`, {
       method: 'POST',
       headers: {
-        'AccessKey': this.config.apiKey,
+        'AccessKey': this.config.streamKey || this.config.apiKey,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -267,7 +268,7 @@ export class ReelsBridge {
     const updateResponse = await fetch(`https://video.bunnycdn.com/library/${this.libraryId}/videos/${videoGuid}`, {
       method: 'POST',
       headers: {
-        'AccessKey': this.config.apiKey,
+        'AccessKey': this.config.streamKey || this.config.apiKey,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(updateData)

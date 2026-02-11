@@ -6,29 +6,43 @@ import { authService } from './authService';
 
 // Get base URL from environment
 const getBaseUrl = () => {
+  console.log('[API_CONFIG]: Getting base URL...');
+  
   // Check for environment variable first
   if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
+    const url = process.env.EXPO_PUBLIC_API_URL;
+    console.log('[API_CONFIG]: Using EXPO_PUBLIC_API_URL:', url);
+    return url;
   }
   
-  // Use KOYEB_URL from config if available
+  // Check for KOYEB_URL from config
   if (API_KEYS.KOYEB_URL) {
-    return API_KEYS.KOYEB_URL;
+    const url = API_KEYS.KOYEB_URL;
+    console.log('[API_CONFIG]: Using KOYEB_URL:', url);
+    return url;
   }
   
   // Universal development URL - works on all devices in the same network
   if (__DEV__) {
-    return 'http://0.0.0.0:3000'; // Universal host for mobile compatibility
+    const url = process.env.DEV_API_URL || 'http://0.0.0.0:3000';
+    console.log('[API_CONFIG]: Using development URL:', url);
+    return url;
   }
   
-  // Production Koyeb URL - Updated to correct URL
-  return 'https://common-jesse-kronop-app-19cf0acc.koyeb.app';
+  // Production URL from environment
+  const prodUrl = process.env.PRODUCTION_API_URL;
+  if (prodUrl) {
+    console.log('[API_CONFIG]: Using production URL:', prodUrl);
+    return prodUrl;
+  }
+  
+  throw new Error('[API_CONFIG]: No API URL configured. Set EXPO_PUBLIC_API_URL or KOYEB_URL');
 };
 
 const base = getBaseUrl();
 const cleanBase = base.replace(/\/+$/, ''); 
 export const API_URL = cleanBase.endsWith('/api') ? cleanBase : `${cleanBase}/api`;
-console.log('🔗 API Base URL set to:', API_URL);
+console.log('[API_CONFIG]: API Base URL configured:', API_URL);
 
 const API_CLIENT = axios.create({
   baseURL: API_URL,
@@ -86,8 +100,9 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
       finalHeaders = headersWithoutContentType;
     }
     
-    console.log(`📤 Request headers:`, JSON.stringify(finalHeaders, null, 2));
-    console.log(`📤 Request options:`, JSON.stringify({
+    console.log(`[UPLOADING START] Making request to: ${fullUrl}`);
+    console.log(`[FILE DETAILS] Request headers:`, JSON.stringify(finalHeaders, null, 2));
+    console.log(`[FILE DETAILS] Request options:`, JSON.stringify({
       method: options.method || 'GET',
       body: finalBody ? (finalBody instanceof FormData ? '[FormData]' : finalBody) : 'no body',
     }, null, 2));
@@ -99,22 +114,23 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     });
 
     if (!response.ok) {
-      console.error(`❌ API Error: ${response.status} ${response.statusText} at ${fullUrl}`);
+      console.error(`[SERVER RESPONSE] API Error: ${response.status} ${response.statusText} at ${fullUrl}`);
       
       // Try to get error response body
       let errorDetails = '';
       try {
         const errorText = await response.text();
         errorDetails = errorText;
-        console.error(`❌ Error response body:`, errorText);
+        console.error(`[SERVER RESPONSE] Error response body:`, errorText);
       } catch (e) {
-        console.error(`❌ Could not read error response body`);
+        console.error(`[SERVER RESPONSE] Could not read error response body`);
       }
       
       throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorDetails}`);
     }
 
     const result = await response.json();
+    console.log('[SERVER RESPONSE] API Response received:', result);
     
     // Auto-unwrap data if it exists to fix "filter is not a function" errors
     if (result && result.success && Array.isArray(result.data)) {
@@ -123,24 +139,36 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     
     return result;
   } catch (error) {
-    console.error(`⚠️ API Call Failed: ${endpoint}`, error);
+    console.error(`[SERVER RESPONSE] API Call Failed: ${endpoint}`, error);
     throw error;
   }
 };
 
 const getUploadUrl = async (contentType: string, fileName: string, fileSize: number, metadata?: any) => {
-  return await apiCall('/upload/url', {
-    method: 'POST',
-    body: JSON.stringify({
-      contentType,
-      fileName,
-      fileSize,
-      metadata
-    })
-  });
+  console.log(`[${contentType.toUpperCase()}_UPLOAD]: Getting URL...`);
+  
+  try {
+    const response = await apiCall('/upload/url', {
+      method: 'POST',
+      body: JSON.stringify({
+        contentType,
+        fileName,
+        fileSize,
+        metadata
+      })
+    });
+    
+    console.log(`[${contentType.toUpperCase()}_UPLOAD]: URL received`);
+    return response;
+  } catch (error) {
+    console.error(`[${contentType.toUpperCase()}_UPLOAD]: URL error`, error instanceof Error ? error.message : String(error));
+    throw error;
+  }
 };
 
 export const uploadReel = async (file: any, metadata: any) => {
+  console.log('[REELS_UPLOAD]: START');
+  
   // BYPASS LOGIN: Add dummy user ID for testing
   const enhancedMetadata = {
     ...metadata,
@@ -150,19 +178,31 @@ export const uploadReel = async (file: any, metadata: any) => {
   const fileName = file.name || file.fileName || `reel_${Date.now()}.mp4`;
   const fileSize = file.size || file.fileSize || 0;
   
-  const { uploadUrl, videoId } = await getUploadUrl('reel', fileName, fileSize, enhancedMetadata);
+  console.log('[REELS_UPLOAD]: Details', { fileName, fileSize });
   
-  if (fileSize > 100 * 1024 * 1024) {
-    const config = BUNNY_CONFIG.reels;
-    await uploadInChunks(file, config, videoId, enhancedMetadata);
-  } else {
-    await uploadToBunny(file, 'reel', enhancedMetadata);
+  try {
+    const { uploadUrl, videoId } = await getUploadUrl('reel', fileName, fileSize, enhancedMetadata);
+    
+    if (fileSize > 100 * 1024 * 1024) {
+      console.log('[FILE DETAILS] Large file detected, using chunk upload');
+      const config = BUNNY_CONFIG.reels;
+      await uploadInChunks(file, config, videoId, enhancedMetadata);
+    } else {
+      console.log('[FILE DETAILS] Small file detected, using direct upload');
+      await uploadToBunny(file, 'reel', enhancedMetadata);
+    }
+    
+    console.log('[REELS_UPLOAD]: SUCCESS', { videoId, uploadUrl });
+    return { success: true, videoId, url: uploadUrl };
+  } catch (error) {
+    console.error('[REELS_UPLOAD]: ERROR', error instanceof Error ? error.message : String(error));
+    throw error;
   }
-  
-  return { success: true, videoId, url: uploadUrl };
 };
 
 export const uploadVideo = async (file: any, metadata: any) => {
+  console.log('[VIDEO_UPLOAD]: START');
+  
   // BYPASS LOGIN: Add dummy user ID for testing
   const enhancedMetadata = {
     ...metadata,
@@ -172,19 +212,31 @@ export const uploadVideo = async (file: any, metadata: any) => {
   const fileName = file.name || file.fileName || `video_${Date.now()}.mp4`;
   const fileSize = file.size || file.fileSize || 0;
   
-  const { uploadUrl, videoId } = await getUploadUrl('video', fileName, fileSize, enhancedMetadata);
+  console.log('[VIDEO_UPLOAD]: Details', { fileName, fileSize });
   
-  if (fileSize > 100 * 1024 * 1024) {
-    const config = BUNNY_CONFIG.video;
-    await uploadInChunks(file, config, videoId, enhancedMetadata);
-  } else {
-    await uploadToBunny(file, 'video', enhancedMetadata);
+  try {
+    const { uploadUrl, videoId } = await getUploadUrl('video', fileName, fileSize, enhancedMetadata);
+    
+    if (fileSize > 100 * 1024 * 1024) {
+      console.log('[FILE_DETAILS] Large file detected, using chunk upload');
+      const config = BUNNY_CONFIG.video;
+      await uploadInChunks(file, config, videoId, enhancedMetadata);
+    } else {
+      console.log('[FILE_DETAILS] Small file detected, using direct upload');
+      await uploadToBunny(file, 'video', enhancedMetadata);
+    }
+    
+    console.log('[VIDEO_UPLOAD]: SUCCESS', { videoId, uploadUrl });
+    return { success: true, videoId, url: uploadUrl };
+  } catch (error) {
+    console.error('[VIDEO_UPLOAD]: ERROR', error instanceof Error ? error.message : String(error));
+    throw error;
   }
-  
-  return { success: true, videoId, url: uploadUrl };
 };
 
 export const uploadPhoto = async (file: any, metadata: any) => {
+  console.log('[PHOTO_UPLOAD]: START');
+  
   // BYPASS LOGIN: Add dummy user ID for testing
   const enhancedMetadata = {
     ...metadata,
@@ -194,42 +246,192 @@ export const uploadPhoto = async (file: any, metadata: any) => {
   const fileName = file.name || file.fileName || `photo_${Date.now()}.jpg`;
   const fileSize = file.size || file.fileSize || 0;
   
-  const { uploadUrl } = await getUploadUrl('photo', fileName, fileSize, enhancedMetadata);
-  await uploadToBunny(file, 'photos', enhancedMetadata);
+  console.log('[PHOTO_UPLOAD]: Details', { fileName, fileSize });
   
-  return { success: true, url: uploadUrl };
+  try {
+    // Step 1: Upload to BunnyCDN via PhotoBridge
+    const { PhotoBridge } = await import('./bridges/PhotoBridge');
+    const bridge = new PhotoBridge();
+    
+    const bunnyResult = await bridge.uploadPhoto(file, enhancedMetadata);
+    
+    if (!bunnyResult.success) {
+      throw new Error(bunnyResult.error || 'BunnyCDN upload failed');
+    }
+    
+    console.log('[PHOTO_UPLOAD]: BunnyCDN upload successful:', bunnyResult);
+    
+    // Step 2: Save metadata to MongoDB
+    console.log('[PHOTO_UPLOAD]: Saving metadata to MongoDB...');
+    const photoData = {
+      title: enhancedMetadata.title || bunnyResult.fileName,
+      description: enhancedMetadata.description,
+      bunny_photo_id: bunnyResult.fileName,
+      photo_url: bunnyResult.url,
+      thumbnail_url: bunnyResult.url, // For photos, same URL
+      category: enhancedMetadata.category,
+      views_count: 0,
+      likes_count: 0,
+      comments_count: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    
+    const response = await apiCall('/upload/photo', {
+      method: 'POST',
+      body: JSON.stringify(photoData)
+    });
+    
+    console.log('[PHOTO_UPLOAD]: MongoDB save successful:', response);
+    return { success: true, photoId: bunnyResult.fileName, url: bunnyResult.url, data: response };
+    
+  } catch (error) {
+    console.error('[PHOTO_UPLOAD]: ERROR', error instanceof Error ? error.message : String(error));
+    throw error;
+  }
 };
 
 export const uploadStory = async (file: any, metadata: any) => {
+  console.log('[STORY_UPLOAD]: START');
+  
   // BYPASS LOGIN: Add dummy user ID for testing
   const enhancedMetadata = {
     ...metadata,
     userId: 'guest_user' // Dummy user ID for testing
   };
   
-  const fileName = file.name || file.fileName || `story_${Date.now()}.mp4`;
+  const fileName = file.name || file.fileName || `story_${Date.now()}.jpg`;
   const fileSize = file.size || file.fileSize || 0;
   
-  const { uploadUrl, videoId } = await getUploadUrl('story', fileName, fileSize, enhancedMetadata);
-  await uploadToBunny(file, 'story', enhancedMetadata);
+  console.log('[STORY_UPLOAD]: Details', { fileName, fileSize });
   
-  return { success: true, videoId, url: uploadUrl };
+  try {
+    // Step 1: Upload to BunnyCDN via StoryBridge
+    const { StoryBridge } = await import('./bridges/StoryBridge');
+    const bridge = new StoryBridge();
+    
+    const bunnyResult = await bridge.uploadStory(file, enhancedMetadata);
+    
+    if (!bunnyResult.success) {
+      throw new Error(bunnyResult.error || 'BunnyCDN upload failed');
+    }
+    
+    console.log('[STORY_UPLOAD]: BunnyCDN upload successful:', bunnyResult);
+    
+    // Step 2: Save metadata to MongoDB
+    console.log('[STORY_UPLOAD]: Saving metadata to MongoDB...');
+    const storyData = {
+      title: enhancedMetadata.title || bunnyResult.fileName,
+      description: enhancedMetadata.description,
+      bunny_story_id: bunnyResult.fileName,
+      story_url: bunnyResult.url,
+      thumbnail_url: bunnyResult.url, // For stories, same URL
+      type: enhancedMetadata.type || 'image',
+      expires_at: enhancedMetadata.expiresAt,
+      views_count: 0,
+      likes_count: 0,
+      comments_count: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    
+    const response = await apiCall('/upload/story', {
+      method: 'POST',
+      body: JSON.stringify(storyData)
+    });
+    
+    console.log('[STORY_UPLOAD]: MongoDB save successful:', response);
+    return { success: true, storyId: bunnyResult.fileName, url: bunnyResult.url, data: response };
+    
+  } catch (error) {
+    console.error('[STORY_UPLOAD]: ERROR', error instanceof Error ? error.message : String(error));
+    throw error;
+  }
 };
 
-export const uploadLive = async (file: any, metadata: any) => {
+export const uploadLive = async (metadata: any) => {
+  console.log('[LIVE_UPLOAD]: START');
+  
   // BYPASS LOGIN: Add dummy user ID for testing
   const enhancedMetadata = {
     ...metadata,
     userId: 'guest_user' // Dummy user ID for testing
   };
   
-  const fileName = file.name || file.fileName || `live_${Date.now()}.mp4`;
+  console.log('[LIVE_UPLOAD]: Details', enhancedMetadata);
+  
+  try {
+    const response = await apiCall('/content/live/upload', {
+      method: 'POST',
+      body: JSON.stringify(enhancedMetadata)
+    });
+    
+    console.log('[LIVE_UPLOAD]: SUCCESS', response);
+    return response;
+  } catch (error) {
+    console.error('[LIVE_UPLOAD]: ERROR', error instanceof Error ? error.message : String(error));
+    throw error;
+  }
+};
+
+export const uploadShayari = async (file: any, metadata: any) => {
+  console.log('[SHAYARI_UPLOAD]: START');
+  
+  // BYPASS LOGIN: Add dummy user ID for testing
+  const enhancedMetadata = {
+    ...metadata,
+    userId: 'guest_user' // Dummy user ID for testing
+  };
+  
+  const fileName = file.name || file.fileName || `shayari_${Date.now()}.jpg`;
   const fileSize = file.size || file.fileSize || 0;
   
-  const { uploadUrl, videoId } = await getUploadUrl('live', fileName, fileSize, enhancedMetadata);
-  await uploadToBunny(file, 'live', enhancedMetadata);
+  console.log('[SHAYARI_UPLOAD]: Details', { fileName, fileSize });
   
-  return { success: true, videoId, url: uploadUrl };
+  try {
+    // Step 1: Upload to BunnyCDN via ShayariBridge
+    const { ShayariBridge } = await import('./bridges/ShayariBridge');
+    const bridge = new ShayariBridge();
+    
+    const bunnyResult = await bridge.uploadShayari(file, enhancedMetadata);
+    
+    if (!bunnyResult.success) {
+      throw new Error(bunnyResult.error || 'BunnyCDN upload failed');
+    }
+    
+    console.log('[SHAYARI_UPLOAD]: BunnyCDN upload successful:', bunnyResult);
+    
+    // Step 2: Save metadata to MongoDB
+    console.log('[SHAYARI_UPLOAD]: Saving metadata to MongoDB...');
+    const shayariData = {
+      title: enhancedMetadata.title || bunnyResult.fileName,
+      content: enhancedMetadata.content,
+      author: enhancedMetadata.author,
+      bunny_shayari_id: bunnyResult.fileName,
+      shayari_url: bunnyResult.url,
+      thumbnail_url: bunnyResult.url, // For shayari, same URL
+      category: enhancedMetadata.category,
+      mood: enhancedMetadata.mood,
+      language: enhancedMetadata.language,
+      views_count: 0,
+      likes_count: 0,
+      comments_count: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    
+    const response = await apiCall('/upload/shayari', {
+      method: 'POST',
+      body: JSON.stringify(shayariData)
+    });
+    
+    console.log('[SHAYARI_UPLOAD]: MongoDB save successful:', response);
+    return { success: true, shayariId: bunnyResult.fileName, url: bunnyResult.url, data: response };
+    
+  } catch (error) {
+    console.error('[SHAYARI_UPLOAD]: ERROR', error instanceof Error ? error.message : String(error));
+    throw error;
+  }
 };
 
 // ==================== CONTENT MANAGEMENT API ====================
@@ -292,7 +494,16 @@ export const shayariPhotosApi = {
   },
 
   uploadShayariPhoto: async (file: any, metadata: any) => {
-    return await uploadToBunny(file, 'shayari-photos', metadata);
+    console.log('[UPLOADING START] Uploading shayari photo:', { fileName: file.name, fileSize: file.size });
+    
+    try {
+      const response = await uploadShayari(file, metadata);
+      console.log('[UPLOADING SUCCESS] Shayari photo uploaded:', response);
+      return response;
+    } catch (error) {
+      console.error('[UPLOADING ERROR] Shayari photo upload failed:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
   },
 
   updateShayariPhoto: async (photoId: string, updates: any) => {
@@ -421,9 +632,13 @@ export const videosApi = {
   },
 
   uploadVideo: async (file: any, metadata: any) => {
-    // TODO: Implement video upload similar to reels
-    console.log('🎥 Video upload not yet implemented');
-    return { success: false, error: 'Video upload not yet implemented' };
+    try {
+      console.log('[VIDEO_UPLOAD]: Starting upload...');
+      return await uploadVideo(file, metadata);
+    } catch (error) {
+      console.error('[VIDEO_UPLOAD]: ERROR', error instanceof Error ? error.message : String(error));
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
   },
 
   updateVideo: async (videoId: string, updates: any) => {
@@ -488,8 +703,8 @@ export const liveApi = {
     return await apiCall(`/live?${params}`);
   },
 
-  uploadLive: async (file: any, metadata: any) => {
-    return await uploadLive(file, metadata);
+  uploadLive: async (metadata: any) => {
+    return await uploadLive(metadata);
   },
 };
 
@@ -526,10 +741,21 @@ export const savedApi = {
   },
   
   saveItem: async (itemId: string, itemType: string) => {
-    return await apiCall('/content/save', {
-      method: 'POST',
-      body: JSON.stringify({ itemId, itemType })
-    });
+    console.log('[UPLOADING START] Saving item:', { itemId, itemType });
+    console.log('[FILE DETAILS] Item ID:', itemId, 'Type:', itemType);
+    
+    try {
+      const response = await apiCall('/content/save', {
+        method: 'POST',
+        body: JSON.stringify({ itemId, itemType })
+      });
+      
+      console.log('[UPLOADING SUCCESS] Save successful:', response);
+      return response;
+    } catch (error) {
+      console.error('[UPLOADING ERROR] Save failed:', error);
+      throw error;
+    }
   },
   
   unsaveItem: async (itemId: string) => {
@@ -565,13 +791,24 @@ export const userProfileApi = {
   },
 
   uploadProfileImage: async (formData: FormData, type: 'profile' | 'cover') => {
-    return await apiCall('/users/upload-image', {
-      method: 'POST',
-      body: formData,
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      }
-    });
+    console.log('[UPLOADING START] Uploading profile image:', { type });
+    console.log('[FILE DETAILS] FormData entries count:', formData.getAll.length);
+    
+    try {
+      const response = await apiCall('/users/upload-image', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        }
+      });
+      
+      console.log('[SERVER RESPONSE] Profile image upload successful:', response);
+      return response;
+    } catch (error) {
+      console.error('[SERVER RESPONSE] Profile image upload failed:', error);
+      throw error;
+    }
   },
 
   getSupporters: async () => {
@@ -613,7 +850,7 @@ const uploadInChunks = async (
     const initResponse = await fetch(`https://video.bunnycdn.com/library/${videoConfig.libraryId}/videos/${videoGuid}/uploads`, {
       method: 'POST',
       headers: {
-        'AccessKey': videoConfig.apiKey,
+        'AccessKey': videoConfig.streamKey || videoConfig.apiKey,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -651,7 +888,7 @@ const uploadInChunks = async (
             {
               method: 'POST',
               headers: {
-                'AccessKey': videoConfig.apiKey,
+                'AccessKey': videoConfig.streamKey || videoConfig.apiKey,
               },
               body: formData
             }
@@ -686,7 +923,7 @@ const uploadInChunks = async (
     const finalizeResponse = await fetch(`https://video.bunnycdn.com/library/${videoConfig.libraryId}/videos/${videoGuid}/uploads/${uploadSessionId}/complete`, {
       method: 'POST',
       headers: {
-        'AccessKey': videoConfig.apiKey,
+        'AccessKey': videoConfig.streamKey || videoConfig.apiKey,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -755,7 +992,7 @@ export const uploadToBunny = async (file: any, contentType: string, metadata?: a
 
     } else {
       // Videos/Reels/Live/Story - BunnyCDN Stream API
-      const videoConfig = config as { libraryId: string; host: string; apiKey: string };
+      const videoConfig = config as BunnyConfigType;
       
       // Step 1: Create video entry first
       const createVideoUrl = `https://video.bunnycdn.com/library/${videoConfig.libraryId}/videos`;
@@ -768,7 +1005,7 @@ export const uploadToBunny = async (file: any, contentType: string, metadata?: a
       const createResponse = await fetch(createVideoUrl, {
         method: 'POST',
         headers: {
-          'AccessKey': videoConfig.apiKey,
+          'AccessKey': videoConfig.streamKey || videoConfig.apiKey,
           'Content-Type': 'application/json',
           'accept': 'application/json'
         },
@@ -810,7 +1047,7 @@ export const uploadToBunny = async (file: any, contentType: string, metadata?: a
         const uploadResponse = await fetch(uploadUrl, {
           method: 'PUT',
           headers: {
-            'AccessKey': videoConfig.apiKey,
+            'AccessKey': videoConfig.streamKey || videoConfig.apiKey,
             'Content-Type': 'application/octet-stream'
           },
           body: fileBlob
@@ -831,7 +1068,7 @@ export const uploadToBunny = async (file: any, contentType: string, metadata?: a
         await fetch(`https://video.bunnycdn.com/library/${videoConfig.libraryId}/videos/${videoResult.guid}`, {
           method: 'POST',
           headers: {
-            'AccessKey': videoConfig.apiKey,
+            'AccessKey': videoConfig.streamKey || videoConfig.apiKey,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify(updateData)
