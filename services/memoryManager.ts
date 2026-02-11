@@ -10,10 +10,11 @@ interface VideoMemorySlot {
 }
 
 class MemoryManagerService {
-  private readonly MAX_VIDEOS_IN_MEMORY = 3; // LIMITED to 3 videos for performance
+  private readonly MAX_VIDEOS_IN_MEMORY = 10; // INCREASED from 3 to 10 for better performance
   private videoSlots: Map<number, VideoMemorySlot> = new Map();
   private currentIndex = 0;
   private lastResumeIndex = 0;
+  private aggressiveCleanupDisabled = true; // DISABLE aggressive cleanup temporarily
 
   // Initialize or update video in memory
   manageVideoMemory(videoId: string, videoUrl: string, index: number): void {
@@ -185,8 +186,13 @@ class MemoryManagerService {
     });
   }
 
-  // Aggressive cleanup for 3-video limit
+  // Aggressive cleanup for 3-video limit - DISABLED
   aggressiveCleanup(currentIndex: number, keepCount: number = 3): void {
+    if (this.aggressiveCleanupDisabled) {
+      console.log('🧠 Aggressive cleanup is DISABLED - keeping videos in memory');
+      return;
+    }
+    
     const toDelete: number[] = [];
     
     // Keep only current, previous, and next videos

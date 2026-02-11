@@ -87,12 +87,13 @@ export class PhotoBridge {
 
       console.log('📸 PhotoBridge: Photo uploaded successfully:', fileName);
 
-      // Generate thumbnail URL (same file but can be processed later)
-      const thumbnailUrl = `https://${this.config.host}/${this.storageZoneName}/thumb_${fileName}`;
+      // Generate thumbnail URL using Pull Zone from config (not hardcoded)
+      const pullZoneHost = BUNNY_CONFIG.photos.host || process.env.EXPO_PUBLIC_BUNNY_PHOTO_PULL_ZONE || 'kronop-photos.b-cdn.net';
+      const thumbnailUrl = `https://${pullZoneHost}/thumb_${fileName}`;
 
       return {
         success: true,
-        url: `https://${this.config.host}/${this.storageZoneName}/${fileName}`,
+        url: `https://${pullZoneHost}/${fileName}`,
         fileName: fileName,
         size: fileSize,
         storageZone: this.storageZoneName,

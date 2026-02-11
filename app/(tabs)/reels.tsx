@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   View, 
@@ -430,61 +431,37 @@ function ReelItem({
   };
 
   return (
-    <View style={styles.reelContainer} key={item.id}>
-      <DotAnimation isActive={false} />
-      
-      {/* Video Player */}
-      <TouchableOpacity 
-        style={styles.videoContainer}
-        activeOpacity={1}
-        onPress={handleVideoTap}
-      >
-        <VideoView 
-          player={player} 
-          style={styles.reelVideo}
-          contentFit="cover"
-          nativeControls={false}
-          allowsPictureInPicture={false}
-        />
+    <>
+      <View style={styles.reelContainer} key={item.id}>
+        <DotAnimation isActive={false} />
         
-        {isPaused && (
-          <View style={styles.pauseOverlay}>
-            <MaterialIcons name="play-circle-outline" size={80} color="rgba(255,255,255,0.8)" />
-          </View>
-        )}
-      </TouchableOpacity>
+        {/* Video Player */}
+        <TouchableOpacity 
+          style={styles.videoContainer}
+          activeOpacity={1}
+          onPress={handleVideoTap}
+        >
+          <VideoView 
+            player={player} 
+            style={styles.reelVideo}
+            contentFit="cover"
+            nativeControls={false}
+            allowsPictureInPicture={false}
+          />
+          
+          {isPaused && (
+            <View style={styles.pauseOverlay}>
+              <MaterialIcons name="play-circle-outline" size={80} color="rgba(255,255,255,0.8)" />
+            </View>
+          )}
+        </TouchableOpacity>
 
-      {/* Bottom Content - MODULAR DESIGN */}
-      <View style={styles.bottomContainer}>
-        <View style={styles.bottomInfo}>
-          {/* Channel Info with Support Button */}
-          <View style={styles.channelInfoContainer}>
-            <View style={styles.channelLeftSide}>
-              <TouchableOpacity 
-                style={styles.channelAvatarContainer}
-                onPress={() => onChannelPress(item)}
-                activeOpacity={0.7}
-              >
-                <Image source={{ uri: channelAvatar }} style={styles.avatar} contentFit="cover" />
-              </TouchableOpacity>
-              
-              <View style={styles.channelAndSupport}>
-                <TouchableOpacity 
-                  onPress={() => onChannelPress(item)}
-                  activeOpacity={0.7}
-                  style={styles.channelNameTouchable}
-                >
-                  <Text style={styles.channelName} numberOfLines={1}>
-                    {channelName}
-                  </Text>
-                </TouchableOpacity>
-                
-                <SupporterButton
-                  itemId={item.id}
-                  isInitiallySupported={supported[item.id]}
-                  onSupportChange={onSupportChange}
-                  size="small"
-                />
+        {/* Bottom Content - MODULAR DESIGN */}
+        <View style={styles.bottomContainer}>
+          <View style={styles.bottomInfo}>
+            {/* Channel Info with Support Button */}
+            <View style={styles.channelInfoContainer}>
+              <View style={styles.channelLeftSide}>
               </View>
             </View>
           </View>
@@ -511,7 +488,7 @@ function ReelItem({
           />
         </View>
       </View>
-    </View>
+    </>
   );
 }
 
@@ -859,22 +836,8 @@ export default function ReelsScreen() {
     );
   }
 
-  if (reels.length === 0) {
-    return (
-      <View style={styles.container}>
-        <StatusBarOverlay style="light" backgroundColor="#000000" />
-        <View style={styles.emptyContainer}>
-          <MaterialIcons name="video-library" size={80} color={theme.colors.text.tertiary} />
-          <Text style={styles.emptyTitle}>No Reels Yet</Text>
-          <Text style={styles.emptyText}>Upload your first reel to get started!</Text>
-        </View>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
-      {/* Premium Status Bar Overlay for Reels */}
       <StatusBarOverlay style="light" backgroundColor="#000000" />
       
       <FlatList

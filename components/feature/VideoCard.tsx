@@ -50,14 +50,26 @@ export function VideoCard({ video, onPress, onPrefetchNext }: VideoCardProps) {
   return (
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.9}>
       <View style={styles.thumbnailContainer}>
-        <Image source={{ uri: video.thumbnailUrl }} style={styles.thumbnail} contentFit="cover" />
+        <Image 
+          source={{ uri: video.thumbnailUrl }} 
+          style={styles.thumbnail} 
+          contentFit="cover"
+          onLoad={() => console.log('[VIDEO_CARD]: Thumbnail loaded successfully:', video.thumbnailUrl)}
+          onError={(error) => console.error('[VIDEO_CARD]: Thumbnail failed to load:', error)}
+        />
         <View style={styles.durationBadge}>
           <Text style={styles.durationText}>{formatDuration(video.duration)}</Text>
         </View>
       </View>
 
       <View style={styles.infoContainer}>
-        <Image source={{ uri: video.channelAvatar }} style={styles.avatar} contentFit="cover" />
+        <Image 
+          source={{ uri: video.channelAvatar }} 
+          style={styles.avatar} 
+          contentFit="cover"
+          onLoad={() => console.log('[VIDEO_CARD]: Channel avatar loaded successfully:', video.channelAvatar)}
+          onError={(error) => console.error('[VIDEO_CARD]: Channel avatar failed to load:', error)}
+        />
 
         <View style={styles.textContainer}>
           <Text style={styles.title} numberOfLines={2}>

@@ -39,8 +39,14 @@ export function CommentItem({ comment, onLike, onReply, level = 0 }: CommentItem
 
   return (
     <View style={[styles.container, level > 0 && { marginLeft: 40 }]}>
-      <Image source={{ uri: comment.userAvatar }} style={styles.avatar} contentFit="cover" />
-
+      <Image 
+        source={{ uri: comment.userAvatar }} 
+        style={styles.avatar} 
+        contentFit="cover"
+        onLoad={() => console.log('[COMMENT_ITEM]: User avatar loaded successfully:', comment.userAvatar)}
+        onError={(error) => console.error('[COMMENT_ITEM]: User avatar failed to load:', error)}
+      />
+      
       <View style={styles.contentContainer}>
         <View style={styles.header}>
           <Text style={styles.userName}>{comment.userName}</Text>

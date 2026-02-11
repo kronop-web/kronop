@@ -7,6 +7,7 @@ import { theme } from '../../constants/theme';
 import { useSWRContent } from '../../hooks/swr';
 import { useRouter } from 'expo-router';
 import ShayariCard from '../../components/feature/Shayari';
+import UrlValidationService from '../../services/urlValidationService';
 
 interface Photo {
   id: string;
@@ -97,20 +98,29 @@ export default function PhotosScreen() {
   const mixedFeed = createMixedFeed();
 
   const renderMixedItem = ({ item, index }: { item: any; index: number }) => {
+    // Fix URLs in content data
+    const fixedItem = UrlValidationService.fixContentUrls(item.data);
+    
     if (item.type === 'photo') {
       return (
         <TouchableOpacity style={styles.photoCard} activeOpacity={0.9}>
-          <Image source={{ uri: item.data.photo_url }} style={styles.photoImage} contentFit="cover" />
+          <Image 
+            source={{ uri: fixedItem.photo_url || 'https://via.placeholder.com/40' }} 
+            style={styles.photoImage} 
+            contentFit="cover"
+            onLoad={() => console.log('[PHOTOS_SCREEN]: Photo image loaded:', fixedItem.photo_url)}
+            onError={(error) => console.error('[PHOTOS_SCREEN]: Photo image failed to load:', error)}
+          />
           <View style={styles.photoInfo}>
-            <Text style={styles.photoTitle} numberOfLines={1}>{item.data.title}</Text>
-            {item.data.user_profiles && (
+            <Text style={styles.photoTitle} numberOfLines={1}>{fixedItem.title}</Text>
+            {fixedItem.user_profiles && (
               <View style={styles.photoMeta}>
                 <Image 
-                  source={{ uri: item.data.user_profiles.avatar_url || 'https://via.placeholder.com/40' }} 
+                  source={{ uri: fixedItem.user_profiles.avatar_url || 'https://via.placeholder.com/40' }} 
                   style={styles.userAvatar} 
                   contentFit="cover"
                 />
-                <Text style={styles.username}>{item.data.user_profiles.username}</Text>
+                <Text style={styles.username}>{fixedItem.user_profiles.username}</Text>
               </View>
             )}
           </View>
@@ -138,6 +148,25 @@ export default function PhotosScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary.main} />
           <Text style={styles.loadingText}>Loading photos...</Text>
+        </View>
+      </SafeScreen>
+    );
+  }
+
+  if (mixedFeed.length === 0) {
+    return (
+      <SafeScreen edges={['top']}>
+        <View style={styles.listEmptyContainer}>
+          <MaterialIcons name="photo-library" size={80} color={theme.colors.text.tertiary} />
+          <Text style={styles.listEmptyTitle}>No Photos Yet</Text>
+          <Text style={styles.listEmptyText}>Be the first to share your moments</Text>
+          <TouchableOpacity 
+            style={styles.listEmptyUploadButton}
+            onPress={() => router.push('/upload')}
+          >
+            <MaterialIcons name="add" size={24} color="#fff" />
+            <Text style={styles.listEmptyUploadButtonText}>Upload Photo</Text>
+          </TouchableOpacity>
         </View>
       </SafeScreen>
     );
@@ -192,16 +221,16 @@ export default function PhotosScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
+          <View style={styles.listEmptyContainer}>
             <MaterialIcons name="photo-library" size={80} color={theme.colors.text.tertiary} />
-            <Text style={styles.emptyTitle}>No Photos Yet</Text>
-            <Text style={styles.emptyText}>Upload your first photo to get started</Text>
+            <Text style={styles.listEmptyTitle}>No Photos Yet</Text>
+            <Text style={styles.listEmptyText}>Upload your first photo to get started</Text>
             <TouchableOpacity 
-              style={styles.uploadEmptyButton}
+              style={styles.listEmptyUploadButton}
               onPress={() => router.push('/upload')}
             >
               <MaterialIcons name="add" size={24} color="#fff" />
-              <Text style={styles.uploadEmptyText}>Upload Photo</Text>
+              <Text style={styles.listEmptyUploadButtonText}>Upload Photo</Text>
             </TouchableOpacity>
           </View>
         }
@@ -417,6 +446,40 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
     fontStyle: 'italic',
+  },
+
+  // ListEmptyComponent Styles
+  listEmptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: theme.spacing.xl * 2,
+  },
+  listEmptyTitle: {
+    fontSize: theme.typography.fontSize.xl,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.text.primary,
+    marginTop: theme.spacing.lg,
+  },
+  listEmptyText: {
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.secondary,
+    marginTop: theme.spacing.sm,
+    textAlign: 'center',
+  },
+  listEmptyUploadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.primary.main,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    gap: theme.spacing.sm,
+  },
+  listEmptyUploadButtonText: {
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: '#fff',
   },
   shayariAuthor: {
     fontSize: theme.typography.fontSize.xs,

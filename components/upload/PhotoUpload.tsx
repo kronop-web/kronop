@@ -222,12 +222,17 @@ export default function PhotoUpload({ onClose, isShayari = false }: PhotoUploadP
 
   const renderSelectedFile = ({ item, index }: { item: any; index: number }) => (
     <View style={styles.selectedFileItem}>
-      <Image source={{ uri: item.uri }} style={styles.selectedFileImage} />
+      <Image 
+        source={{ uri: item.uri }} 
+        style={styles.selectedFileImage} 
+        onLoad={() => console.log('[PHOTO_UPLOAD]: Image loaded successfully:', item.uri)}
+        onError={(error) => console.error('[PHOTO_UPLOAD]: Image failed to load:', error)}
+      />
       <TouchableOpacity
         style={styles.removeFileButton}
         onPress={() => removeFile(index)}
       >
-        <MaterialIcons name="close" size={16} color="#fff" />
+        <MaterialIcons name="close" size={20} color="#fff" />
       </TouchableOpacity>
       <Text style={styles.selectedFileName} numberOfLines={1}>
         {item.fileName}

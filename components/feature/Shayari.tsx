@@ -44,7 +44,9 @@ export default function ShayariCard({
         <ExpoImage 
           source={{ uri: background_image }} 
           style={styles.backgroundImage} 
-          contentFit="cover" 
+          contentFit="cover"
+          onLoad={() => console.log('[SHAYARI]: Background image loaded successfully:', background_image)}
+          onError={(error) => console.error('[SHAYARI]: Background image failed to load:', error)}
         />
       ) : (
         <View style={[styles.backgroundImage, styles.gradientBackground]} />
@@ -59,6 +61,8 @@ export default function ShayariCard({
             size={20} 
             color="#fff" 
             style={styles.quoteIconTop}
+            onLoad={() => console.log('[SHAYARI]: Quote icon loaded successfully')}
+            onError={(error: any) => console.error('[SHAYARI]: Quote icon failed to load:', error)}
           />
           
           <Text style={styles.shayariText} numberOfLines={4}>

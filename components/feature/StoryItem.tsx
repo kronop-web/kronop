@@ -85,7 +85,13 @@ export function StoryItem({
     return (
       <TouchableOpacity style={styles.container} onPress={handlePress} activeOpacity={0.7}>
         <View style={styles.addStoryContainer}>
-          <Image source={{ uri: story.userAvatar }} style={styles.image} contentFit="cover" />
+          <Image 
+            source={{ uri: story.userAvatar }} 
+            style={styles.image} 
+            contentFit="cover"
+            onLoad={() => console.log('[STORY_ITEM]: User avatar loaded successfully:', story.userAvatar)}
+            onError={(error) => console.error('[STORY_ITEM]: User avatar failed to load:', error)}
+          />
           <View style={styles.addIcon}>
             <MaterialIcons name="add" size={20} color={theme.colors.text.primary} />
           </View>
@@ -98,9 +104,21 @@ export function StoryItem({
   return (
     <TouchableOpacity style={styles.container} onPress={handlePress} activeOpacity={0.7}>
       <View style={[styles.imageContainer, story.viewed && styles.viewedBorder]}>
-        <Image source={{ uri: story.imageUrl }} style={styles.image} contentFit="cover" />
+        <Image 
+          source={{ uri: story.imageUrl }} 
+          style={styles.image} 
+          contentFit="cover"
+          onLoad={() => console.log('[STORY_ITEM]: Story image loaded successfully:', story.imageUrl)}
+          onError={(error) => console.error('[STORY_ITEM]: Story image failed to load:', error)}
+        />
         <View style={styles.avatarContainer}>
-          <Image source={{ uri: story.userAvatar }} style={styles.avatar} contentFit="cover" />
+          <Image 
+            source={{ uri: story.userAvatar }} 
+            style={styles.avatar} 
+            contentFit="cover"
+            onLoad={() => console.log('[STORY_ITEM]: User avatar loaded successfully:', story.userAvatar)}
+            onError={(error) => console.error('[STORY_ITEM]: User avatar failed to load:', error)}
+          />
         </View>
       </View>
       <Text style={styles.name} numberOfLines={1}>{story.userName}</Text>

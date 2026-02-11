@@ -48,9 +48,22 @@ const CATEGORIES = [
 ];
 
 // ==================== BUNNY.NET API CONFIGURATION ====================
-const BUNNY_CONFIG = {
+interface BunnyConfigType {
+  LIBRARY_ID: string;
+  ACCESS_KEY: string;
+  STREAM_KEY: string;
+  CDN_HOSTNAME: string;
+  TOKEN_KEY: string;
+  LIST_VIDEOS_URL: string;
+  getVideoUrl: (videoId: string) => string;
+  getThumbnailUrl: (videoId: string) => string;
+  getApiHeaders: () => any;
+}
+
+const BUNNY_CONFIG: BunnyConfigType = {
   LIBRARY_ID: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_VIDEO || process.env.BUNNY_LIBRARY_ID_VIDEO || '',
   ACCESS_KEY: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ACCESS_KEY_VIDEO || process.env.BUNNY_LIBRARY_ACCESS_KEY_VIDEO || process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || '',
+  STREAM_KEY: process.env.EXPO_PUBLIC_BUNNY_STREAM_KEY_VIDEO || process.env.BUNNY_STREAM_KEY_VIDEO || '',
   CDN_HOSTNAME: process.env.EXPO_PUBLIC_BUNNY_HOST_VIDEO || process.env.BUNNY_HOST_VIDEO || '',
   TOKEN_KEY: process.env.EXPO_PUBLIC_BUNNY_TOKEN_KEY || process.env.BUNNY_TOKEN_KEY || '',
   
@@ -69,12 +82,22 @@ const BUNNY_CONFIG = {
     return host ? `https://${host}/${videoId}/thumbnail.jpg` : '';
   },
   
-  // API headers
-  getApiHeaders: () => ({
-    'AccessKey': BUNNY_CONFIG.ACCESS_KEY,
-    'Accept': 'application/json',
-    'Content-Type': 'application/json'
-  })
+  // API headers - FIXED: Add security token for video access
+  getApiHeaders: () => {
+    const headers: any = {
+      'AccessKey': BUNNY_CONFIG.ACCESS_KEY,
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    };
+    
+    // Add security token if available for video access
+    if (BUNNY_CONFIG.STREAM_KEY) {
+      headers['Authorization'] = `Bearer ${BUNNY_CONFIG.STREAM_KEY}`;
+    }
+    
+    console.log('📡 Video Headers:', headers);
+    return headers;
+  }
 };
 
 // ==================== BUNNY.NET VIDEOS SERVICE ====================
@@ -800,7 +823,13 @@ export default function VideosScreen() {
 
   const renderComment = ({ item }: { item: Comment }) => (
     <View style={styles.commentItem}>
-      <Image source={{ uri: item.userAvatar }} style={styles.commentAvatar} contentFit="cover" />
+      <Image 
+        source={{ uri: item.userAvatar }} 
+        style={styles.commentAvatar} 
+        contentFit="cover"
+        onLoad={() => console.log('[VIDEO_SCREEN]: Comment avatar loaded successfully:', item.userAvatar)}
+        onError={(error) => console.error('[VIDEO_SCREEN]: Comment avatar failed to load:', error)}
+      />
       <View style={styles.commentContent}>
         <View style={styles.commentHeader}>
           <Text style={styles.commentUserName}>{item.userName}</Text>

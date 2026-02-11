@@ -99,13 +99,23 @@ export class ReelsBridge {
         await this.updateVideoMetadata(videoResult.guid, enhancedMetadata);
       }
 
-      // Step 4: Return success result
+      // Step 4: Return success result with secure URL
       const videoUrl = `https://${this.config.host}/${videoResult.guid}/playlist.m3u8`;
+      
+      // Add security token if available - CRITICAL FIX
+      console.log('🎬 ReelsBridge: Stream Key:', this.config.streamKey ? 'SET' : 'MISSING');
+      console.log('🎬 ReelsBridge: Host:', this.config.host);
+      console.log('🎬 ReelsBridge: Library ID:', this.libraryId);
+      
+      const securityToken = this.config.streamKey ? `?token=${this.config.streamKey}` : '';
+      const secureVideoUrl = videoUrl + securityToken;
+      
+      console.log('🎬 ReelsBridge: Final URL:', secureVideoUrl);
 
       return {
         success: true,
         videoId: videoResult.guid,
-        url: videoUrl,
+        url: secureVideoUrl,
         libraryId: this.libraryId,
         title: enhancedMetadata?.title || fileName.split('.')[0],
         description: enhancedMetadata?.description || ''

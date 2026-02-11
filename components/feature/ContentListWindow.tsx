@@ -160,7 +160,12 @@ export default function ContentListWindow({ visible, onClose, contentType = 'all
     <View style={styles.contentItem}>
       <View style={styles.thumbnailContainer}>
         {item.thumbnail ? (
-          <Image source={{ uri: item.thumbnail }} style={styles.thumbnail} />
+          <Image 
+            source={{ uri: item.thumbnail }} 
+            style={styles.thumbnail} 
+            onLoad={() => console.log('[CONTENT_LIST]: Thumbnail loaded successfully:', item.thumbnail)}
+            onError={(error) => console.error('[CONTENT_LIST]: Thumbnail failed to load:', error)}
+          />
         ) : (
           <View style={[styles.placeholderThumbnail, { backgroundColor: getTypeColor(item.type) }]}>
             <MaterialIcons name={getTypeIcon(item.type)} size={40} color="#fff" />

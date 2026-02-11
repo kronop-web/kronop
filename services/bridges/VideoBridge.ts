@@ -96,13 +96,17 @@ export class VideoBridge {
         await this.updateVideoMetadata(videoResult.guid, enhancedMetadata);
       }
 
-      // Step 4: Return success result
+      // Step 4: Return success result with secure URL
       const videoUrl = `https://${this.config.host}/${videoResult.guid}/playlist.m3u8`;
+      
+      // Add security token if available
+      const securityToken = this.config.streamKey ? `?token=${this.config.streamKey}` : '';
+      const secureVideoUrl = videoUrl + securityToken;
 
       return {
         success: true,
         videoId: videoResult.guid,
-        url: videoUrl,
+        url: secureVideoUrl,
         libraryId: this.libraryId,
         title: enhancedMetadata?.title || fileName.split('.')[0],
         description: enhancedMetadata?.description || ''

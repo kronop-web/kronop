@@ -231,7 +231,12 @@ export default function ShayariPhotoUpload({ onClose }: ShayariPhotoUploadProps)
         {selectedFile && (
           <View style={styles.selectedFileContainer}>
             <Text style={styles.selectedFileTitle}>Selected Photo</Text>
-            <Image source={{ uri: selectedFile.uri }} style={styles.selectedFileImage} />
+            <Image 
+              source={{ uri: selectedFile.uri }} 
+              style={styles.selectedFileImage} 
+              onLoad={() => console.log('[SHAYARI_UPLOAD]: Image loaded successfully:', selectedFile.uri)}
+              onError={(error) => console.error('[SHAYARI_UPLOAD]: Image failed to load:', error)}
+            />
             <TouchableOpacity
               style={styles.removeFileButton}
               onPress={() => setSelectedFile(null)}

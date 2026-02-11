@@ -135,9 +135,29 @@ export const getBunnyConfigByType = (type: string): BunnyConfigType | BunnyPhoto
   }
 };
 
+// Helper function to get full BunnyCDN URL
+export const getBunnyFullUrl = (type: string, videoId?: string, fileName?: string): string => {
+  const config = getBunnyConfigByType(type);
+  
+  if (!config) return '';
+  
+  // For video content (reels, videos, live, story)
+  if ('libraryId' in config && videoId) {
+    return `https://${config.host}/${videoId}/playlist.m3u8`;
+  }
+  
+  // For image content (photos, shayari)
+  if ('storageZoneName' in config && fileName) {
+    return `https://${config.host}/${fileName}`;
+  }
+  
+  return '';
+};
+
 export default {
   API_KEYS,
   BUNNY_CONFIG,
   LIBRARY_ID_MAP,
   getBunnyConfigByType,
+  getBunnyFullUrl,
 };

@@ -79,7 +79,12 @@ export const CommentSheet: React.FC<CommentSheetProps> = ({
 
   const renderComment = useCallback(({ item }: { item: Comment }) => (
     <View style={styles.commentItem}>
-      <Image source={{ uri: item.userAvatar }} style={styles.commentAvatar} />
+      <Image 
+        source={{ uri: item.userAvatar }} 
+        style={styles.commentAvatar} 
+        onLoad={() => console.log('[COMMENT_SHEET]: User avatar loaded successfully:', item.userAvatar)}
+        onError={(error) => console.error('[COMMENT_SHEET]: User avatar failed to load:', error)}
+      />
       <View style={styles.commentContent}>
         <View style={styles.commentHeader}>
           <Text style={styles.commentUserName}>{item.userName}</Text>
