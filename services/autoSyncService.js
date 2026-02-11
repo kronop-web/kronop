@@ -268,11 +268,42 @@ class AutoSyncService {
             }
           }
         }
+      } else {
+        // Handle other content types (reels, videos, live)
+        const bunnyService = require('./bunnyContentService');
+        const config = bunnyService.BUNNY_CONFIG[type];
+        
+        if (!config || !config.libraryId) {
+          console.log(`⚠️ No config found for ${type}, skipping`);
+          return 0;
+        }
+        
+        try {
+          const items = await bunnyService.fetchVideosFromBunny(config.libraryId, config.apiKey);
+          
+          for (const item of items) {
+            try {
+              const result = await this.saveContentToDatabase(item, type);
+              if (result && result.isNew) {
+                newItemsCount++;
+              }
+              processedItems++;
+            } catch (error) {
+              // CONTINUE SYNC even if individual item fails
+              console.log(`⚠️ Failed to sync ${type} item ${item.title}: ${error.message}`);
+              skippedItems++;
+            }
+          }
+        } catch (error) {
+          // CONTINUE SYNC even if library fetch fails
+          console.log(`⚠️ Failed to fetch ${type} library: ${error.message}`);
+          return 0;
+        }
       }
-    } else {
-      // Handle other content types (reels, videos, live)
-      const bunnyService = require('./bunnyContentService');
-      const config = bunnyService.BUNNY_CONFIG[type];
+
+      this.lastSyncTimes[type] = new Date();
+      console.log(`✅ ${type} sync completed. Processed: ${processedItems}, New: ${newItemsCount}, Existing: ${skippedItems}`);
+      return newItemsCount;
     } catch (error) {
       // SILENCED: Remove repetitive error logs
       // console.error(`❌ Error syncing ${type}:`, error.message);
