@@ -92,7 +92,7 @@ const getLocalIPv4 = () => {
   return '0.0.0.0';
 };
 
-const MONGO_URI = process.env.MONGODB_URI;
+const MONGO_URI = process.env.MONGODB_URI || process.env.EXPO_PUBLIC_MONGODB_URI;
 
 if (!MONGO_URI) {
   console.error('FATAL ERROR: MONGODB_URI is not defined in environment variables.');
@@ -143,25 +143,113 @@ if (MONGO_URI) {
   }
 
   connectToDatabase().catch(err => {
-    console.error('❌ MongoDB CONNECTION FAILED:');
+    console.error('❌ Koyeb MongoDB CONNECTION FAILED:');
     console.error('🔍 Error Name:', err.name);
     console.error('📝 Error Message:', err.message);
     console.error('🔢 Error Code:', err.code);
-    console.error('📊 Error Details:', JSON.stringify(err, null, 2));
+    console.error('🌍 Deployment Platform: Koyeb');
+    console.error('🔧 Environment Variables Check:');
+    
+    // Check if MongoDB URI is set in Koyeb environment
+    const mongoUri = process.env.MONGODB_URI || process.env.EXPO_PUBLIC_MONGODB_URI;
+    if (!mongoUri) {
+      console.error('❌ MONGODB_URI not found in Koyeb Environment Variables');
+      console.error('🔧 Solution: Go to Koyeb Dashboard → Service → Environment Variables');
+      console.error('📝 Add: MONGODB_URI=mongodb://...');
+    } else {
+      console.error('✅ MONGODB_URI found in environment');
+      console.error('📍 URI Length:', mongoUri.length, 'characters');
+      console.error('🔍 URI Format Check:', mongoUri.startsWith('mongodb://') || mongoUri.startsWith('mongodb+srv://') ? '✅ Valid' : '❌ Invalid');
+    }
 
     if (err.name === 'MongoServerSelectionError') {
-      console.error('🌐 Server Selection Error - Possible causes:');
-      console.error('   • Network connectivity issues');
-      console.error('   • Wrong MongoDB URL/credentials');
-      console.error('   • Firewall blocking connection');
-      console.error('   • MongoDB server down');
+      console.error('🌐 Koyeb Network Error - MongoDB Atlas Connection:');
+      console.error('   • MongoDB Atlas IP whitelist missing Koyeb IP');
+      console.error('   • Network connectivity issues between Koyeb and MongoDB');
+      console.error('   • MongoDB cluster down or maintenance');
+      console.error('   • DNS resolution issues');
+      console.error('🔧 Solution Steps:');
+      console.error('   1. Go to MongoDB Atlas → Network Access');
+      console.error('   2. Add IP: 0.0.0.0/0 (Allow all access)');
+      console.error('   3. Or add Koyeb\'s specific IP range');
     } else if (err.name === 'MongoParseError') {
-      console.error('📝 Parse Error - Check MongoDB URI format');
+      console.error('📝 MongoDB URI Parse Error:');
+      console.error('   • Missing @ in connection string');
+      console.error('   • Invalid characters in password');
+      console.error('   • Malformed URL parameters');
+      console.error('🔧 Solution: Check MONGODB_URI format in Koyeb');
     } else if (err.code === 'AUTH_FAILED') {
-      console.error('🔐 Authentication Failed - Check username/password');
+      console.error('🔐 MongoDB Authentication Failed:');
+      console.error('   • Username or password incorrect');
+      console.error('   • Special characters in password need URL encoding');
+      console.error('   • User does not have permission to access database');
+      console.error('🔧 Solution: Update MongoDB credentials in Koyeb Environment');
+    } else if (err.message.includes('ENOTFOUND')) {
+      console.error('🌍 MongoDB Server Not Found:');
+      console.error('   • MongoDB cluster hostname incorrect');
+      console.error('   • DNS resolution failed');
+      console.error('   • Network connectivity issues');
+      console.error('🔧 Solution: Verify MongoDB Atlas cluster endpoint');
+    } else if (err.message.includes('timeout')) {
+      console.error('⏰ MongoDB Connection Timeout:');
+      console.error('   • High latency between Koyeb and MongoDB');
+      console.error('   • Network congestion or slow connection');
+      console.error('   • MongoDB cluster overloaded');
+      console.error('🔧 Solution: Increase timeout values or check network');
     }
+    
+    console.error('📊 Full Error Details:', JSON.stringify(err, null, 2));
+    console.error('🚀 Server will continue running but database features disabled');
   });
 }
+
+// Koyeb-specific health check endpoint
+app.get('/koyeb/health', async (req, res) => {
+  try {
+    const dbConnected = mongoose.connection && mongoose.connection.readyState === 1;
+    const connectionStates = {
+      0: 'disconnected',
+      1: 'connected', 
+      2: 'connecting',
+      3: 'disconnecting'
+    };
+    
+    const mongoUri = process.env.MONGODB_URI || process.env.EXPO_PUBLIC_MONGODB_URI;
+    
+    const health = {
+      status: dbConnected ? 'healthy' : 'unhealthy',
+      timestamp: new Date().toISOString(),
+      platform: 'Koyeb',
+      database: {
+        connected: dbConnected,
+        state: connectionStates[mongoose.connection.readyState] || 'unknown',
+        uriSet: !!mongoUri,
+        uriLength: mongoUri ? mongoUri.length : 0,
+        host: mongoose.connection.host,
+        database: mongoose.connection.name
+      },
+      environment: {
+        nodeEnv: process.env.NODE_ENV || 'not set',
+        port: PORT,
+        mongoUriEnvVar: Object.keys(process.env).filter(key => key.includes('MONGO'))
+      }
+    };
+    
+    if (!dbConnected) {
+      health.error = 'MongoDB not connected - Check Koyeb Environment Variables';
+      health.solution = 'Add MONGODB_URI to Koyeb Environment Variables';
+    }
+    
+    res.status(dbConnected ? 200 : 503).json(health);
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Health check failed',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
 
 // Basic routes
 app.get('/', (req, res) => res.send('Kronop server running with Bunny routes'));
@@ -181,20 +269,21 @@ app.get('/debug/database', async (req, res) => {
     const debug = {
       dbConnected,
       connectionState: connectionStates[connectionState] || 'unknown',
-      mongoUri: process.env.MONGODB_URI ? 'SET' : 'NOT SET',
-      mongoUriLength: process.env.MONGODB_URI ? process.env.MONGODB_URI.length : 0,
+      mongoUri: process.env.MONGODB_URI || process.env.EXPO_PUBLIC_MONGODB_URI ? 'SET' : 'NOT SET',
+      mongoUriLength: (process.env.MONGODB_URI || process.env.EXPO_PUBLIC_MONGODB_URI || '').length,
       nodeEnv: process.env.NODE_ENV || 'not set',
       timestamp: new Date().toISOString()
     };
     
-    if (process.env.MONGODB_URI) {
+    if (process.env.MONGODB_URI || process.env.EXPO_PUBLIC_MONGODB_URI) {
       // Show sanitized URI for debugging
-      const sanitizedUri = process.env.MONGODB_URI.replace(/\/\/([^:]+):([^@]+)@/, '//***:***@');
+      const uri = process.env.MONGODB_URI || process.env.EXPO_PUBLIC_MONGODB_URI;
+      const sanitizedUri = uri.replace(/\/\/([^:]+):([^@]+)@/, '//***:***@');
       debug.sanitizedUri = sanitizedUri;
       
       // Check URI format
       const uriPattern = /^mongodb:\/\/[^@]+@[^\/]+\/|^mongodb\+srv:\/\/[^@]+@[^\/]+\//;
-      debug.validFormat = uriPattern.test(process.env.MONGODB_URI);
+      debug.validFormat = uriPattern.test(uri);
     }
     
     if (dbConnected) {
@@ -233,10 +322,10 @@ app.get('/debug/database', async (req, res) => {
   }
 });
 
-// MongoDB connection test endpoint
 app.get('/debug/mongodb-test', async (req, res) => {
   try {
-    if (!process.env.MONGODB_URI) {
+    const mongoUri = process.env.MONGODB_URI || process.env.EXPO_PUBLIC_MONGODB_URI;
+    if (!mongoUri) {
       return res.status(400).json({
         success: false,
         error: 'MONGODB_URI not set in environment variables'

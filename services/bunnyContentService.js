@@ -50,17 +50,17 @@ class BunnyContentService {
       reels: {
         libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_REELS || process.env.BUNNY_LIBRARY_ID_REELS || '',
         host: process.env.EXPO_PUBLIC_BUNNY_HOST_REELS || process.env.BUNNY_HOST_REELS || '',
-        apiKey: process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || ''
+        apiKey: process.env.EXPO_PUBLIC_BUNNY_REELS_ACCESS_KEY || process.env.BUNNY_REELS_ACCESS_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || ''
       },
       video: {
         libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_VIDEO || process.env.BUNNY_LIBRARY_ID_VIDEO || '', 
         host: process.env.EXPO_PUBLIC_BUNNY_HOST_VIDEO || process.env.BUNNY_HOST_VIDEO || '',
-        apiKey: process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || ''
+        apiKey: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ACCESS_KEY_VIDEO || process.env.BUNNY_LIBRARY_ACCESS_KEY_VIDEO || process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || ''
       },
       live: {
         libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_LIVE || process.env.BUNNY_LIBRARY_ID_LIVE || '',
         host: process.env.EXPO_PUBLIC_BUNNY_HOST_LIVE || process.env.BUNNY_HOST_LIVE || '', 
-        apiKey: process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || ''
+        apiKey: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ACCESS_KEY_LIVE || process.env.BUNNY_LIBRARY_ACCESS_KEY_LIVE || process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || ''
       },
       story: {
         libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_STORY || process.env.BUNNY_LIBRARY_ID_STORY || '',
@@ -81,17 +81,17 @@ class BunnyContentService {
       reels: {
         libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_REELS || process.env.BUNNY_LIBRARY_ID_REELS || '',
         host: process.env.EXPO_PUBLIC_BUNNY_HOST_REELS || process.env.BUNNY_HOST_REELS || '',
-        apiKey: process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || ''
+        apiKey: process.env.EXPO_PUBLIC_BUNNY_REELS_ACCESS_KEY || process.env.BUNNY_REELS_ACCESS_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || ''
       },
       video: {
         libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_VIDEO || process.env.BUNNY_LIBRARY_ID_VIDEO || '', 
         host: process.env.EXPO_PUBLIC_BUNNY_HOST_VIDEO || process.env.BUNNY_HOST_VIDEO || '',
-        apiKey: process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || ''
+        apiKey: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ACCESS_KEY_VIDEO || process.env.BUNNY_LIBRARY_ACCESS_KEY_VIDEO || process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || ''
       },
       live: {
         libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_LIVE || process.env.BUNNY_LIBRARY_ID_LIVE || '',
         host: process.env.EXPO_PUBLIC_BUNNY_HOST_LIVE || process.env.BUNNY_HOST_LIVE || '', 
-        apiKey: process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || ''
+        apiKey: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ACCESS_KEY_LIVE || process.env.BUNNY_LIBRARY_ACCESS_KEY_LIVE || process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || ''
       },
       story: {
         libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_STORY || process.env.BUNNY_LIBRARY_ID_STORY || '',
@@ -158,6 +158,14 @@ class BunnyContentService {
       // Try different API endpoints and headers
       const endpoints = [
         {
+          url: `https://api.bunny.net/video/library/${libraryId}/videos`,
+          headers: {
+            'AccessKey': apiKey,
+            'accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        },
+        {
           url: `https://video.bunnycdn.com/library/${libraryId}/videos`,
           headers: {
             'AccessKey': apiKey,
@@ -168,9 +176,8 @@ class BunnyContentService {
         {
           url: `https://api.bunny.net/video/library/${libraryId}/videos`,
           headers: {
-            'AccessKey': apiKey,
-            'accept': 'application/json',
-            'Content-Type': 'application/json'
+            'Authorization': `Bearer ${apiKey}`,
+            'accept': 'application/json'
           }
         },
         {
