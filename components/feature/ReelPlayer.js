@@ -108,17 +108,13 @@ const ReelPlayer = ({
         newSavedVideos.add(reel.id);
         
         // You can add actual save logic here (API call, local storage, etc.)
-        Alert.alert(
-          'Video Saved!',
-          `"${reel.title}" has been saved to your collection.`,
-          [{ text: 'OK', style: 'default' }]
-        );
+        console.log('[REEL_SAVE_SUCCESS]:', `"${reel.title}" has been saved to collection.`);
+        newSavedVideos.add(reel.id);
       }
       
       setSavedVideos(newSavedVideos);
     } catch (error) {
-      console.error('❌ Save video failed:', error);
-      Alert.alert('Error', 'Failed to save video. Please try again.');
+      console.error('[REEL_SAVE_FAIL]:', error);
     }
   }, [savedVideos]);
   const preFetchNextVideos = useCallback(async (index) => {

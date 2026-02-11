@@ -29,30 +29,23 @@ export function AlertProvider({ children }: AlertProviderProps) {
     message?: string,
     buttons?: AlertButton[]
   ) => {
-    // Parameter normalization
-    const normalizedMessage = message || '';
+    // SILENT MODE: Log to console only, no mobile alerts
+    console.log(`[SILENT_ALERT]: ${title} - ${message || ''}`);
+    
+    // Parameter normalization for silent execution
     const normalizedButtons = buttons?.length ? buttons : [{ 
       text: 'OK',
       onPress: () => {}
     }];
 
-    if (Platform.OS === 'web') {
-      // Web: Use internal modal
-      setAlertState({
-        visible: true,
-        title,
-        message: normalizedMessage,
-        buttons: normalizedButtons
-      });
-    } else {
-      // Mobile: Use native Alert.alert
-      const alertButtons = normalizedButtons.map(button => ({
-        text: button.text,
-        onPress: button.onPress,
-        style: button.style
-      }));
-      
-      Alert.alert(title, normalizedMessage, alertButtons);
+    // Execute button callbacks silently if provided
+    if (normalizedButtons.length > 0) {
+      // Execute the first non-cancel button or just close
+      const confirmButton = normalizedButtons.find(b => b.style !== 'cancel');
+      if (confirmButton?.onPress) {
+        // Small delay to make it feel natural
+        setTimeout(() => confirmButton.onPress?.(), 100);
+      }
     }
   };
 

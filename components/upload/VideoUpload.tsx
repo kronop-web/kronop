@@ -58,14 +58,14 @@ export default function VideoUpload({ onClose }: VideoUploadProps) {
         const allowedExtensions = ['mp4', 'mov', 'avi', 'webm', '3gp', 'mkv'];
         
         if (!extension || !allowedExtensions.includes(extension)) {
-          Alert.alert('Invalid File', `Please select a valid video file. Allowed: ${allowedExtensions.join(', ')}`);
+          console.error('[VIDEO_UPLOAD_FAIL]: Invalid file extension -', extension);
           return;
         }
 
         // Basic file size validation
         const MAX_SIZE = 2 * 1024 * 1024 * 1024; // 2GB for videos
         if (file.size && file.size > MAX_SIZE) {
-          Alert.alert('File Too Large', 'Video files must be less than 2GB');
+          console.error('[VIDEO_UPLOAD_FAIL]: File too large -', file.size);
           return;
         }
 
@@ -76,8 +76,7 @@ export default function VideoUpload({ onClose }: VideoUploadProps) {
         }));
       }
     } catch (error) {
-      console.error('Error picking file:', error);
-      Alert.alert('Error', 'Failed to pick file');
+      console.error('[VIDEO_PICK_FAIL]:', error);
     }
   };
 
@@ -100,17 +99,17 @@ export default function VideoUpload({ onClose }: VideoUploadProps) {
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      Alert.alert('No File Selected', 'Please select a video file first');
+      console.error('[VIDEO_UPLOAD_FAIL]: No file selected');
       return;
     }
 
     if (!videoData.title.trim()) {
-      Alert.alert('Missing Title', 'Please enter a title for your video');
+      console.error('[VIDEO_UPLOAD_FAIL]: Missing title');
       return;
     }
 
     if (!videoData.category.trim()) {
-      Alert.alert('Missing Category', 'Please select a category for your video');
+      console.error('[VIDEO_UPLOAD_FAIL]: Missing category');
       return;
     }
 
@@ -126,28 +125,21 @@ export default function VideoUpload({ onClose }: VideoUploadProps) {
       });
 
       if (result.success) {
-        Alert.alert(
-          'Upload Successful!',
-          'Your video has been uploaded successfully.',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                // Reset form
-                setSelectedFile(null);
-                setVideoData({ title: '', description: '', tags: [], category: '' });
-                setTagInput('');
-                setUploadProgress(0);
-              }
-            }
-          ]
-        );
+        console.log('[VIDEO_UPLOAD_SUCCESS]: Video uploaded successfully');
+        // Reset form silently
+        setSelectedFile(null);
+        setVideoData({
+          title: '',
+          description: '',
+          category: '',
+          tags: []
+        });
+        setTagInput('');
       } else {
         throw new Error('Upload failed');
       }
     } catch (error: any) {
-      console.error('Upload error:', error);
-      Alert.alert('Upload Failed', error.message || 'Failed to upload video');
+      console.error('[VIDEO_UPLOAD_FAIL]:', error.message || 'Failed to upload video');
     } finally {
       setUploading(false);
     }

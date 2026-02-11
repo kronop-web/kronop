@@ -1,53 +1,58 @@
-// ==================== AUTO-SYNC MANAGER ====================
-// Background Sync Manager Component
-// Integrates Auto-Sync Service with React App
+// ==================== REAL-TIME SYNC MANAGER ====================
+// Background WebSocket Sync Manager Component
+// Integrates Real-time WebSocket Sync with React App
 
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useAutoSync } from '../../hooks/useAutoSync';
+import { useRealtimeSync } from '../../hooks/useAutoSync';
 
-interface AutoSyncManagerProps {
+interface RealtimeSyncManagerProps {
   children?: React.ReactNode;
   showDebugInfo?: boolean;
 }
 
 /**
- * Auto-Sync Manager - Handles background data synchronization
- * Place this component in your app root for global sync management
+ * Real-time Sync Manager - Handles WebSocket-based data synchronization
+ * Place this component in your app root for global real-time sync management
  */
-export const AutoSyncManager: React.FC<AutoSyncManagerProps> = ({ 
+export const RealtimeSyncManager: React.FC<RealtimeSyncManagerProps> = ({ 
   children, 
   showDebugInfo = false 
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   
   const {
-    isRunning,
-    lastSync,
-    syncStats,
-    syncCount
-  } = useAutoSync({
+    isConnected,
+    isConnecting,
+    connectionStatus,
+    eventCount
+  } = useRealtimeSync({
     autoStart: true,
-    onSyncComplete: (result) => {
-      console.log('[AUTO_SYNC_MANAGER]: Sync completed', {
-        synced: result.synced,
-        cleaned: result.cleaned,
-        errors: result.errors.length
-      });
+    onConnectionChange: (connected) => {
+      console.log(`[REALTIME_MANAGER]: Connection ${connected ? 'established' : 'lost'}`);
+    },
+    onContentAdded: (event) => {
+      console.log(`[REALTIME_MANAGER]: New ${event.contentType} added: ${event.data.id}`);
+    },
+    onContentUpdated: (event) => {
+      console.log(`[REALTIME_MANAGER]: ${event.contentType} updated: ${event.data.id}`);
+    },
+    onContentDeleted: (event) => {
+      console.log(`[REALTIME_MANAGER]: ${event.contentType} deleted: ${event.data.id}`);
     },
     onError: (error) => {
-      console.error('[AUTO_SYNC_MANAGER]: Sync error:', error);
+      console.error(`[REALTIME_MANAGER]: Error: ${error}`);
     }
   });
 
-  // Show debug info briefly when sync completes
+  // Show debug info briefly on connection events
   useEffect(() => {
-    if (syncStats.synced > 0 || syncStats.cleaned > 0) {
+    if (showDebugInfo && (isConnected || isConnecting)) {
       setIsVisible(true);
       const timer = setTimeout(() => setIsVisible(false), 3000);
       return () => clearTimeout(timer);
     }
-  }, [syncStats.synced, syncStats.cleaned]);
+  }, [isConnected, isConnecting, showDebugInfo]);
 
   if (!showDebugInfo) {
     return <>{children}</>;
@@ -61,22 +66,21 @@ export const AutoSyncManager: React.FC<AutoSyncManagerProps> = ({
       {isVisible && (
         <View style={styles.debugOverlay}>
           <View style={styles.debugBox}>
-            <Text style={styles.debugTitle}>🔄 Auto-Sync Active</Text>
-            <Text style={styles.debugText}>
-              Status: {isRunning ? 'Running' : 'Stopped'}
+            <Text style={styles.debugTitle}>
+              {isConnected ? '🟢 Real-time Connected' : isConnecting ? '🟡 Connecting...' : '🔴 Disconnected'}
             </Text>
             <Text style={styles.debugText}>
-              Last Sync: {lastSync ? new Date(lastSync).toLocaleTimeString() : 'Never'}
+              Status: {isConnected ? 'WebSocket Active' : 'No Connection'}
             </Text>
             <Text style={styles.debugText}>
-              Synced: {syncStats.synced} | Cleaned: {syncStats.cleaned}
+              Events: {eventCount}
             </Text>
             <Text style={styles.debugText}>
-              Total Cycles: {syncCount}
+              Last: {connectionStatus.lastSync ? new Date(connectionStatus.lastSync).toLocaleTimeString() : 'Never'}
             </Text>
-            {syncStats.errors.length > 0 && (
+            {connectionStatus.errors.length > 0 && (
               <Text style={styles.errorText}>
-                Errors: {syncStats.errors.length}
+                Errors: {connectionStatus.errors.length}
               </Text>
             )}
           </View>
@@ -128,4 +132,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AutoSyncManager;
+export default RealtimeSyncManager;

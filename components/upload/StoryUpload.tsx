@@ -39,28 +39,10 @@ export default function StoryUpload({ onClose }: StoryUploadProps) {
 
   const pickFile = async () => {
     try {
-      // Show action sheet for media type selection
-      Alert.alert(
-        'Select Media Type',
-        'Choose what type of story you want to upload',
-        [
-          {
-            text: 'Photo',
-            onPress: () => pickPhoto(),
-          },
-          {
-            text: 'Video',
-            onPress: () => pickVideo(),
-          },
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-        ]
-      );
+      // SILENT MODE: Auto-select photo type for simplicity
+      await pickPhoto();
     } catch (error) {
-      console.error('Error picking file:', error);
-      Alert.alert('Error', 'Failed to pick file');
+      console.error('[STORY_PICK_FAIL]:', error);
     }
   };
 
@@ -69,7 +51,7 @@ export default function StoryUpload({ onClose }: StoryUploadProps) {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
       
       if (!permissionResult.granted) {
-        Alert.alert('Permission Required', 'Please allow access to your photos.');
+        console.error('[STORY_PERMISSION_FAIL]: Camera permission denied');
         return;
       }
 
@@ -89,14 +71,14 @@ export default function StoryUpload({ onClose }: StoryUploadProps) {
         const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov', 'avi'];
         
         if (!extension || !allowedExtensions.includes(extension)) {
-          Alert.alert('Invalid File', `Please select a valid file. Allowed: ${allowedExtensions.join(', ')}`);
+          console.error('[STORY_PICK_FAIL]: Invalid file extension -', extension);
           return;
         }
 
         // Basic file size validation
         const MAX_SIZE = 50 * 1024 * 1024; // 50MB for stories
         if (file.fileSize && file.fileSize > MAX_SIZE) {
-          Alert.alert('File Too Large', 'Story files must be less than 50MB');
+          console.error('[STORY_PICK_FAIL]: File too large -', file.fileSize);
           return;
         }
 
@@ -108,8 +90,7 @@ export default function StoryUpload({ onClose }: StoryUploadProps) {
         }));
       }
     } catch (error) {
-      console.error('Error picking photo:', error);
-      Alert.alert('Error', 'Failed to pick photo');
+      console.error('[STORY_PHOTO_PICK_FAIL]:', error);
     }
   };
 
@@ -129,14 +110,14 @@ export default function StoryUpload({ onClose }: StoryUploadProps) {
         const allowedExtensions = ['mp4', 'mov', 'avi'];
         
         if (!extension || !allowedExtensions.includes(extension)) {
-          Alert.alert('Invalid File', `Please select a valid video file. Allowed: ${allowedExtensions.join(', ')}`);
+          console.error('[STORY_VIDEO_PICK_FAIL]: Invalid file extension -', extension);
           return;
         }
 
         // Basic file size validation (DocumentPicker uses size)
         const MAX_SIZE = 50 * 1024 * 1024; // 50MB for stories
         if (file.size && file.size > MAX_SIZE) {
-          Alert.alert('File Too Large', 'Story files must be less than 50MB');
+          console.error('[STORY_VIDEO_PICK_FAIL]: File too large -', file.size);
           return;
         }
 
@@ -148,19 +129,18 @@ export default function StoryUpload({ onClose }: StoryUploadProps) {
         }));
       }
     } catch (error) {
-      console.error('Error picking video:', error);
-      Alert.alert('Error', 'Failed to pick video');
+      console.error('[STORY_VIDEO_PICK_FAIL]:', error);
     }
   };
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      Alert.alert('No File Selected', 'Please select a photo or video first');
+      console.error('[STORY_UPLOAD_FAIL]: No file selected');
       return;
     }
 
     if (!storyData.title.trim()) {
-      Alert.alert('Missing Title', 'Please enter a title for your story');
+      console.error('[STORY_UPLOAD_FAIL]: Missing title');
       return;
     }
 
@@ -176,27 +156,16 @@ export default function StoryUpload({ onClose }: StoryUploadProps) {
       });
 
       if (result.success) {
-        Alert.alert(
-          'Story Uploaded!',
-          'Your story has been uploaded successfully and will be available for 24 hours.',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                // Reset form
-                setSelectedFile(null);
-                setStoryData({ title: '', type: 'photo', duration: 15, isPrivate: false });
-                setUploadProgress(0);
-              }
-            }
-          ]
-        );
+        console.log('[STORY_UPLOAD_SUCCESS]: Story uploaded successfully');
+        // Reset form silently
+        setSelectedFile(null);
+        setStoryData({ title: '', type: 'photo', duration: 15, isPrivate: false });
+        setUploadProgress(0);
       } else {
         throw new Error('Upload failed');
       }
     } catch (error: any) {
-      console.error('Upload error:', error);
-      Alert.alert('Upload Failed', error.message || 'Failed to upload story');
+      console.error('[STORY_UPLOAD_FAIL]:', error.message || 'Failed to upload story');
     } finally {
       setUploading(false);
     }

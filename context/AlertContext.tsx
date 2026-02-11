@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { Alert, Platform } from 'react-native';
+import { Platform } from 'react-native';
 
 interface AlertButton {
   text: string;
@@ -15,17 +15,17 @@ const AlertContext = createContext<AlertContextType | undefined>(undefined);
 
 export function AlertProvider({ children }: { children: ReactNode }) {
   const showAlert = (title: string, message?: string, buttons?: AlertButton[]) => {
-    if (Platform.OS === 'web') {
-      const result = window.confirm(`${title}\n\n${message || ''}`);
-      if (result && buttons && buttons.length > 0) {
-        // Simple web fallback - execute the first non-cancel button or just close
-        const confirmButton = buttons.find(b => b.style !== 'cancel');
-        if (confirmButton?.onPress) {
-          confirmButton.onPress();
-        }
+    // SILENT MODE: Log to console only, no mobile alerts
+    console.log(`[SILENT_ALERT]: ${title} - ${message || ''}`);
+    
+    // Execute button callbacks silently if provided
+    if (buttons && buttons.length > 0) {
+      // Execute the first non-cancel button or just close
+      const confirmButton = buttons.find(b => b.style !== 'cancel');
+      if (confirmButton?.onPress) {
+        // Small delay to make it feel natural
+        setTimeout(() => confirmButton.onPress?.(), 100);
       }
-    } else {
-      Alert.alert(title, message, buttons);
     }
   };
 

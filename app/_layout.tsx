@@ -5,7 +5,7 @@ import { VideoProvider } from '../context/VideoContext';
 import { AlertProvider } from '../template/ui';
 import { AuthProvider } from '../template';
 import StatusBarOverlay from '../components/common/StatusBarOverlay';
-import AutoSyncManager from '../components/common/AutoSyncManager';
+import RealtimeSyncManager from '../components/common/AutoSyncManager';
 
 export default function RootLayout() {
 
@@ -17,7 +17,7 @@ export default function RootLayout() {
       <AlertProvider>
         <VideoProvider>
           <AuthProvider>
-            <AutoSyncManager showDebugInfo={__DEV__}>
+            <RealtimeSyncManager showDebugInfo={__DEV__}>
               <Stack screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="(tabs)" />
                 <Stack.Screen name="login" />
@@ -25,7 +25,7 @@ export default function RootLayout() {
                 <Stack.Screen name="help-center" />
                 <Stack.Screen name="chat" />
               </Stack>
-            </AutoSyncManager>
+            </RealtimeSyncManager>
           </AuthProvider>
         </VideoProvider>
       </AlertProvider>

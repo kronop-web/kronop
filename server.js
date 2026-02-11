@@ -1417,6 +1417,148 @@ app.delete('/api/stories/:id', async (req, res) => {
   }
 });
 
-console.log('🚀 Auto-Sync cleanup endpoints loaded');
+// ==================== REAL-TIME WEBSOCKET SERVER ====================
+// WebSocket server for real-time data synchronization
+// No polling - push notifications only
+
+const WebSocket = require('ws');
+const wss = new WebSocket.Server({ port: 8080 });
+
+console.log('🚀 WebSocket Server started on port 8080');
+
+// Connected clients
+const clients = new Set();
+
+// Handle WebSocket connections
+wss.on('connection', (ws, req) => {
+  console.log(`[WEBSOCKET]: New client connected from ${req.socket.remoteAddress}`);
+  clients.add(ws);
+  
+  // Send welcome message
+  ws.send(JSON.stringify({
+    type: 'connected',
+    message: 'WebSocket connection established',
+    timestamp: new Date().toISOString()
+  }));
+
+  // Handle messages from clients
+  ws.on('message', (data) => {
+    try {
+      const message = JSON.parse(data);
+      console.log('[WEBSOCKET]: Received message:', message.type);
+      
+      switch (message.type) {
+        case 'connect':
+          // Client is ready to receive updates
+          ws.send(JSON.stringify({
+            type: 'pong',
+            timestamp: new Date().toISOString()
+          }));
+          break;
+          
+        case 'ping':
+          ws.send(JSON.stringify({
+            type: 'pong',
+            timestamp: new Date().toISOString()
+          }));
+          break;
+          
+        default:
+          console.log('[WEBSOCKET]: Unknown message type:', message.type);
+      }
+    } catch (error) {
+      console.error('[WEBSOCKET]: Failed to parse message:', error);
+    }
+  });
+
+  // Handle client disconnection
+  ws.on('close', (code, reason) => {
+    console.log(`[WEBSOCKET]: Client disconnected - Code: ${code}, Reason: ${reason}`);
+    clients.delete(ws);
+  });
+
+  // Handle errors
+  ws.on('error', (error) => {
+    console.error('[WEBSOCKET]: WebSocket error:', error);
+    clients.delete(ws);
+  });
+});
+
+// Broadcast function to send messages to all connected clients
+function broadcast(message) {
+  const messageStr = JSON.stringify(message);
+  console.log(`[WEBSOCKET]: Broadcasting to ${clients.size} clients:`, message.type);
+  
+  clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      try {
+        client.send(messageStr);
+      } catch (error) {
+        console.error('[WEBSOCKET]: Failed to send to client:', error);
+        clients.delete(client);
+      }
+    } else {
+      clients.delete(client);
+    }
+  });
+}
+
+// MongoDB Change Stream for real-time updates
+const mongoose = require('mongoose');
+
+// Function to setup change streams for all content collections
+function setupChangeStreams() {
+  console.log('[WEBSOCKET]: Setting up MongoDB Change Streams...');
+  
+  // Watch Content collection for changes
+  const contentSchema = mongoose.models.Content;
+  if (contentSchema) {
+    const changeStream = contentSchema.watch();
+    
+    changeStream.on('change', (change) => {
+      console.log('[WEBSOCKET]: MongoDB change detected:', change.operationType);
+      
+      const fullDocument = change.fullDocument;
+      if (fullDocument) {
+        const eventType = change.operationType === 'insert' ? 'content_added' :
+                         change.operationType === 'update' ? 'content_updated' :
+                         change.operationType === 'delete' ? 'content_deleted' : 'content_changed';
+        
+        // Broadcast to all connected clients
+        broadcast({
+          type: eventType,
+          contentType: fullDocument.type.toLowerCase(),
+          data: {
+            id: fullDocument._id.toString(),
+            bunny_id: fullDocument.bunny_id,
+            url: fullDocument.url,
+            thumbnail_url: fullDocument.thumbnail,
+            title: fullDocument.title,
+            type: fullDocument.type.toLowerCase(),
+            created_at: fullDocument.created_at,
+            updated_at: fullDocument.updated_at
+          },
+          timestamp: new Date().toISOString()
+        });
+      }
+    });
+    
+    changeStream.on('error', (error) => {
+      console.error('[WEBSOCKET]: Change Stream error:', error);
+    });
+    
+    console.log('[WEBSOCKET]: Change Stream setup complete');
+  }
+}
+
+// Setup change streams after MongoDB connection
+mongoose.connection.once('open', () => {
+  setupChangeStreams();
+});
+
+// Manual broadcast function for testing
+global.broadcastToClients = broadcast;
+
+console.log('🚀 Real-time WebSocket system loaded');
 
 

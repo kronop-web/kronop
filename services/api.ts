@@ -266,15 +266,12 @@ export const uploadPhoto = async (file: any, metadata: any) => {
     const photoData = {
       title: enhancedMetadata.title || bunnyResult.fileName,
       description: enhancedMetadata.description,
-      bunny_photo_id: bunnyResult.fileName,
-      photo_url: bunnyResult.url,
-      thumbnail_url: bunnyResult.url, // For photos, same URL
+      bunny_id: bunnyResult.fileName, // Server expects 'bunny_id'
+      url: bunnyResult.url, // Server expects 'url'
+      thumbnail: bunnyResult.url, // Server expects 'thumbnail'
       category: enhancedMetadata.category,
-      views_count: 0,
-      likes_count: 0,
-      comments_count: 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      tags: enhancedMetadata.tags,
+      userId: 'guest_user' // Server expects 'userId'
     };
     
     const response = await apiCall('/upload/photo', {
@@ -323,16 +320,11 @@ export const uploadStory = async (file: any, metadata: any) => {
     const storyData = {
       title: enhancedMetadata.title || bunnyResult.fileName,
       description: enhancedMetadata.description,
-      bunny_story_id: bunnyResult.fileName,
-      story_url: bunnyResult.url,
-      thumbnail_url: bunnyResult.url, // For stories, same URL
-      type: enhancedMetadata.type || 'image',
-      expires_at: enhancedMetadata.expiresAt,
-      views_count: 0,
-      likes_count: 0,
-      comments_count: 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      bunny_id: bunnyResult.fileName, // Server expects 'bunny_id'
+      url: bunnyResult.url, // Server expects 'url'
+      thumbnail: bunnyResult.url, // Server expects 'thumbnail'
+      tags: enhancedMetadata.tags,
+      userId: 'guest_user' // Server expects 'userId'
     };
     
     const response = await apiCall('/upload/story', {
@@ -405,19 +397,14 @@ export const uploadShayari = async (file: any, metadata: any) => {
     console.log('[SHAYARI_UPLOAD]: Saving metadata to MongoDB...');
     const shayariData = {
       title: enhancedMetadata.title || bunnyResult.fileName,
-      content: enhancedMetadata.content,
-      author: enhancedMetadata.author,
-      bunny_shayari_id: bunnyResult.fileName,
-      shayari_url: bunnyResult.url,
-      thumbnail_url: bunnyResult.url, // For shayari, same URL
-      category: enhancedMetadata.category,
-      mood: enhancedMetadata.mood,
-      language: enhancedMetadata.language,
-      views_count: 0,
-      likes_count: 0,
-      comments_count: 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      description: enhancedMetadata.description,
+      bunny_id: bunnyResult.fileName, // Server expects 'bunny_id'
+      url: bunnyResult.url, // Server expects 'url'
+      thumbnail: bunnyResult.url, // Server expects 'thumbnail'
+      tags: enhancedMetadata.tags,
+      userId: 'guest_user', // Server expects 'userId'
+      shayari_text: enhancedMetadata.content, // Server expects 'shayari_text'
+      shayari_author: enhancedMetadata.author // Server expects 'shayari_author'
     };
     
     const response = await apiCall('/upload/shayari', {

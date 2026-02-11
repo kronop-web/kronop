@@ -1,140 +1,187 @@
-// ==================== AUTO-SYNC HOOK ====================
-// React Hook for Auto-Sync Service Integration
-// Provides background sync functionality to React components
+// ==================== REAL-TIME SYNC HOOK ====================
+// React Hook for Real-time WebSocket Sync Integration
+// Provides real-time data updates without polling
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { autoSyncService, SyncResult } from '../services/autoSyncService';
+import { realtimeSyncService, RealtimeEvent, SyncResult } from '../services/autoSyncService';
 
-export interface UseAutoSyncOptions {
+export interface UseRealtimeSyncOptions {
   autoStart?: boolean;
-  interval?: number;
-  onSyncComplete?: (result: SyncResult) => void;
+  onContentAdded?: (event: RealtimeEvent) => void;
+  onContentUpdated?: (event: RealtimeEvent) => void;
+  onContentDeleted?: (event: RealtimeEvent) => void;
+  onConnectionChange?: (isConnected: boolean) => void;
   onError?: (error: string) => void;
 }
 
-export interface UseAutoSyncReturn {
-  isRunning: boolean;
-  lastSync: string | null;
-  syncStats: SyncResult;
+export interface UseRealtimeSyncReturn {
+  isConnected: boolean;
+  isConnecting: boolean;
+  connectionStatus: SyncResult;
   start: () => void;
   stop: () => void;
-  forceSync: () => Promise<SyncResult>;
-  syncCount: number;
+  eventCount: number;
 }
 
 /**
- * Auto-Sync Hook - React Integration for Background Sync
+ * Real-time Sync Hook - React Integration for WebSocket Sync
  * 
  * @param options - Configuration options
- * @returns Auto-sync controls and status
+ * @returns Real-time sync controls and status
  */
-export const useAutoSync = (options: UseAutoSyncOptions = {}): UseAutoSyncReturn => {
+export const useRealtimeSync = (options: UseRealtimeSyncOptions = {}): UseRealtimeSyncReturn => {
   const {
     autoStart = true,
-    onSyncComplete,
+    onContentAdded,
+    onContentUpdated,
+    onContentDeleted,
+    onConnectionChange,
     onError
   } = options;
 
-  const [isRunning, setIsRunning] = useState(false);
-  const [lastSync, setLastSync] = useState<string | null>(null);
-  const [syncStats, setSyncStats] = useState<SyncResult>({
-    success: true,
+  const [isConnected, setIsConnected] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<SyncResult>({
+    success: false,
     synced: 0,
     cleaned: 0,
     errors: [],
     lastSync: new Date().toISOString()
   });
-  const [syncCount, setSyncCount] = useState(0);
+  const [eventCount, setEventCount] = useState(0);
 
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const serviceRef = useRef(autoSyncService);
+  const serviceRef = useRef(realtimeSyncService);
+  const eventHandlersRef = useRef<Map<string, (event: RealtimeEvent) => void>>(new Map());
 
   /**
-   * Update sync stats from service
+   * Update connection status from service
    */
-  const updateStats = useCallback(() => {
-    const stats = serviceRef.current.getStatus();
-    setSyncStats(stats);
-    setLastSync(stats.lastSync);
+  const updateStatus = useCallback(() => {
+    const status = serviceRef.current.getStatus();
+    const connected = serviceRef.current.isReady();
     
-    if (onSyncComplete) {
-      onSyncComplete(stats);
+    setConnectionStatus(status);
+    setIsConnected(connected);
+    
+    if (onConnectionChange) {
+      onConnectionChange(connected);
     }
     
-    if (stats.errors.length > 0 && onError) {
-      onError(stats.errors.join(', '));
+    if (!connected && status.errors.length > 0 && onError) {
+      onError(status.errors.join(', '));
     }
-  }, [onSyncComplete, onError]);
+  }, [onConnectionChange, onError]);
 
   /**
-   * Start auto-sync service
+   * Handle content added event
+   */
+  const handleContentAdded = useCallback((event: RealtimeEvent) => {
+    console.log(`[REALTIME_HOOK]: Content added - ${event.contentType}:${event.data.id}`);
+    setEventCount(prev => prev + 1);
+    
+    if (onContentAdded) {
+      onContentAdded(event);
+    }
+  }, [onContentAdded]);
+
+  /**
+   * Handle content updated event
+   */
+  const handleContentUpdated = useCallback((event: RealtimeEvent) => {
+    console.log(`[REALTIME_HOOK]: Content updated - ${event.contentType}:${event.data.id}`);
+    setEventCount(prev => prev + 1);
+    
+    if (onContentUpdated) {
+      onContentUpdated(event);
+    }
+  }, [onContentUpdated]);
+
+  /**
+   * Handle content deleted event
+   */
+  const handleContentDeleted = useCallback((event: RealtimeEvent) => {
+    console.log(`[REALTIME_HOOK]: Content deleted - ${event.contentType}:${event.data.id}`);
+    setEventCount(prev => prev + 1);
+    
+    if (onContentDeleted) {
+      onContentDeleted(event);
+    }
+  }, [onContentDeleted]);
+
+  /**
+   * Start real-time sync service
    */
   const start = useCallback(() => {
-    if (isRunning) return;
+    if (isConnected) return;
     
     try {
+      setIsConnecting(true);
       serviceRef.current.start();
-      setIsRunning(true);
-      console.log('[AUTO_SYNC_HOOK]: Started auto-sync');
-      
-      // Set up interval to update stats
-      intervalRef.current = setInterval(() => {
-        updateStats();
-        setSyncCount(prev => prev + 1);
-      }, 5000); // Update stats every 5 seconds
-      
+      console.log('[REALTIME_HOOK]: Started real-time sync');
     } catch (error) {
-      console.error('[AUTO_SYNC_HOOK]: Failed to start:', error);
+      console.error('[REALTIME_HOOK]: Failed to start:', error);
+      setIsConnecting(false);
       if (onError) {
         onError(error instanceof Error ? error.message : String(error));
       }
     }
-  }, [isRunning, updateStats, onError]);
+  }, [isConnected, onError]);
 
   /**
-   * Stop auto-sync service
+   * Stop real-time sync service
    */
   const stop = useCallback(() => {
-    if (!isRunning) return;
-    
     try {
       serviceRef.current.stop();
-      setIsRunning(false);
-      
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      
-      console.log('[AUTO_SYNC_HOOK]: Stopped auto-sync');
+      setIsConnected(false);
+      setIsConnecting(false);
+      console.log('[REALTIME_HOOK]: Stopped real-time sync');
     } catch (error) {
-      console.error('[AUTO_SYNC_HOOK]: Failed to stop:', error);
+      console.error('[REALTIME_HOOK]: Failed to stop:', error);
       if (onError) {
         onError(error instanceof Error ? error.message : String(error));
       }
     }
-  }, [isRunning, onError]);
+  }, [onError]);
 
   /**
-   * Force immediate sync
+   * Initialize event listeners
    */
-  const forceSync = useCallback(async (): Promise<SyncResult> => {
-    try {
-      console.log('[AUTO_SYNC_HOOK]: Force sync triggered...');
-      const result = await serviceRef.current.forceSync();
-      updateStats();
-      return result;
-    } catch (error) {
-      console.error('[AUTO_SYNC_HOOK]: Force sync failed:', error);
-      if (onError) {
-        onError(error instanceof Error ? error.message : String(error));
-      }
-      throw error;
-    }
-  }, [updateStats, onError]);
+  useEffect(() => {
+    const service = serviceRef.current;
+    const handlers = eventHandlersRef.current;
+
+    // Set up event listeners
+    handlers.set('content_added', handleContentAdded);
+    handlers.set('content_updated', handleContentUpdated);
+    handlers.set('content_deleted', handleContentDeleted);
+
+    // Register listeners with service
+    service.on('content_added', handleContentAdded);
+    service.on('content_updated', handleContentUpdated);
+    service.on('content_deleted', handleContentDeleted);
+
+    // Cleanup function
+    return () => {
+      service.off('content_added', handleContentAdded);
+      service.off('content_updated', handleContentUpdated);
+      service.off('content_deleted', handleContentDeleted);
+    };
+  }, [handleContentAdded, handleContentUpdated, handleContentDeleted]);
 
   /**
-   * Initialize on mount
+   * Monitor connection status
+   */
+  useEffect(() => {
+    const interval = setInterval(() => {
+      updateStatus();
+    }, 2000); // Check every 2 seconds
+
+    return () => clearInterval(interval);
+  }, [updateStatus]);
+
+  /**
+   * Auto-start on mount
    */
   useEffect(() => {
     if (autoStart) {
@@ -147,63 +194,46 @@ export const useAutoSync = (options: UseAutoSyncOptions = {}): UseAutoSyncReturn
     };
   }, [autoStart, start, stop]);
 
-  /**
-   * Update stats periodically when running
-   */
-  useEffect(() => {
-    if (!isRunning) return;
-
-    const statsInterval = setInterval(() => {
-      updateStats();
-    }, 10000); // Update every 10 seconds
-
-    return () => clearInterval(statsInterval);
-  }, [isRunning, updateStats]);
-
   return {
-    isRunning,
-    lastSync,
-    syncStats,
+    isConnected,
+    isConnecting,
+    connectionStatus,
     start,
     stop,
-    forceSync,
-    syncCount
+    eventCount
   };
 };
 
 /**
- * Background Sync Hook - Simplified version for basic usage
+ * Background Real-time Sync Hook - Simplified version for basic usage
  */
-export const useBackgroundSync = () => {
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
+export const useBackgroundRealtimeSync = () => {
+  const [isConnected, setIsConnected] = useState(false);
+  const [lastEvent, setLastEvent] = useState<RealtimeEvent | null>(null);
 
-  const sync = useAutoSync({
+  const sync = useRealtimeSync({
     autoStart: true,
-    onSyncComplete: (result) => {
-      setIsSyncing(false);
-      setLastSyncTime(result.lastSync);
+    onConnectionChange: (connected) => {
+      setIsConnected(connected);
+    },
+    onContentAdded: (event) => {
+      setLastEvent(event);
+    },
+    onContentUpdated: (event) => {
+      setLastEvent(event);
+    },
+    onContentDeleted: (event) => {
+      setLastEvent(event);
     },
     onError: (error) => {
-      setIsSyncing(false);
-      console.error('[BACKGROUND_SYNC]: Error:', error);
+      console.error('[BACKGROUND_REALTIME_SYNC]: Error:', error);
     }
   });
 
-  const triggerSync = useCallback(async () => {
-    setIsSyncing(true);
-    try {
-      await sync.forceSync();
-    } catch (error) {
-      setIsSyncing(false);
-    }
-  }, [sync]);
-
   return {
-    isSyncing,
-    lastSyncTime,
-    triggerSync,
-    isRunning: sync.isRunning,
-    syncCount: sync.syncCount
+    isConnected,
+    lastEvent,
+    eventCount: sync.eventCount,
+    isReady: sync.isConnected
   };
 };

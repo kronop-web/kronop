@@ -81,14 +81,11 @@ export class VideosService {
       const videoData = {
         title: metadata.title || bunnyResult.title,
         description: metadata.description || bunnyResult.description,
-        bunny_video_id: bunnyResult.videoId,
-        video_url: bunnyResult.url,
-        thumbnail_url: `https://${BUNNY_CONFIG.video.host}/${bunnyResult.videoId}/thumbnail.jpg`,
-        views_count: 0,
-        likes_count: 0,
-        comments_count: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        bunny_id: bunnyResult.videoId, // Server expects 'bunny_id'
+        url: bunnyResult.url, // Server expects 'url'
+        thumbnail: `https://${BUNNY_CONFIG.video.host}/${bunnyResult.videoId}/thumbnail.jpg`, // Server expects 'thumbnail'
+        tags: metadata.tags,
+        userId: metadata.user_id || 'guest_user' // Server expects 'userId'
       };
 
       const headers = await this.createHeaders();
