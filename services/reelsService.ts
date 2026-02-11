@@ -4,7 +4,7 @@
 
 import { authService } from './authService';
 import { reelsBridge } from './bridges/ReelsBridge';
-import { BUNNY_CONFIG } from '../constants/Config';
+import { BUNNY_CONFIG, API_KEYS } from '../constants/Config';
 
 export interface ReelData {
   id?: string;
@@ -34,7 +34,7 @@ export interface ReelUploadResult {
  * Upload flow: MongoDB API -> ReelsBridge (BunnyCDN) -> MongoDB API (save metadata)
  */
 export class ReelsService {
-  private readonly API_BASE = 'https://kronop-api.koyeb.app';
+  private readonly API_BASE = API_KEYS.KOYEB_URL || 'https://common-jesse-kronop-app-19cf0acc.koyeb.app';
 
   /**
    * Get authentication token for MongoDB API calls

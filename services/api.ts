@@ -6,8 +6,8 @@ import { authService } from './authService';
 
 // Get base URL from environment
 const getBaseUrl = () => {
-  // Use hardcoded URL for now
-  return 'https://kronop-api.koyeb.app';
+  // Use environment variable first, then fallback to correct Koyeb URL
+  return API_KEYS.KOYEB_URL || 'https://common-jesse-kronop-app-19cf0acc.koyeb.app';
 };
 
 const base = getBaseUrl();

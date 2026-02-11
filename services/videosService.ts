@@ -1,9 +1,10 @@
 // ==================== VIDEOS SERVICE ====================
 // MongoDB-based service for Videos management
-// Uses VideoBridge for BunnyCDN uploads, handles all data operations via MongoDB API
+// Uses VideosBridge for BunnyCDN uploads, handles all data operations via MongoDB API
 
 import { authService } from './authService';
-import { BUNNY_CONFIG } from '../constants/Config';
+import { videoBridge } from './bridges/VideoBridge';
+import { BUNNY_CONFIG, API_KEYS } from '../constants/Config';
 
 export interface VideoData {
   id?: string;
@@ -32,7 +33,7 @@ export interface VideoUploadResult {
  * Videos Service - Handles all Videos operations through MongoDB API
  */
 export class VideosService {
-  private readonly API_BASE = 'https://kronop-api.koyeb.app';
+  private readonly API_BASE = API_KEYS.KOYEB_URL || 'https://common-jesse-kronop-app-19cf0acc.koyeb.app';
 
   /**
    * Get authentication token for MongoDB API calls
