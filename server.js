@@ -436,7 +436,13 @@ apiRouter.post('/sync/trigger', async (req, res) => {
 
 app.use('/api', apiRouter);
 
+// Register content routes with /api prefix
+app.use('/api/content', contentRouteNew);
+app.use('/api/users', userRouteNew);
+
 // Alias routes (without /api) to avoid non-JSON 404/edge HTML responses from proxies
+app.use('/content', contentRouteNew);
+app.use('/users', userRouteNew);
 app.use('/notifications', notificationRoutes);
 
 apiRouter.get('/notifications/list', async (_req, res) => {

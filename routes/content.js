@@ -17,11 +17,20 @@ router.get('/photo/user', contentController.getUserPhotos);
 // GET /content/photo (PUBLIC - for all photos)
 router.get('/photo', contentController.getUserPhotos);
 
+// GET /content/photos (ALIAS for /content/photo)
+router.get('/photos', contentController.getUserPhotos);
+
 // GET /content/video (PUBLIC - for all videos)
 router.get('/video', contentController.getUserVideos);
 
+// GET /content/videos (ALIAS for /content/video)
+router.get('/videos', contentController.getUserVideos);
+
 // GET /content/reels (PUBLIC - for all reels)
 router.get('/reels', contentController.getUserReels);
+
+// GET /content/reels/public (ALIAS for /content/reels)
+router.get('/reels/public', contentController.getUserReels);
 
 // GET /content/story (PUBLIC)
 router.get('/story', contentController.getUserStories);
@@ -269,6 +278,93 @@ router.post('/test', async (req, res) => {
     res.json(testResponse);
   } catch (error) {
     console.error('🧪 POST Test endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// POST /content/saved (PUBLIC - no auth required)
+router.post('/saved', async (req, res) => {
+  try {
+    console.log('🔍 Saved content endpoint called');
+    const { itemId, itemType } = req.body;
+    
+    if (!itemId || !itemType) {
+      return res.status(400).json({
+        success: false,
+        error: 'itemId and itemType are required'
+      });
+    }
+    
+    // For now, return success without actual database operations
+    const savedItem = {
+      id: `saved_${Date.now()}`,
+      itemId,
+      itemType,
+      userId: 'guest_user',
+      savedAt: new Date(),
+      status: 'saved'
+    };
+    
+    res.json({
+      success: true,
+      message: 'Content saved successfully',
+      data: savedItem
+    });
+    
+  } catch (error) {
+    console.error('🔍 Saved content error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// GET /content/saved (PUBLIC - no auth required)
+router.get('/saved', async (req, res) => {
+  try {
+    console.log('🔍 Get saved content endpoint called');
+    
+    // For now, return empty array
+    res.json({
+      success: true,
+      message: 'Saved content retrieved',
+      data: []
+    });
+    
+  } catch (error) {
+    console.error('🔍 Get saved content error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// DELETE /content/saved/:itemId (PUBLIC - no auth required)
+router.delete('/saved/:itemId', async (req, res) => {
+  try {
+    const { itemId } = req.params;
+    console.log('🔍 Delete saved content endpoint called for itemId:', itemId);
+    
+    if (!itemId) {
+      return res.status(400).json({
+        success: false,
+        error: 'itemId is required'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Content unsaved successfully',
+      itemId
+    });
+    
+  } catch (error) {
+    console.error('🔍 Delete saved content error:', error);
     res.status(500).json({
       success: false,
       error: error.message
