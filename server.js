@@ -1504,7 +1504,6 @@ function broadcast(message) {
 }
 
 // MongoDB Change Stream for real-time updates
-const mongoose = require('mongoose');
 
 // Function to setup change streams for all content collections
 function setupChangeStreams() {
