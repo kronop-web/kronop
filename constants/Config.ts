@@ -28,8 +28,8 @@ export const API_KEYS = {
   STABLE_DIFFUSION: process.env.EXPO_PUBLIC_STABLE_DIFFUSION_KEY || '',
   
   // Supabase
-  SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://your-project.supabase.co',
-  SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'your-anon-key',
+  SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
+  SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
   
   // OneSignal
   ONESIGNAL_APP_ID: process.env.EXPO_PUBLIC_ONESIGNAL_APP_ID || '',
@@ -97,10 +97,10 @@ export const BUNNY_CONFIG = {
 
 // Library ID mapping for dynamic content identification
 export const LIBRARY_ID_MAP: Record<string, string> = {
-  [process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_REELS || '']: 'Reel',
-  [process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_VIDEO || '']: 'Video',
-  [process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_LIVE || '']: 'Live',
-  [process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_STORY || '']: 'Story',
+  [process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_REELS || '593793']: 'Reel',
+  [process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_VIDEO || '593795']: 'Video',
+  [process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_LIVE || '594452']: 'Live',
+  [process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_STORY || process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_REELS || '593793']: 'Story',
   photos: 'Photo',
 };
 
@@ -109,23 +109,23 @@ export const getBunnyConfigByType = (type: string): BunnyConfigType | BunnyPhoto
   switch (type.toLowerCase()) {
     case 'reel':
     case 'reels':
-      return BUNNY_CONFIG.reels;
+      return BUNNY_CONFIG.reels as BunnyConfigType;
     case 'video':
     case 'videos':
-      return BUNNY_CONFIG.video;
+      return BUNNY_CONFIG.video as BunnyConfigType;
     case 'live':
-      return BUNNY_CONFIG.live;
+      return BUNNY_CONFIG.live as BunnyConfigType;
     case 'story':
     case 'stories':
-      return BUNNY_CONFIG.story;
+      return BUNNY_CONFIG.story as BunnyConfigType;
     case 'photo':
     case 'photos':
-      return BUNNY_CONFIG.photos;
+      return BUNNY_CONFIG.photos as BunnyPhotosConfigType;
     case 'shayari':
     case 'shayari-photos':
-      return BUNNY_CONFIG.shayari;
+      return BUNNY_CONFIG.shayari as BunnyPhotosConfigType;
     default:
-      return BUNNY_CONFIG.video; // Default fallback
+      return BUNNY_CONFIG.video as BunnyConfigType; // Default fallback
   }
 };
 

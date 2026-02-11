@@ -298,6 +298,15 @@ router.post('/saved', async (req, res) => {
       });
     }
     
+    // Validate itemType to prevent "Invalid content type" error
+    const validItemTypes = ['Photo', 'Video', 'Reel', 'Story', 'Live', 'ShayariPhoto'];
+    if (!validItemTypes.includes(itemType)) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid content type. Must be one of: ${validItemTypes.join(', ')}`
+      });
+    }
+    
     // For now, return success without actual database operations
     const savedItem = {
       id: `saved_${Date.now()}`,

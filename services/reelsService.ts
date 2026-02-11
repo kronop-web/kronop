@@ -156,7 +156,8 @@ export class ReelsService {
   async getPublicReels(page: number = 1, limit: number = 20): Promise<ReelData[]> {
     try {
       const headers = await this.createHeaders();
-      const response = await fetch(`${this.API_BASE}/api/reels/public?page=${page}&limit=${limit}`, {
+      // Fixed: Use correct route /content/reels instead of /api/reels/public
+      const response = await fetch(`${this.API_BASE}/content/reels?page=${page}&limit=${limit}`, {
         method: 'GET',
         headers
       });
