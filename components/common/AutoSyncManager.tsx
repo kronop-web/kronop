@@ -29,19 +29,19 @@ export const RealtimeSyncManager: React.FC<RealtimeSyncManagerProps> = ({
   } = useRealtimeSync({
     autoStart: true,
     onConnectionChange: (connected) => {
-      console.log(`[REALTIME_MANAGER]: Connection ${connected ? 'established' : 'lost'}`);
+      // Silent connection handling
     },
     onContentAdded: (event) => {
-      console.log(`[REALTIME_MANAGER]: New ${event.contentType} added: ${event.data.id}`);
+      // Silent content updates
     },
     onContentUpdated: (event) => {
-      console.log(`[REALTIME_MANAGER]: ${event.contentType} updated: ${event.data.id}`);
+      // Silent content updates
     },
     onContentDeleted: (event) => {
-      console.log(`[REALTIME_MANAGER]: ${event.contentType} deleted: ${event.data.id}`);
+      // Silent content updates
     },
     onError: (error) => {
-      console.error(`[REALTIME_MANAGER]: Error: ${error}`);
+      // Silent error handling
     }
   });
 

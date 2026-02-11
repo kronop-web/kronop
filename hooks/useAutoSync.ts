@@ -170,18 +170,7 @@ export const useRealtimeSync = (options: UseRealtimeSyncOptions = {}): UseRealti
   }, [handleContentAdded, handleContentUpdated, handleContentDeleted]);
 
   /**
-   * Monitor connection status
-   */
-  useEffect(() => {
-    const interval = setInterval(() => {
-      updateStatus();
-    }, 2000); // Check every 2 seconds
-
-    return () => clearInterval(interval);
-  }, [updateStatus]);
-
-  /**
-   * Auto-start on mount
+   * Auto-start on mount - no polling
    */
   useEffect(() => {
     if (autoStart) {
@@ -205,8 +194,9 @@ export const useRealtimeSync = (options: UseRealtimeSyncOptions = {}): UseRealti
 };
 
 /**
- * Background Real-time Sync Hook - Simplified version for basic usage
- */
+   * Background Real-time Sync Hook - Pure Push Mode
+   * No polling, only receives server push notifications
+   */
 export const useBackgroundRealtimeSync = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [lastEvent, setLastEvent] = useState<RealtimeEvent | null>(null);
@@ -226,7 +216,7 @@ export const useBackgroundRealtimeSync = () => {
       setLastEvent(event);
     },
     onError: (error) => {
-      console.error('[BACKGROUND_REALTIME_SYNC]: Error:', error);
+      // Silent error handling
     }
   });
 

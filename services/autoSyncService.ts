@@ -60,11 +60,9 @@ export class RealtimeSyncService {
    */
   start(): void {
     if (this.isConnecting || this.isConnected) {
-      console.log('[REALTIME_SYNC]: Already connected or connecting');
       return;
     }
 
-    console.log('[REALTIME_SYNC]: Starting WebSocket connection...');
     this.connect();
   }
 
@@ -85,7 +83,6 @@ export class RealtimeSyncService {
     this.isConnected = false;
     this.isConnecting = false;
     this.reconnectAttempts = 0;
-    console.log('[REALTIME_SYNC]: Stopped');
   }
 
   /**
@@ -98,24 +95,17 @@ export class RealtimeSyncService {
     
     // Construct WebSocket URL
     const wsUrl = API_URL.replace(/^https?:/, 'ws:') + '/ws';
-    
-    console.log(`[REALTIME_SYNC]: Connecting to ${wsUrl}`);
 
     try {
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
-        console.log('[REALTIME_SYNC]: WebSocket connected');
         this.isConnected = true;
         this.isConnecting = false;
         this.reconnectAttempts = 0;
         this.reconnectDelay = 1000;
         
-        // Send initial connection message
-        this.send({
-          type: 'connect',
-          timestamp: new Date().toISOString()
-        });
+        // Silent connection - no initial message
       };
 
       this.ws.onmessage = (event) => {
@@ -123,12 +113,11 @@ export class RealtimeSyncService {
           const data = JSON.parse(event.data);
           this.handleMessage(data);
         } catch (error) {
-          console.error('[REALTIME_SYNC]: Failed to parse message:', error);
+          // Silent error handling
         }
       };
 
       this.ws.onclose = (event) => {
-        console.log(`[REALTIME_SYNC]: WebSocket closed - Code: ${event.code}, Reason: ${event.reason}`);
         this.isConnected = false;
         this.isConnecting = false;
         
@@ -137,9 +126,11 @@ export class RealtimeSyncService {
       };
 
       this.ws.onerror = (error) => {
-        console.error('[REALTIME_SYNC]: WebSocket error:', error);
         this.isConnected = false;
         this.isConnecting = false;
+        
+        // Attempt to reconnect
+        this.attemptReconnect();
       };
 
     } catch (error) {
@@ -154,6 +145,18 @@ export class RealtimeSyncService {
    */
   private handleMessage(data: any): void {
     switch (data.type) {
+      case 'connection':
+        // Server welcome message
+        break;
+        
+      case 'connected':
+        // Server welcome message (alternative)
+        break;
+        
+      case 'ping':
+        // Silent ping - no logging
+        return;
+        
       case 'pong':
         // Heartbeat response
         break;
@@ -165,11 +168,12 @@ export class RealtimeSyncService {
         break;
         
       case 'error':
-        console.error('[REALTIME_SYNC]: Server error:', data.message);
+        // Silent error handling
         break;
         
       default:
-        console.log('[REALTIME_SYNC]: Unknown message type:', data.type);
+        // Silent unknown messages
+        break;
     }
   }
 
@@ -177,14 +181,12 @@ export class RealtimeSyncService {
    * Send message to WebSocket server
    */
   private send(data: any): void {
-    if (this.ws && this.isConnected) {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       try {
         this.ws.send(JSON.stringify(data));
       } catch (error) {
-        console.error('[REALTIME_SYNC]: Failed to send message:', error);
+        // Silent error handling
       }
-    } else {
-      console.warn('[REALTIME_SYNC]: Cannot send message - not connected');
     }
   }
 
@@ -193,14 +195,11 @@ export class RealtimeSyncService {
    */
   private attemptReconnect(): void {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('[REALTIME_SYNC]: Max reconnect attempts reached');
       return;
     }
 
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
-    
-    console.log(`[REALTIME_SYNC]: Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
     
     this.reconnectTimer = setTimeout(() => {
       this.connect();
