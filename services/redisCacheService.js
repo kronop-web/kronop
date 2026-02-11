@@ -56,7 +56,8 @@ class RedisCacheService {
         this.isEnabled = false;
       });
     } catch (error) {
-      console.log('⚠️ Redis initialization failed - running without cache:', error.message);
+      // SILENCED: Remove Redis error log - AI will work without cache
+      // console.log('⚠️ Redis initialization failed - running without cache:', error.message);
     }
   }
 

@@ -39,7 +39,7 @@ const contentRouteNew = require('./routes/content');
 
 // ==================== APP INITIALIZATION ====================
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8000; // FIXED: Use port 8000 for Koyeb compatibility
 const HOST = '0.0.0.0'; // Universal host - works on all networks and mobile devices
 const apiRouter = express.Router();
 

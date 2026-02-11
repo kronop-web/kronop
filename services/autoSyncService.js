@@ -241,7 +241,8 @@ class AutoSyncService {
   // Sync specific library
   async syncLibrary(type) {
     try {
-      console.log(`🔄 Syncing ${type} library...`);
+      // SILENCED: Remove repetitive sync logs
+      // console.log(`🔄 Syncing ${type} library...`);
       let newItemsCount = 0;
       let processedItems = 0;
       let skippedItems = 0;
@@ -297,7 +298,8 @@ class AutoSyncService {
       console.log(`✅ ${type} sync completed. Processed: ${processedItems}, New: ${newItemsCount}, Existing: ${skippedItems}`);
       return newItemsCount;
     } catch (error) {
-      console.error(`❌ Error syncing ${type}:`, error.message);
+      // SILENCED: Remove repetitive error logs
+      // console.error(`❌ Error syncing ${type}:`, error.message);
       // Still update last sync time to prevent immediate retry
       this.lastSyncTimes[type] = new Date();
       return 0;
@@ -371,7 +373,8 @@ class AutoSyncService {
       this.performFullSync();
     }, 60000); // 60 seconds
 
-    console.log('✅ Auto-sync service started - syncing every 60 seconds');
+    // SILENCED: Remove startup log
+    // console.log('✅ Auto-sync service started - syncing every 60 seconds');
   }
 
   // Stop the auto-sync service
