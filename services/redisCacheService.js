@@ -11,6 +11,12 @@ class RedisCacheService {
       console.log('⚠️ Redis not configured - running without cache (set REDIS_URL or REDIS_HOST)');
       return;
     }
+    
+    // DISABLE REDIS if explicitly set to disabled
+    if (process.env.REDIS_URL === 'disabled') {
+      console.log('⚠️ Redis explicitly disabled - running without cache');
+      return;
+    }
 
     try {
       this.client = redis.createClient({
