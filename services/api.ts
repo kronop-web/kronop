@@ -6,8 +6,23 @@ import { authService } from './authService';
 
 // Get base URL from environment
 const getBaseUrl = () => {
-  // Use environment variable first, then fallback to correct Koyeb URL
-  return API_KEYS.KOYEB_URL || 'https://common-jesse-kronop-app-19cf0acc.koyeb.app';
+  // Check for environment variable first
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+  
+  // Use KOYEB_URL from config if available
+  if (API_KEYS.KOYEB_URL) {
+    return API_KEYS.KOYEB_URL;
+  }
+  
+  // Universal development URL - works on all devices in the same network
+  if (__DEV__) {
+    return 'http://0.0.0.0:3000'; // Universal host for mobile compatibility
+  }
+  
+  // Production Koyeb URL - Updated to correct URL
+  return 'https://common-jesse-kronop-app-19cf0acc.koyeb.app';
 };
 
 const base = getBaseUrl();
