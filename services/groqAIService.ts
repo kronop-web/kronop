@@ -3,6 +3,19 @@
 
 const GROQ_API_URL = process.env.EXPO_PUBLIC_GROQ_API_URL || process.env.GROQ_API_URL || 'https://api.groq.com/openai/v1/chat/completions';
 
+// Load app knowledge from JSON file
+let appKnowledge: any = null;
+try {
+  const fs = require('fs');
+  const path = require('path');
+  const knowledgePath = path.join(__dirname, 'appKnowledge.json');
+  if (fs.existsSync(knowledgePath)) {
+    appKnowledge = JSON.parse(fs.readFileSync(knowledgePath, 'utf8'));
+  }
+} catch (error) {
+  console.warn('⚠️ Could not load app knowledge file:', error);
+}
+
 export interface GroqMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -43,20 +56,26 @@ class GroqAIService {
         return this.getFallbackResponse();
       }
 
-      // Add system prompt with Kronop branding and personality
+      // Add system prompt with app knowledge and Kronop branding
+      const knowledgeContext = appKnowledge ? 
+        `\n\nAPP KNOWLEDGE:\n${JSON.stringify(appKnowledge, null, 2)}` : '';
+        
       const systemMessage: GroqMessage = {
         role: 'system',
-        content: `You are a helpful AI assistant for Kronop, a video sharing platform. You should:
+        content: `You are a helpful AI assistant for Kronop, a social media platform. You should:
 
 1. Be friendly, professional, and helpful
-2. Use Kronop's blue-purple theme colors in your responses when relevant
-3. Help users with profile management, video uploads, settings, and general app usage
+2. Use the provided app knowledge to answer questions accurately
+3. Help users with content uploads, profile management, and app usage
 4. Keep responses concise but informative
-5. If you don't know something, be honest and suggest contacting support
-6. Use emojis occasionally to make conversations more engaging
-7. Respond in the language the user is using (Hindi, English, etc.)
+5. Use emojis occasionally to make conversations more engaging
+6. Respond in the language the user is using (Hindi, English, etc.)
+7. ALWAYS base your answers on the app knowledge provided above
+8. If information is not in the knowledge, suggest checking the app or contacting support
 
-Kronop is a video sharing platform where users can upload reels, videos, photos, and go live. Users can also support creators and earn from their content.`
+${knowledgeContext}
+
+IMPORTANT: Use only the information from the app knowledge above. Do not make up information about features, endpoints, or configurations that are not mentioned in the knowledge.`
       };
 
       const requestMessages = [systemMessage, ...messages];
@@ -128,25 +147,54 @@ Kronop is a video sharing platform where users can upload reels, videos, photos,
   }
 
   /**
-   * Get a quick response for common questions
+   * Get a quick response for common questions using app knowledge
    */
   async getQuickResponse(question: string): Promise<string> {
-    const quickResponses: { [key: string]: string } = {
-      'profile': '📝 To update your profile: Go to Profile tab > Edit Profile > Update your info > Save Changes. You can change your name, bio, photos, and more!',
-      'upload': '📤 To upload content: Tap the + button > Choose Reel/Video/Photo > Select file > Add details > Upload. Make sure your content follows our community guidelines!',
-      'settings': '⚙️ For settings: Go to Profile > Settings icon (top right) > Choose what you want to change. You can update privacy, notifications, and account preferences.',
-      'privacy': '🔒 Privacy settings help: Profile > Settings > Privacy > Choose who can see your content. You can set posts to private, control who can message you, and more.',
-      'support': '💜 Need more help? You can call us at 9039012335, email angoriyaarun311@gmail.com, or explore our FAQ section in the app.',
-    };
-
-    const lowerQuestion = question.toLowerCase();
-    for (const [key, response] of Object.entries(quickResponses)) {
-      if (lowerQuestion.includes(key)) {
-        return response;
+    // Try to answer using app knowledge first
+    if (appKnowledge) {
+      const lowerQuestion = question.toLowerCase();
+      
+      // Check for content type questions
+      if (lowerQuestion.includes('reel') || lowerQuestion.includes('reels')) {
+        const reelInfo = appKnowledge.features?.contentTypes?.find((c: any) => c.type === 'Reels');
+        if (reelInfo) {
+          return `🎬 **Reels**: ${reelInfo.description}\n\n📤 Upload: ${reelInfo.upload}\n💾 Storage: ${reelInfo.storage}\n\nNeed help uploading? Ask me "How to upload reels?"`;
+        }
+      }
+      
+      if (lowerQuestion.includes('video') || lowerQuestion.includes('videos')) {
+        const videoInfo = appKnowledge.features?.contentTypes?.find((c: any) => c.type === 'Videos');
+        if (videoInfo) {
+          return `🎥 **Videos**: ${videoInfo.description}\n\n📤 Upload: ${videoInfo.upload}\n💾 Storage: ${videoInfo.storage}\n\nNeed help uploading? Ask me "How to upload videos?"`;
+        }
+      }
+      
+      if (lowerQuestion.includes('photo') || lowerQuestion.includes('photos')) {
+        const photoInfo = appKnowledge.features?.contentTypes?.find((c: any) => c.type === 'Photos');
+        if (photoInfo) {
+          return `📸 **Photos**: ${photoInfo.description}\n\n📤 Upload: ${photoInfo.upload}\n💾 Storage: ${photoInfo.storage}\n\nNeed help uploading? Ask me "How to upload photos?"`;
+        }
+      }
+      
+      // Check for troubleshooting
+      if (lowerQuestion.includes('error') || lowerQuestion.includes('problem') || lowerQuestion.includes('issue')) {
+        const issues = appKnowledge.troubleshooting?.commonIssues;
+        if (issues && issues.length > 0) {
+          const issueList = issues.map((issue: any) => `• **${issue.issue}**: ${issue.solution}`).join('\n');
+          return `🔧 **Common Issues & Solutions**:\n\n${issueList}\n\nStill having trouble? Contact support!`;
+        }
+      }
+      
+      // Check for API/technical questions
+      if (lowerQuestion.includes('api') || lowerQuestion.includes('endpoint') || lowerQuestion.includes('server')) {
+        const apiInfo = appKnowledge.features?.apiEndpoints;
+        if (apiInfo) {
+          return `🔗 **API Information**:\n\n• Base URL: ${apiInfo.baseURL}\n• Content: ${apiInfo.content}\n• Upload: ${apiInfo.upload}\n• Health: ${apiInfo.health}\n\nNeed help with API integration? Ask me specific questions!`;
+        }
       }
     }
 
-    // If no quick response, use AI
+    // Fallback to AI if no knowledge-based response
     return this.sendMessage([{ role: 'user', content: question }]);
   }
 
