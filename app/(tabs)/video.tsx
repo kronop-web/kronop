@@ -67,8 +67,8 @@ const BUNNY_CONFIG: BunnyConfigType = {
   CDN_HOSTNAME: process.env.EXPO_PUBLIC_BUNNY_HOST_VIDEO || process.env.BUNNY_HOST_VIDEO || '',
   TOKEN_KEY: process.env.EXPO_PUBLIC_BUNNY_TOKEN_KEY || process.env.BUNNY_TOKEN_KEY || '',
   
-  // API URLs - FIXED: Use correct bunny CDN domain
-  LIST_VIDEOS_URL: `https://video.bunnycdn.com/library/${process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_VIDEO || process.env.BUNNY_LIBRARY_ID_VIDEO || ''}/videos`,
+  // API URLs - VARIABLE: Use environment variables for all BunnyCDN endpoints
+  LIST_VIDEOS_URL: `${process.env.EXPO_PUBLIC_BUNNY_API_URL || 'https://video.bunnycdn.com'}/library/${process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_VIDEO || process.env.BUNNY_LIBRARY_ID_VIDEO || ''}/videos`,
   
   // Get video URL for player - FIXED: Use stream URL with audio
   getVideoUrl: (videoId: string) => {

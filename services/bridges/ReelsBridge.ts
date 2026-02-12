@@ -3,7 +3,11 @@
 // Dedicated service for Reels upload and management
 // NOTE: This bridge only handles BunnyCDN uploads, authentication is handled by MongoDB API
 
-import { BUNNY_CONFIG } from '../../constants/Config';
+// DIRECT ENV ACCESS: No centralized config, use environment variables directly
+const REELS_LIBRARY_ID = process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_REELS || '593793';
+const REELS_API_KEY = process.env.EXPO_PUBLIC_BUNNY_API_KEY_REELS || 'cfa113db-233a-453d-ac580bde7245-1219-4537';
+const REELS_HOST = process.env.EXPO_PUBLIC_BUNNY_HOST_REELS || 'vz-718b59c2-05f.b-cdn.net';
+const REELS_STREAM_KEY = process.env.EXPO_PUBLIC_BUNNY_STREAM_KEY_REELS || REELS_API_KEY;
 
 export interface ReelUploadResult {
   success: boolean;
@@ -31,8 +35,11 @@ const DEFAULT_USER_ID = 'guest_user';
  * Uses BunnyCDN Stream API with Library ID: 593793
  */
 export class ReelsBridge {
-  private readonly config = BUNNY_CONFIG.reels;
-  private readonly libraryId = this.config.libraryId;
+  // DIRECT ENV ACCESS: Use environment variables directly
+  private readonly libraryId = REELS_LIBRARY_ID;
+  private readonly apiKey = REELS_API_KEY;
+  private readonly host = REELS_HOST;
+  private readonly streamKey = REELS_STREAM_KEY;
 
   /**
    * Upload a reel to BunnyCDN Stream
@@ -61,7 +68,7 @@ export class ReelsBridge {
       const createVideoUrl = `https://video.bunnycdn.com/library/${this.libraryId}/videos`;
       
       // Use proper Stream API key from environment
-      const apiKey = this.config.streamKey || this.config.apiKey;
+      const apiKey = this.streamKey || this.apiKey;
       
       const createResponse = await fetch(createVideoUrl, {
         method: 'POST',
@@ -100,14 +107,14 @@ export class ReelsBridge {
       }
 
       // Step 4: Return success result with secure URL
-      const videoUrl = `https://${this.config.host}/${videoResult.guid}/playlist.m3u8`;
+      const videoUrl = `https://${this.host}/${videoResult.guid}/playlist.m3u8`;
       
       // Add security token if available - CRITICAL FIX
-      console.log('🎬 ReelsBridge: Stream Key:', this.config.streamKey ? 'SET' : 'MISSING');
-      console.log('🎬 ReelsBridge: Host:', this.config.host);
+      console.log('🎬 ReelsBridge: Stream Key:', this.streamKey ? 'SET' : 'MISSING');
+      console.log('🎬 ReelsBridge: Host:', this.host);
       console.log('🎬 ReelsBridge: Library ID:', this.libraryId);
       
-      const securityToken = this.config.streamKey ? `?token=${this.config.streamKey}` : '';
+      const securityToken = this.streamKey ? `?token=${this.streamKey}` : '';
       const secureVideoUrl = videoUrl + securityToken;
       
       console.log('🎬 ReelsBridge: Final URL:', secureVideoUrl);
@@ -148,7 +155,7 @@ export class ReelsBridge {
     
     // Use actual API key from environment
     // Use proper Stream API key from environment
-    const apiKey = this.config.streamKey || this.config.apiKey;
+    const apiKey = this.streamKey || this.apiKey;
     
     const uploadResponse = await fetch(uploadUrl, {
       method: 'PUT',
@@ -181,7 +188,7 @@ export class ReelsBridge {
     const initResponse = await fetch(`https://video.bunnycdn.com/library/${this.libraryId}/videos/${videoGuid}/uploads`, {
       method: 'POST',
       headers: {
-        'AccessKey': this.config.streamKey || this.config.apiKey,
+        'AccessKey': this.streamKey || this.apiKey,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -218,7 +225,7 @@ export class ReelsBridge {
             {
               method: 'POST',
               headers: {
-                'AccessKey': this.config.streamKey || this.config.apiKey,
+                'AccessKey': this.streamKey || this.apiKey,
               },
               body: formData
             }
@@ -252,7 +259,7 @@ export class ReelsBridge {
     const finalizeResponse = await fetch(`https://video.bunnycdn.com/library/${this.libraryId}/videos/${videoGuid}/uploads/${uploadSessionId}/complete`, {
       method: 'POST',
       headers: {
-        'AccessKey': this.config.streamKey || this.config.apiKey,
+        'AccessKey': this.streamKey || this.apiKey,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -278,7 +285,7 @@ export class ReelsBridge {
     const updateResponse = await fetch(`https://video.bunnycdn.com/library/${this.libraryId}/videos/${videoGuid}`, {
       method: 'POST',
       headers: {
-        'AccessKey': this.config.streamKey || this.config.apiKey,
+        'AccessKey': this.streamKey || this.apiKey,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(updateData)
