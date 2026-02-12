@@ -70,10 +70,11 @@ const BUNNY_CONFIG: BunnyConfigType = {
   // API URLs - FIXED: Use correct bunny CDN domain
   LIST_VIDEOS_URL: `https://video.bunnycdn.com/library/${process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_VIDEO || process.env.BUNNY_LIBRARY_ID_VIDEO || ''}/videos`,
   
-  // Get video URL for player
+  // Get video URL for player - FIXED: Use stream URL with audio
   getVideoUrl: (videoId: string) => {
     const host = process.env.EXPO_PUBLIC_BUNNY_HOST_VIDEO || process.env.BUNNY_HOST_VIDEO || '';
-    return host ? `https://${host}/${videoId}/play_720p.mp4` : '';
+    // Use playlist.m3u8 for streaming with audio (instead of play_720p.mp4)
+    return host ? `https://${host}/${videoId}/playlist.m3u8` : '';
   },
   
   // Get thumbnail URL
@@ -1086,6 +1087,7 @@ function VideoPlayerModal({
 
   const [showFullDescModal, setShowFullDescModal] = useState(false);
   const [playerReady, setPlayerReady] = useState(false);
+  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const playerRef = useRef(player);
 
   // Update player ref when player changes
@@ -1244,6 +1246,13 @@ function VideoPlayerModal({
             nativeControls={!isLandscape}
             allowsFullscreen={false}
             allowsPictureInPicture={true}
+            useNativeControls={true}
+            onPlaybackStatusUpdate={(status) => {
+              if (status.isLoaded && !status.isMuted) {
+                player.muted = false;
+                player.volume = 1.0;
+              }
+            }}
           />
         </View>
 
