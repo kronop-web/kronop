@@ -160,7 +160,7 @@ class BunnyContentService {
         {
           url: `https://video.bunnycdn.com/library/${libraryId}/videos`,
           headers: {
-            'AccessKey': apiKey,
+            'AccessKey': process.env.EXPO_PUBLIC_BUNNY_API_KEY || apiKey,
             'accept': 'application/json',
             'content-type': 'application/json'
           }
@@ -168,7 +168,7 @@ class BunnyContentService {
         {
           url: `https://video.bunnycdn.com/library/${libraryId}/videos`,
           headers: {
-            'Authorization': `Bearer ${apiKey}`,
+            'Authorization': `Bearer ${process.env.EXPO_PUBLIC_BUNNY_API_KEY || apiKey}`,
             'accept': 'application/json',
             'content-type': 'application/json'
           }

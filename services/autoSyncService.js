@@ -279,7 +279,9 @@ class AutoSyncService {
         }
         
         try {
-          const items = await bunnyService.fetchVideosFromBunny(config.libraryId, config.apiKey);
+          // Use master API key from .env directly
+          const masterApiKey = process.env.EXPO_PUBLIC_BUNNY_API_KEY;
+          const items = await bunnyService.fetchVideosFromBunny(config.libraryId, masterApiKey || config.apiKey);
           
           for (const item of items) {
             try {
