@@ -308,7 +308,7 @@ export class ReelsBridge {
       const response = await fetch(deleteUrl, {
         method: 'DELETE',
         headers: {
-          'AccessKey': this.config.apiKey
+          'AccessKey': this.apiKey
         }
       });
 
@@ -337,7 +337,7 @@ export class ReelsBridge {
       
       const response = await fetch(getUrl, {
         headers: {
-          'AccessKey': this.config.apiKey
+          'AccessKey': this.apiKey
         }
       });
 
