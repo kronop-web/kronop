@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const axios = require('axios');
 const Content = require('../models/Content');
 const RealtimeService = require('./realtimeService');
 const bunnyConfig = require('../config/bunnyConfig');
@@ -271,9 +272,9 @@ class AutoSyncService {
           }
         }
       } else {
-        // Handle other content types (reels, videos, live)
+        // Handle other content types (reels, videos, live) - MULTI-KEY LOGIC
         const bunnyService = require('./bunnyContentService');
-        const config = bunnyService.BUNNY_CONFIG[type];
+        const config = bunnyConfig.getSectionConfig(type);
         
         if (!config || !config.libraryId) {
           console.log(`⚠️ No config found for ${type}, skipping`);
@@ -281,12 +282,27 @@ class AutoSyncService {
         }
         
         try {
-          // Use master API key from .env directly - ENVIRONMENT SYNC
-          const masterApiKey = process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || '';
-          console.log(`🔑 Syncing ${type} with Master API Key: ${masterApiKey ? masterApiKey.substring(0, 20) + '...' : 'MISSING'}`);
+          // MULTI-KEY LOGIC: Use specific API key for each content type
+          let specificApiKey = '';
+          
+          if (type === 'reels') {
+            specificApiKey = process.env.EXPO_PUBLIC_BUNNY_API_KEY_REELS || '';
+            console.log(`🔑 Using REELS API Key: ${specificApiKey ? specificApiKey.substring(0, 20) + '...' : 'MISSING'}`);
+          } else if (type === 'video') {
+            specificApiKey = process.env.EXPO_PUBLIC_BUNNY_API_KEY_VIDEO || '';
+            console.log(`🔑 Using VIDEO API Key: ${specificApiKey ? specificApiKey.substring(0, 20) + '...' : 'MISSING'}`);
+          } else if (type === 'live') {
+            specificApiKey = process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ACCESS_KEY_LIVE || '';
+            console.log(`🔑 Using LIVE API Key: ${specificApiKey ? specificApiKey.substring(0, 20) + '...' : 'MISSING'}`);
+          } else {
+            // Fallback to master key for other types
+            specificApiKey = process.env.EXPO_PUBLIC_BUNNY_API_KEY || '';
+            console.log(`🔑 Using MASTER API Key for ${type}: ${specificApiKey ? specificApiKey.substring(0, 20) + '...' : 'MISSING'}`);
+          }
+          
           console.log(`📚 Library ID: ${config.libraryId}`);
           
-          const items = await bunnyService.fetchVideosFromBunny(config.libraryId, masterApiKey || config.apiKey);
+          const items = await bunnyService.fetchVideosFromBunny(config.libraryId, specificApiKey || config.apiKey);
           
           console.log(`📥 Fetched ${items.length} items from ${type}`);
           

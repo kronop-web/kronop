@@ -156,15 +156,14 @@ class BunnyContentService {
       console.log(`🔍 Fetching from BunnyCDN: Library ${libraryId}, API Key: ${apiKey ? apiKey.substring(0, 20) + '...' : 'MISSING'}`);
       console.log(`🔗 Full API URL: https://video.bunnycdn.com/library/${libraryId}/videos`);
       
-      // Try different API endpoints and headers - FIXED: Use correct bunny CDN domain
-      const masterApiKey = process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || '';
-      console.log(`🔑 Using Master API Key: ${masterApiKey ? masterApiKey.substring(0, 20) + '...' : 'MISSING'}`);
+      // MULTI-KEY LOGIC: Use the specific API key passed to this function
+      console.log(`🔑 Using Specific API Key: ${apiKey ? apiKey.substring(0, 20) + '...' : 'MISSING'}`);
       
       const endpoints = [
         {
           url: `https://video.bunnycdn.com/library/${libraryId}/videos`,
           headers: {
-            'AccessKey': masterApiKey,
+            'AccessKey': apiKey,
             'accept': 'application/json',
             'content-type': 'application/json'
           }
@@ -172,7 +171,7 @@ class BunnyContentService {
         {
           url: `https://video.bunnycdn.com/library/${libraryId}/videos`,
           headers: {
-            'Authorization': `Bearer ${masterApiKey}`,
+            'Authorization': `Bearer ${apiKey}`,
             'accept': 'application/json',
             'content-type': 'application/json'
           }
