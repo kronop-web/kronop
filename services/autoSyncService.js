@@ -279,9 +279,14 @@ class AutoSyncService {
         }
         
         try {
-          // Use master API key from .env directly
-          const masterApiKey = process.env.EXPO_PUBLIC_BUNNY_API_KEY;
+          // Use master API key from .env directly - ENVIRONMENT SYNC
+          const masterApiKey = process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || '';
+          console.log(`🔑 Syncing ${type} with Master API Key: ${masterApiKey ? masterApiKey.substring(0, 20) + '...' : 'MISSING'}`);
+          console.log(`📚 Library ID: ${config.libraryId}`);
+          
           const items = await bunnyService.fetchVideosFromBunny(config.libraryId, masterApiKey || config.apiKey);
+          
+          console.log(`📥 Fetched ${items.length} items from ${type}`);
           
           for (const item of items) {
             try {
