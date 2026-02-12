@@ -2,6 +2,7 @@ const axios = require('axios');
 const mongoose = require('mongoose');
 const DatabaseService = require('./databaseService');
 const { config } = require('./config/koyebConfig');
+const bunnyConfig = require('../config/bunnyConfig');
 require('dotenv').config();
 
 let redisClient = null;
@@ -9,14 +10,14 @@ const REDIS_TTL_SECONDS = parseInt(process.env.REDIS_TTL_SECONDS || '30', 10);
 
 // IP logic removed
 
-const BUNNY_API_KEY = process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || '';
+// Use centralized configuration
+const BUNNY_API_KEY = bunnyConfig.getMasterApiKey();
 const BUNNY_ACCESS_KEY = process.env.EXPO_PUBLIC_BUNNY_ACCESS_KEY || process.env.BUNNY_ACCESS_KEY || '';
 const BUNNY_ACCESS_KEY_REELS = process.env.EXPO_PUBLIC_BUNNY_REELS_ACCESS_KEY || process.env.BUNNY_REELS_ACCESS_KEY || '';
 const BUNNY_ACCESS_KEY_VIDEO = process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ACCESS_KEY_VIDEO || process.env.BUNNY_LIBRARY_ACCESS_KEY_VIDEO || '';
 const BUNNY_ACCESS_KEY_LIVE = process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ACCESS_KEY_LIVE || process.env.BUNNY_LIBRARY_ACCESS_KEY_LIVE || '';
 const BUNNY_PHOTO_STORAGE_KEY = process.env.EXPO_PUBLIC_BUNNY_PHOTO_STORAGE_KEY || process.env.BUNNY_PHOTO_STORAGE_KEY || '';
 const BUNNY_SHAYARI_STORAGE_KEY = process.env.EXPO_PUBLIC_BUNNY_SHAYARI_STORAGE_KEY || process.env.BUNNY_SHAYARI_STORAGE_KEY || '';
-const BUNNY_STORY_STORAGE_KEY = process.env.EXPO_PUBLIC_BUNNY_STORY_STORAGE_KEY || process.env.BUNNY_STORY_STORAGE_KEY || '';
 const BUNNY_ACCESS_KEY_STORY = process.env.EXPO_PUBLIC_BUNNY_ACCESS_KEY_STORY || process.env.BUNNY_ACCESS_KEY_STORY || BUNNY_API_KEY;
 
 try {

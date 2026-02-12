@@ -1,6 +1,8 @@
-const axios = require('axios');
+const mongoose = require('mongoose');
 const Content = require('../models/Content');
 const RealtimeService = require('./realtimeService');
+const bunnyConfig = require('../config/bunnyConfig');
+require('dotenv').config();
 const { BUNNY_CONFIG, LIBRARY_ID_MAP } = require('./config/bunnyConfig');
 
 class AutoSyncService {
