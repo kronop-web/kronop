@@ -272,7 +272,7 @@ class AutoSyncService {
           }
         }
       } else {
-        // Handle other content types (reels, videos, live) - MULTI-KEY LOGIC
+        // Handle other content types (reels, videos, live) - LIBRARY-BASED KEY MAPPING
         const bunnyService = require('./bunnyContentService');
         const config = bunnyConfig.getSectionConfig(type);
         
@@ -282,29 +282,33 @@ class AutoSyncService {
         }
         
         try {
-          // MULTI-KEY LOGIC: Use specific API key for each content type
+          // LIBRARY-BASED KEY MAPPING: Use specific key based on Library ID
           let specificApiKey = '';
+          const libraryId = config.libraryId;
           
-          if (type === 'reels') {
-            specificApiKey = process.env.EXPO_PUBLIC_BUNNY_API_KEY_REELS || '';
-            console.log(`🔑 Using REELS API Key: ${specificApiKey ? specificApiKey.substring(0, 20) + '...' : 'MISSING'}`);
-          } else if (type === 'video') {
-            specificApiKey = process.env.EXPO_PUBLIC_BUNNY_API_KEY_VIDEO || '';
-            console.log(`🔑 Using VIDEO API Key: ${specificApiKey ? specificApiKey.substring(0, 20) + '...' : 'MISSING'}`);
-          } else if (type === 'live') {
+          if (libraryId === '593793') {
+            // Library 593793 (Reels/Story) के लिए Key
+            specificApiKey = 'cfa113db-233a-453d-ac580bde7245-1219-4537';
+            console.log(`🔑 Using REELS/STORY Key for Library ${libraryId}: cfa113db-233a-453d-ac580bde7245...`);
+          } else if (libraryId === '593795') {
+            // Library 593795 (Video) के लिए Key
+            specificApiKey = '916728d0-ae43-4d24-bbe6fc730ad6-bf51-4173';
+            console.log(`🔑 Using VIDEO Key for Library ${libraryId}: 916728d0-ae43-4d24-bbe6fc730ad6...`);
+          } else if (libraryId === '594452') {
+            // Library 594452 (Live) के लिए Key
             specificApiKey = process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ACCESS_KEY_LIVE || '';
-            console.log(`🔑 Using LIVE API Key: ${specificApiKey ? specificApiKey.substring(0, 20) + '...' : 'MISSING'}`);
+            console.log(`🔑 Using LIVE Key for Library ${libraryId}: ${specificApiKey ? specificApiKey.substring(0, 20) + '...' : 'MISSING'}`);
           } else {
-            // Fallback to master key for other types
-            specificApiKey = process.env.EXPO_PUBLIC_BUNNY_API_KEY || '';
-            console.log(`🔑 Using MASTER API Key for ${type}: ${specificApiKey ? specificApiKey.substring(0, 20) + '...' : 'MISSING'}`);
+            // Fallback - पुरानी मास्टर की को हटा दिया गया है
+            console.log(`⚠️ No specific key mapping for Library ${libraryId}, skipping`);
+            return 0;
           }
           
-          console.log(`📚 Library ID: ${config.libraryId}`);
+          console.log(`📚 Processing ${type} - Library ID: ${libraryId}`);
           
-          const items = await bunnyService.fetchVideosFromBunny(config.libraryId, specificApiKey || config.apiKey);
+          const items = await bunnyService.fetchVideosFromBunny(libraryId, specificApiKey);
           
-          console.log(`📥 Fetched ${items.length} items from ${type}`);
+          console.log(`📥 Fetched ${items.length} items from ${type} (Library: ${libraryId})`);
           
           for (const item of items) {
             try {

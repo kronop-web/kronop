@@ -156,44 +156,33 @@ class BunnyContentService {
       console.log(`🔍 Fetching from BunnyCDN: Library ${libraryId}, API Key: ${apiKey ? apiKey.substring(0, 20) + '...' : 'MISSING'}`);
       console.log(`🔗 Full API URL: https://video.bunnycdn.com/library/${libraryId}/videos`);
       
-      // MULTI-KEY LOGIC: Use the specific API key passed to this function
+      // LIBRARY-BASED KEY LOGIC: Use the specific API key passed to this function
       console.log(`🔑 Using Specific API Key: ${apiKey ? apiKey.substring(0, 20) + '...' : 'MISSING'}`);
       
-      const endpoints = [
-        {
-          url: `https://video.bunnycdn.com/library/${libraryId}/videos`,
-          headers: {
-            'AccessKey': apiKey,
-            'accept': 'application/json',
-            'content-type': 'application/json'
-          }
-        },
-        {
-          url: `https://video.bunnycdn.com/library/${libraryId}/videos`,
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'accept': 'application/json',
-            'content-type': 'application/json'
-          }
-        }
-      ];
+      // HEADER UPDATE: Only AccessKey header (no Authorization)
+      const headers = {
+        'AccessKey': apiKey,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      };
+      
+      console.log(`📡 API Headers: AccessKey=${apiKey ? apiKey.substring(0, 20) + '...' : 'MISSING'}`);
+      
+      const url = `https://video.bunnycdn.com/library/${libraryId}/videos`;
       
       let response = null;
       let lastError = null;
       
-      for (const endpoint of endpoints) {
-        try {
-          console.log(`🔄 Trying endpoint: ${endpoint.url}`);
-          response = await axios.get(endpoint.url, {
-            headers: endpoint.headers,
-            timeout: 10000
-          });
-          console.log(`✅ Success with endpoint: ${endpoint.url}`);
-          break;
-        } catch (err) {
-          console.log(`❌ Failed endpoint ${endpoint.url}: ${err.message}`);
-          lastError = err;
-        }
+      try {
+        console.log(`🔄 Trying endpoint: ${url}`);
+        response = await axios.get(url, {
+          headers: headers,
+          timeout: 10000
+        });
+        console.log(`✅ Success with endpoint: ${url}`);
+      } catch (err) {
+        console.log(`❌ Failed endpoint ${url}: ${err.message}`);
+        lastError = err;
       }
       
       if (!response) {
