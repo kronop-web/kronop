@@ -5,28 +5,26 @@
 require('dotenv').config();
 
 const getBunnyConfigByType = (type) => {
-  // Master API Key from .env (Primary for all operations)
-  const MASTER_API_KEY = process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || '';
-  
-  console.log(`🔑 Master API Key: ${MASTER_API_KEY ? MASTER_API_KEY.substring(0, 20) + '...' : 'MISSING'}`);
+  // NO MASTER KEY - Only specific library keys
+  console.log(`� Loading config for ${type} - NO MASTER KEY USED`);
   
   const configs = {
     reels: {
-      libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_REELS || process.env.BUNNY_LIBRARY_ID_REELS || '',
+      libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_REELS || process.env.BUNNY_LIBRARY_ID_REELS || '593793',
       host: process.env.EXPO_PUBLIC_BUNNY_HOST_REELS || process.env.BUNNY_HOST_REELS || '',
-      apiKey: process.env.EXPO_PUBLIC_BUNNY_API_KEY_REELS || MASTER_API_KEY,
+      apiKey: 'cfa113db-233a-453d-ac580bde7245-1219-4537', // FIXED: Reels key
       streamKey: process.env.EXPO_PUBLIC_BUNNY_STREAM_KEY_REELS || process.env.BUNNY_STREAM_KEY_REELS || ''
     },
     video: {
-      libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_VIDEO || process.env.BUNNY_LIBRARY_ID_VIDEO || '',
+      libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_VIDEO || process.env.BUNNY_LIBRARY_ID_VIDEO || '593795',
       host: process.env.EXPO_PUBLIC_BUNNY_HOST_VIDEO || process.env.BUNNY_HOST_VIDEO || '',
-      apiKey: process.env.EXPO_PUBLIC_BUNNY_API_KEY_VIDEO || MASTER_API_KEY,
+      apiKey: '916728d0-ae43-4d24-bbe6fc730ad6-bf51-4173', // FIXED: Video key
       streamKey: process.env.EXPO_PUBLIC_BUNNY_STREAM_KEY_VIDEO || process.env.BUNNY_STREAM_KEY_VIDEO || ''
     },
     live: {
-      libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_LIVE || process.env.BUNNY_LIBRARY_ID_LIVE || '',
+      libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_LIVE || process.env.BUNNY_LIBRARY_ID_LIVE || '594452',
       host: process.env.EXPO_PUBLIC_BUNNY_HOST_LIVE || process.env.BUNNY_HOST_LIVE || '',
-      apiKey: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ACCESS_KEY_LIVE || MASTER_API_KEY,
+      apiKey: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ACCESS_KEY_LIVE || '',
       streamKey: process.env.EXPO_PUBLIC_BUNNY_STREAM_KEY_LIVE || process.env.BUNNY_STREAM_KEY_LIVE || ''
     },
     photos: {
@@ -40,16 +38,16 @@ const getBunnyConfigByType = (type) => {
       host: process.env.EXPO_PUBLIC_BUNNY_STORAGE_HOST_SHAYARI || process.env.BUNNY_HOST_SHAYARI || ''
     },
     story: {
-      libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_STORY || process.env.BUNNY_LIBRARY_ID_STORY || '',
+      libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_STORY || process.env.BUNNY_LIBRARY_ID_STORY || '593793',
       host: process.env.EXPO_PUBLIC_BUNNY_HOST_STORY || process.env.BUNNY_HOST_STORY || '',
-      apiKey: MASTER_API_KEY,
+      apiKey: 'cfa113db-233a-453d-ac580bde7245-1219-4537', // FIXED: Same as reels (same library)
       streamKey: process.env.EXPO_PUBLIC_BUNNY_STREAM_KEY_STORY || process.env.BUNNY_STREAM_KEY_STORY || '',
       storageAccessKey: process.env.EXPO_PUBLIC_BUNNY_STORY_STORAGE_KEY || process.env.BUNNY_STORY_STORAGE_KEY || ''
     }
   };
   
   const config = configs[type.toLowerCase()] || configs.reels;
-  console.log(`📚 ${type.toUpperCase()} Config: Library=${config.libraryId || 'N/A'}, Host=${config.host || 'N/A'}`);
+  console.log(`📚 ${type.toUpperCase()} Config: Library=${config.libraryId || 'N/A'}, Host=${config.host || 'N/A'}, Key=${config.apiKey ? config.apiKey.substring(0, 20) + '...' : 'MISSING'}`);
   
   return config;
 };
@@ -60,38 +58,40 @@ const LIBRARY_ID_MAP = {
   live: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_LIVE || process.env.BUNNY_LIBRARY_ID_LIVE || ''
 };
 
-// API Headers Factory - Uses Master API Key
+// API Headers Factory - Uses specific API key (NO MASTER KEY)
 const getApiHeaders = (section = 'master') => {
-  const MASTER_API_KEY = process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || '';
+  const config = getBunnyConfigByType(section);
+  const specificKey = config.apiKey || '';
   
   const headers = {
-    'AccessKey': MASTER_API_KEY,
+    'AccessKey': specificKey,
     'Accept': 'application/json',
     'Content-Type': 'application/json'
   };
   
-  if (MASTER_API_KEY) {
-    headers['Authorization'] = `Bearer ${MASTER_API_KEY}`;
-  }
-  
   console.log(`📡 API Headers for ${section}:`, {
-    'AccessKey': MASTER_API_KEY ? `${MASTER_API_KEY.substring(0, 20)}...` : 'MISSING',
-    'Authorization': MASTER_API_KEY ? 'Bearer ***' : 'MISSING'
+    'AccessKey': specificKey ? `${specificKey.substring(0, 20)}...` : 'MISSING'
   });
   
   return headers;
 };
 
-// Validation function
+// Validation function - NO MASTER KEY
 const validateConfig = () => {
-  const masterKey = process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || '';
+  const reelsConfig = getBunnyConfigByType('reels');
+  const videoConfig = getBunnyConfigByType('video');
   
-  if (!masterKey || masterKey.trim().length === 0) {
-    console.error('❌ CRITICAL: EXPO_PUBLIC_BUNNY_API_KEY is missing in .env file');
+  if (!reelsConfig.apiKey || reelsConfig.apiKey.trim().length === 0) {
+    console.error('❌ CRITICAL: Reels API key is missing');
     return false;
   }
   
-  console.log('✅ BunnyCDN Configuration Validated');
+  if (!videoConfig.apiKey || videoConfig.apiKey.trim().length === 0) {
+    console.error('❌ CRITICAL: Video API key is missing');
+    return false;
+  }
+  
+  console.log('✅ BunnyCDN Configuration Validated - Using specific library keys');
   return true;
 };
 
@@ -104,7 +104,7 @@ module.exports = {
   getApiHeaders,
   validateConfig,
   
-  // Helper functions
-  getMasterApiKey: () => process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || '',
+  // Helper functions - NO MASTER KEY
+  getMasterApiKey: () => null, // DISABLED - No master key
   getSectionConfig: (section) => getBunnyConfigByType(section)
 };
