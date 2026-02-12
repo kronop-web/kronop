@@ -62,7 +62,7 @@ interface BunnyConfigType {
 
 const BUNNY_CONFIG: BunnyConfigType = {
   LIBRARY_ID: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_VIDEO || process.env.BUNNY_LIBRARY_ID_VIDEO || '',
-  ACCESS_KEY: process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || '',
+  ACCESS_KEY: process.env.EXPO_PUBLIC_BUNNY_API_KEY_VIDEO || process.env.EXPO_PUBLIC_BUNNY_API_KEY || process.env.BUNNY_API_KEY || '',
   STREAM_KEY: process.env.EXPO_PUBLIC_BUNNY_STREAM_KEY_VIDEO || process.env.BUNNY_STREAM_KEY_VIDEO || '',
   CDN_HOSTNAME: process.env.EXPO_PUBLIC_BUNNY_HOST_VIDEO || process.env.BUNNY_HOST_VIDEO || '',
   TOKEN_KEY: process.env.EXPO_PUBLIC_BUNNY_TOKEN_KEY || process.env.BUNNY_TOKEN_KEY || '',
