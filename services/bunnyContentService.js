@@ -5,6 +5,13 @@ const { config } = require('./config/koyebConfig');
 const bunnyConfig = require('../config/bunnyConfig');
 require('dotenv').config();
 
+// LIBRARY_ID_MAP - FIXED: Add proper mapping
+const LIBRARY_ID_MAP = {
+  '593793': 'Reel',
+  '593795': 'Video', 
+  '594452': 'Live'
+};
+
 let redisClient = null;
 const REDIS_TTL_SECONDS = parseInt(process.env.REDIS_TTL_SECONDS || '30', 10);
 
@@ -276,14 +283,21 @@ class BunnyContentService {
 
   static async fetchPhotosFromBunny() {
     try {
-      const config = this.BUNNY_CONFIG.photos;
+      // FIXED: Use centralized config instead of old BUNNY_CONFIG
+      const config = bunnyConfig.getSectionConfig('photos');
+      if (!config) {
+        throw new Error('Photos configuration not found');
+      }
+      
+      console.log(`🔑 Using photos config: Storage=${config.storageZoneName}, Host=${config.host}, Key=${config.storageAccessKey ? config.storageAccessKey.substring(0, 20) + '...' : 'MISSING'}`);
+      
       // Note: This still fetches from Bunny API to get the list, 
       // but we map the URLs to local server for the database.
       const response = await axios.get(
         `https://${config.host}/${config.storageZoneName}/`,
         {
           headers: {
-            'AccessKey': config.apiKey,
+            'AccessKey': config.storageAccessKey, // FIXED: Use storageAccessKey
             'accept': 'application/json'
           }
         }
@@ -390,7 +404,8 @@ class BunnyContentService {
   
   static async syncContentType(type) {
     try {
-      const config = this.BUNNY_CONFIG[type];
+      // FIXED: Use centralized config instead of old BUNNY_CONFIG
+      const config = bunnyConfig.getSectionConfig(type);
       if (!config) {
         throw new Error(`Invalid content type: ${type}`);
       }
@@ -403,6 +418,8 @@ class BunnyContentService {
       }
 
       console.log(`📥 Fetching ${type} from BunnyCDN...`);
+      console.log(`🔑 Using config for ${type}: Library=${config.libraryId}, Key=${config.apiKey.substring(0, 20)}...`);
+      
       const bunnyData = await BunnyContentService.fetchVideosFromBunny(config.libraryId, config.apiKey);
       
       console.log(`🔄 Processing ${bunnyData.length} ${type} items...`);

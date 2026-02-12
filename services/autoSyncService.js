@@ -273,7 +273,7 @@ class AutoSyncService {
         }
       } else {
         // Handle other content types (reels, videos, live) - LIBRARY-BASED KEY MAPPING
-        const bunnyService = require('./bunnyContentService');
+        const bunnyContentService = require('./bunnyContentService'); // FIXED: Use correct service name
         const config = bunnyConfig.getSectionConfig(type);
         
         if (!config || !config.libraryId) {
@@ -306,7 +306,7 @@ class AutoSyncService {
           
           console.log(`📚 Processing ${type} - Library ID: ${libraryId}`);
           
-          const items = await bunnyService.fetchVideosFromBunny(libraryId, specificApiKey);
+          const items = await bunnyContentService.fetchVideosFromBunny(libraryId, specificApiKey); // FIXED: Use correct service
           
           console.log(`📥 Fetched ${items.length} items from ${type} (Library: ${libraryId})`);
           

@@ -24,13 +24,13 @@ const getBunnyConfigByType = (type) => {
     live: {
       libraryId: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_LIVE || process.env.BUNNY_LIBRARY_ID_LIVE || '594452',
       host: process.env.EXPO_PUBLIC_BUNNY_HOST_LIVE || process.env.BUNNY_HOST_LIVE || '',
-      apiKey: process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ACCESS_KEY_LIVE || '',
+      apiKey: 'F16e101a-2087-46e4-9070-d9dd0b9b2c0931584ec4-6583-4e94-b615-c22781558f10', // FIXED: Live key from .env
       streamKey: process.env.EXPO_PUBLIC_BUNNY_STREAM_KEY_LIVE || process.env.BUNNY_STREAM_KEY_LIVE || ''
     },
     photos: {
-      storageZoneName: process.env.EXPO_PUBLIC_BUNNY_STORAGE_NAME_PHOTO || process.env.BUNNY_STORAGE_ZONE || '',
-      storageAccessKey: process.env.EXPO_PUBLIC_BUNNY_PHOTO_STORAGE_KEY || process.env.BUNNY_PHOTO_STORAGE_KEY || '',
-      host: process.env.EXPO_PUBLIC_BUNNY_STORAGE_HOST_PHOTO || process.env.BUNNY_HOST_PHOTOS || ''
+      storageZoneName: process.env.EXPO_PUBLIC_BUNNY_STORAGE_NAME_PHOTO || process.env.BUNNY_STORAGE_ZONE || 'photu',
+      storageAccessKey: process.env.EXPO_PUBLIC_BUNNY_PHOTO_STORAGE_KEY || process.env.BUNNY_PHOTO_STORAGE_KEY || '2bc0776a-9613-4dde-8a24969bf858-e23e-4ab7', // FIXED: Photos storage key
+      host: process.env.EXPO_PUBLIC_BUNNY_STORAGE_HOST_PHOTO || process.env.BUNNY_HOST_PHOTOS || 'storage.bunnycdn.com'
     },
     shayari: {
       storageZoneName: process.env.EXPO_PUBLIC_BUNNY_STORAGE_NAME_SHAYARI || process.env.BUNNY_STORAGE_ZONE_SHAYARI || '',
