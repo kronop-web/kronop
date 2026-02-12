@@ -1246,8 +1246,7 @@ function VideoPlayerModal({
             nativeControls={!isLandscape}
             allowsFullscreen={false}
             allowsPictureInPicture={true}
-            useNativeControls={true}
-            onPlaybackStatusUpdate={(status) => {
+            onPlaybackStatusUpdate={(status: any) => {
               if (status.isLoaded && !status.isMuted) {
                 player.muted = false;
                 player.volume = 1.0;

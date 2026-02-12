@@ -328,6 +328,10 @@ function ReelItem({
     // Store reference
     playerRef.current = playerInstance;
     
+    // AUDIO FIX: Ensure audio is enabled
+    playerInstance.muted = false;
+    playerInstance.volume = 1.0;
+    
     // Data-Centric: Log metadata on load
     console.log({
       duration: playerInstance.duration,
@@ -335,10 +339,10 @@ function ReelItem({
       videoUrl: videoSource
     });
     
-    // Instagram-like instant playback configuration with audio managed by audio manager
+    // Instagram-like instant playback configuration with audio enabled
     playerInstance.loop = false;
-    playerInstance.muted = true; // Start muted, audio manager will handle
-    playerInstance.volume = 0;
+    playerInstance.muted = false; // AUDIO FIX: Keep audio enabled
+    playerInstance.playbackRate = 1.0;
     
     // Mark player as ready
     isPlayerReadyRef.current = true;
