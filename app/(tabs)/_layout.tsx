@@ -1,8 +1,8 @@
 import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../constants/theme';
+import { Sparkles, Monitor, Radio, Shapes, Command, Settings2 } from 'lucide-react-native';
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
@@ -47,42 +47,42 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <Ionicons name="home" size={24} color={color} />,
+          tabBarIcon: ({ color }) => <Shapes size={24} color={color} strokeWidth={1.0} />,
         }}
       />
       <Tabs.Screen
         name="reels"
         options={{
           title: 'Reels',
-          tabBarIcon: ({ color }) => <Ionicons name="film" size={24} color={color} />,
+          tabBarIcon: ({ color }) => <Sparkles size={24} color={color} strokeWidth={1.0} />,
         }}
       />
       <Tabs.Screen
         name="video"
         options={{
           title: 'Video',
-          tabBarIcon: ({ color }) => <Ionicons name="videocam" size={24} color={color} />,
+          tabBarIcon: ({ color }) => <Monitor size={24} color={color} strokeWidth={1.0} />,
         }}
       />
       <Tabs.Screen
         name="live"
         options={{
           title: 'Live',
-          tabBarIcon: ({ color }) => <Ionicons name="radio" size={24} color={color} />,
+          tabBarIcon: ({ color }) => <Radio size={24} color={color} strokeWidth={1.0} />,
         }}
       />
       <Tabs.Screen
         name="userdata"
         options={{
           title: 'Dashboard',
-          tabBarIcon: ({ color }) => <Ionicons name="server" size={24} color={color} />,
+          tabBarIcon: ({ color }) => <Command size={24} color={color} strokeWidth={1.0} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color }) => <Ionicons name="person" size={24} color={color} />,
+          tabBarIcon: ({ color }) => <Settings2 size={24} color={color} strokeWidth={1.0} />,
         }}
       />
       <Tabs.Screen
