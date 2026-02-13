@@ -11,6 +11,7 @@ interface ShareButtonProps {
   onShareChange?: (itemId: string, count: number) => void;
   size?: 'small' | 'medium' | 'large';
   showCount?: boolean;
+  layout?: 'horizontal' | 'vertical'; // TIKTOK STYLE
 }
 
 export const ShareButton: React.FC<ShareButtonProps> = ({
@@ -20,7 +21,8 @@ export const ShareButton: React.FC<ShareButtonProps> = ({
   initialCount = 0,
   onShareChange,
   size = 'medium',
-  showCount = true
+  showCount = true,
+  layout = 'vertical' // TIKTOK STYLE
 }) => {
   const [count, setCount] = useState(initialCount);
   const [isLoading, setIsLoading] = useState(false);

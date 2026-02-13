@@ -1,22 +1,23 @@
-
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  Dimensions, 
-  TouchableOpacity, 
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Dimensions,
+  TouchableOpacity,
   FlatList,
   Animated,
   Modal,
   Alert,
   ActivityIndicator,
   RefreshControl,
-  Platform
+  Platform,
+  TextInput,
+  ScrollView
 } from 'react-native';
 import VideoPlayer from '../../components/feature/VideoPlayer';
 import { Image } from 'expo-image';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeScreen } from '../../components/layout';
@@ -31,6 +32,8 @@ import { slidingWindowManager } from '../../services/slidingWindowManager';
 import { videoChunkingService } from '../../services/videoChunkingService';
 import { ultraFastPreloader } from '../../services/ultraFastPreloader';
 import { bunnySyncCleanup } from '../../services/bunnySyncCleanup';
+import { supportService } from '../../services/supportService';
+import { reportService } from '../../services/reportService';
 import { SupporterButton } from '../../components/feature/SupporterButton';
 import { InteractionBar } from '../../components/feature/InteractionBar';
 import { CommentSheet } from '../../components/feature/CommentSheet';
@@ -243,6 +246,7 @@ function ReelItem({
   onShareChange,
   onSaveChange,
   onSupportChange,
+  onReportPress,
   likes,
   comments,
   shares,
@@ -269,6 +273,53 @@ function ReelItem({
 
   const channelName = item.user_profiles?.username || 'Unknown User';
   const channelAvatar = item.user_profiles?.avatar_url || 'https://via.placeholder.com/100';
+  
+  // Demo user data fallback
+  const getDemoUser = () => {
+    const demoUsers = [
+      { username: 'raj_kumar', avatar: 'https://i.pravatar.cc/150?img=1', displayName: 'Raj Kumar' },
+      { username: 'priya_sharma', avatar: 'https://i.pravatar.cc/150?img=2', displayName: 'Priya Sharma' },
+      { username: 'amit_singh', avatar: 'https://i.pravatar.cc/150?img=3', displayName: 'Amit Singh' },
+      { username: 'neha_patel', avatar: 'https://i.pravatar.cc/150?img=4', displayName: 'Neha Patel' },
+      { username: 'vikram_gupta', avatar: 'https://i.pravatar.cc/150?img=5', displayName: 'Vikram Gupta' },
+      { username: 'anjali_devi', avatar: 'https://i.pravatar.cc/150?img=6', displayName: 'Anjali Devi' }
+    ];
+    
+    if (channelName === 'Unknown User' || !item.user_profiles?.username) {
+      return demoUsers[Math.floor(Math.random() * demoUsers.length)];
+    }
+    return { 
+      username: channelName.toLowerCase().replace(/\s+/g, '_'),
+      avatar: channelAvatar, 
+      displayName: channelName
+    };
+  };
+  
+  const demoUser = getDemoUser();
+  const displayUsername = demoUser.username;
+  const displayAvatar = demoUser.avatar;
+  const displayName = demoUser.displayName;
+
+  // Lock user data to prevent changes on interactions
+  const [lockedUserData, setLockedUserData] = useState<Record<string, {username: string, avatar: string}>>({});
+  
+  // Lock user data when component mounts or item changes
+  useEffect(() => {
+    if (item && !lockedUserData[item.id]) {
+      setLockedUserData(prev => ({
+        ...prev,
+        [item.id]: {
+          username: displayUsername,
+          avatar: displayAvatar
+        }
+      }));
+    }
+  }, [item?.id]);
+  
+  // Use locked data if available
+  const lockedUser = lockedUserData[item.id] || { username: displayUsername, avatar: displayAvatar };
+  const finalUsername = lockedUser.username;
+  const finalAvatar = lockedUser.avatar;
 
   // Data-Centric: Format duration
   const formatDuration = (duration: number, isLoaded: boolean) => {
@@ -296,18 +347,39 @@ function ReelItem({
           forceQuality="1080p" // FIXED HD QUALITY - No switching
         />
 
-        {/* Bottom Content - MODULAR DESIGN */}
+        {/* Bottom Content - TIKTOK STYLE */}
         <View style={styles.bottomContainer}>
-          <View style={styles.bottomInfo}>
-            {/* Channel Info with Support Button */}
-            <View style={styles.channelInfoContainer}>
-              <View style={styles.channelLeftSide}>
-              </View>
+          {/* Left Side - User Info in Horizontal Row */}
+          <View style={styles.leftSideContainer}>
+            {/* User Logo, Name, Support Button in One Row */}
+            <View style={styles.userInfoRow}>
+              {/* User Logo */}
+              <Image 
+                source={{ uri: finalAvatar }}
+                style={styles.userLogo}
+              />
+              
+              {/* User Name */}
+              <TouchableOpacity style={styles.usernameContainer} onPress={() => onChannelPress(item)}>
+                <Text style={styles.username}>@{finalUsername}</Text>
+              </TouchableOpacity>
+              
+              {/* Support Button - NO TEXT */}
+              <TouchableOpacity 
+                style={[
+                  styles.supportButton, 
+                  supported[item.id] && styles.supportButtonActive
+                ]}
+                onPress={() => onSupportChange(item.id, !supported[item.id], 0)}
+              >
+                <MaterialIcons 
+                  name={supported[item.id] ? "favorite" : "favorite-border"} 
+                  size={16} 
+                  color="#fff" 
+                />
+              </TouchableOpacity>
             </View>
           </View>
-          
-          {/* WORKING MARQUEE TEXT */}
-          <MarqueeText text={item.description} />
         </View>
 
         {/* Right Actions - VERTICAL LAYOUT */}
@@ -324,9 +396,17 @@ function ReelItem({
             onShareChange={onShareChange}
             onSaveChange={onSaveChange}
             size="medium"
-            showCounts={true}
+            showCounts={false} // NO TEXT - ONLY ICONS
             layout="vertical" // Vertical layout for right side
           />
+          
+          {/* Three Dots Button */}
+          <TouchableOpacity 
+            style={styles.threeDotsButton}
+            onPress={() => onReportPress(item.id)}
+          >
+            <MaterialIcons name="more-vert" size={20} color="#fff" />
+          </TouchableOpacity>
         </View>
       </View>
     </>
@@ -339,11 +419,17 @@ export default function ReelsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isScreenFocused, setIsScreenFocused] = useState(true);
+  const [selectedReel, setSelectedReel] = useState<Reel | null>(null);
+  const [showCommentsModal, setShowCommentsModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportingReelId, setReportingReelId] = useState<string | null>(null);
   const flatListRef = useRef<FlatList>(null);
   
   // Player control functions for scroll handling
   const currentPlayerRef = useRef<any>(null);
   
+  // ... rest of the code remains the same ...
   const safePlayerPause = useCallback(() => {
     try {
       if (currentPlayerRef.current) {
@@ -362,10 +448,6 @@ export default function ReelsScreen() {
   const [comments, setComments] = useState<Record<string, Comment[]>>({});
   const [shares, setShares] = useState<Record<string, number>>({});
   
-  // Modal states
-  const [showCommentsModal, setShowCommentsModal] = useState(false);
-  const [selectedReel, setSelectedReel] = useState<Reel | null>(null);
-
   const { data: swrReels, loading: swrLoading, refresh } = useSWRContent('Reel', 1, 50);
 
   // Initialize unique view tracker
@@ -538,6 +620,32 @@ export default function ReelsScreen() {
     return () => clearInterval(syncInterval);
   }, [reels]);
 
+  // Handle report
+  const handleReportPress = useCallback((reelId: string) => {
+    setReportingReelId(reelId);
+    setReportReason('');
+    setShowReportModal(true);
+  }, []);
+
+  // Submit report
+  const handleReportSubmit = useCallback(async () => {
+    if (!reportReason.trim() || !reportingReelId) return;
+    
+    try {
+      const result = await reportService.reportVideo(reportingReelId, reportReason);
+      if (result.success) {
+        Alert.alert('Success', 'Video reported successfully');
+        setShowReportModal(false);
+        setReportReason('');
+        setReportingReelId(null);
+      } else {
+        Alert.alert('Error', result.error || 'Failed to report video');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to report video');
+    }
+  }, [reportReason, reportingReelId]);
+
   // Handle index change with auto-play and memory management
   const handleIndexChange = useCallback((newIndex: number) => {
     if (newIndex !== currentIndex) {
@@ -583,8 +691,18 @@ export default function ReelsScreen() {
     setShares(prev => ({ ...prev, [itemId]: count }));
   }, []);
 
-  const handleSupportChange = useCallback((itemId: string, isSupported: boolean, count: number) => {
-    setSupported(prev => ({ ...prev, [itemId]: isSupported }));
+  const handleSupportChange = useCallback(async (itemId: string, isSupported: boolean, count: number) => {
+    try {
+      const result = await supportService.toggleSupport(itemId);
+      if (result.success) {
+        setSupported(prev => ({ ...prev, [itemId]: result.isSupported }));
+        console.log(`🎯 Support ${result.isSupported ? 'added' : 'removed'} for reel ${itemId}`);
+      } else {
+        console.error('❌ Support toggle failed:', result.error);
+      }
+    } catch (error) {
+      console.error('❌ Support change error:', error);
+    }
   }, []);
 
   const handleSaveChange = useCallback((itemId: string, isSaved: boolean) => {
@@ -674,6 +792,7 @@ export default function ReelsScreen() {
         onShareChange={handleShareChange}
         onSaveChange={handleSaveChange}
         onSupportChange={handleSupportChange}
+        onReportPress={handleReportPress}
         likes={likes}
         comments={comments}
         shares={shares}
@@ -778,6 +897,46 @@ export default function ReelsScreen() {
         initialComments={comments[selectedReel?.id || ''] || []}
         onAddComment={handleAddComment}
       />
+
+      {/* REPORT MODAL */}
+      <Modal
+        visible={showReportModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowReportModal(false)}
+      >
+        <View style={styles.reportModalOverlay}>
+          <View style={styles.reportModalContent}>
+            <Text style={styles.reportModalTitle}>Report Video</Text>
+            
+            <TextInput
+              style={styles.reportInput}
+              placeholder="Why are you reporting this video?"
+              placeholderTextColor="#999"
+              multiline
+              numberOfLines={4}
+              value={reportReason}
+              onChangeText={setReportReason}
+            />
+            
+            <View style={styles.reportModalButtons}>
+              <TouchableOpacity
+                style={[styles.reportModalButton, styles.cancelButton]}
+                onPress={() => setShowReportModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.reportModalButton, styles.submitButton]}
+                onPress={handleReportSubmit}
+              >
+                <Text style={styles.submitButtonText}>Report</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -824,6 +983,7 @@ const styles = StyleSheet.create({
     height: REEL_HEIGHT,
     backgroundColor: '#000',
     overflow: 'hidden',
+    zIndex: 1, // Base layer
   },
   videoContainer: {
     width: '100%',
@@ -831,6 +991,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 2, // Video layer above container
   },
   reelVideo: {
     width: '100%',
@@ -871,7 +1032,7 @@ const styles = StyleSheet.create({
     bottom: 70, // और ऊपर लाया बटनों को दिखाने के लिए
     left: 0,
     right: 0,
-    zIndex: 2,
+    zIndex: 10, // Bottom content layer
     flexDirection: 'row', // Horizontal layout
     justifyContent: 'space-between',
     alignItems: 'flex-end',
@@ -881,32 +1042,130 @@ const styles = StyleSheet.create({
     flex: 1, // Left side takes available space
     paddingRight: theme.spacing.xl, // Right actions के लिए space
   },
-  // Channel Info Container
-  channelInfoContainer: {
-    marginBottom: 8, // कम किया
+  // TikTok Style Layout
+  leftSideContainer: {
+    position: 'absolute',
+    left: 0,
+    bottom: 60, // Very bottom - just above navigation
+    zIndex: 15,
+    alignItems: 'flex-start',
   },
-  channelLeftSide: {
+  userInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
   },
-  channelAvatarContainer: {
-    marginRight: 10, // Avatar और channel name के बीच थोड़ा space
-  },
-  avatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+  userLogo: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     borderWidth: 2,
-    borderColor: theme.colors.text.primary,
+    borderColor: '#fff',
   },
-  // Channel name और support button बिल्कुल पास
-  channelAndSupport: {
-    flex: 1,
-    flexDirection: 'row',
+  usernameContainer: {
+    flexShrink: 1,
+  },
+  username: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  supportButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  supportButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  supportButtonActive: {
+    backgroundColor: '#007AFF',
+  },
+  threeDotsButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  // Report Modal Styles
+  reportModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  reportModalContent: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    padding: 20,
+    width: '80%',
+    maxWidth: 300,
+  },
+  reportModalTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  reportInput: {
+    backgroundColor: '#333',
+    color: '#fff',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  reportModalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+  },
+  reportModalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#666',
+    marginRight: 10,
+  },
+  cancelButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  submitButton: {
+    backgroundColor: '#FF3B30',
+    marginLeft: 10,
+  },
+  submitButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   channelNameTouchable: {
-    flex: 1,
     marginRight: 8, // Channel name और support button के बीच बहुत कम space
   },
   channelName: {
@@ -917,15 +1176,6 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
     flexShrink: 1, // Text को shrink करने दें
-  },
-  supportButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    backgroundColor: '#FF3B30',
-    borderRadius: theme.borderRadius.sm,
-    minWidth: 72, // Fixed width
-    alignItems: 'center',
-    flexShrink: 0, // Button का size fixed रहे
   },
   supportText: {
     color: theme.colors.text.primary,
@@ -948,12 +1198,12 @@ const styles = StyleSheet.create({
   },
   rightActions: {
     position: 'absolute',
-    right: 15, // RIGHT SIDE POSITION
-    bottom: 100, // Above bottom text
+    right: 15,
+    bottom: 80, // Very bottom - just above navigation
+    zIndex: 20,
     alignItems: 'center',
-    zIndex: 10,
-    flexDirection: 'column', // Vertical stack
-    gap: 20, // Proper spacing between buttons
+    flexDirection: 'column',
+    gap: 20,
   },
   actionGroup: {
     alignItems: 'center',

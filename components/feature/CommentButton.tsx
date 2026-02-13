@@ -9,6 +9,7 @@ interface CommentButtonProps {
   onCommentPress?: (itemId: string) => void;
   size?: 'small' | 'medium' | 'large';
   showCount?: boolean;
+  layout?: 'horizontal' | 'vertical'; // TIKTOK STYLE
 }
 
 export const CommentButton: React.FC<CommentButtonProps> = ({
@@ -16,7 +17,8 @@ export const CommentButton: React.FC<CommentButtonProps> = ({
   comments = [],
   onCommentPress,
   size = 'medium',
-  showCount = true
+  showCount = true,
+  layout = 'vertical' // TIKTOK STYLE
 }) => {
   const [isLoading, setIsLoading] = useState(false);
 

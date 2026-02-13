@@ -8,7 +8,8 @@ import {
   ActivityIndicator, 
   Dimensions, 
   Animated, 
-  Modal
+  Modal,
+  SafeAreaView
 } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
@@ -32,6 +33,41 @@ const theme = {
 };
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
+// Get safe area insets for notched phones
+const getSafeAreaInsets = () => {
+  // Default values for devices without safe area
+  return {
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0
+  };
+};
+
+const safeAreaInsets = getSafeAreaInsets();
+
+// Calculate 9:16 aspect ratio dimensions
+const getVideoDimensions = () => {
+  const screenWidth = Dimensions.get('window').width;
+  const screenHeight = Dimensions.get('window').height;
+  
+  // For 9:16 aspect ratio
+  const aspectRatio = 9 / 16;
+  
+  // Use full screen height for video
+  const videoHeight = screenHeight;
+  const videoWidth = videoHeight * aspectRatio;
+  
+  // Center the video horizontally
+  const xOffset = (screenWidth - videoWidth) / 2;
+  
+  return {
+    width: videoWidth,
+    height: videoHeight,
+    xOffset: Math.max(0, xOffset) // Ensure no negative offset
+  };
+};
 
 interface VideoPlayerProps {
   videoUrl: string;
@@ -63,6 +99,7 @@ export default function VideoPlayer({
   const [isSeeking, setIsSeeking] = useState(false);
   const [showLoadingIndicator, setShowLoadingIndicator] = useState(false); // No loading icon
   const [firstChunkLoaded, setFirstChunkLoaded] = useState(false);
+  const [autoReplayEnabled, setAutoReplayEnabled] = useState(true); // AUTO-REPLAY CONTROL
   
   const controlsOpacity = useRef(new Animated.Value(1)).current;
   const hideControlsTimeout = useRef<number | null>(null);
@@ -172,8 +209,11 @@ export default function VideoPlayer({
     showControlsAnimation();
   }, [isFullscreen, showControlsAnimation]);
 
-  // Handle video tap
+  // Handle video tap - AUTO-REPLAY CONTROL
   const handleVideoTap = useCallback(() => {
+    // Toggle auto-replay on touch
+    setAutoReplayEnabled(prev => !prev);
+    
     if (showControls) {
       hideControls();
     } else {
@@ -212,35 +252,44 @@ export default function VideoPlayer({
     };
   }, [isPlaying, showControls, hideControls]);
 
-  const videoHeight = screenHeight; // ALWAYS FULL SCREEN - 9:16
+  const videoDimensions = getVideoDimensions();
 
   return (
-    <View style={[styles.container, { height: videoHeight }]}>
-      <Video
-        ref={videoRef}
-        style={[styles.video, { height: videoHeight }]}
-        source={{ uri: videoUrl }}
-        useNativeControls={false}
-        resizeMode={ResizeMode.COVER} // FULL SCREEN FILL - 9:16 aspect
-        shouldPlay={autoPlay && isActive} // AUDIO CONTROL: Only play if active
-        isLooping={true} // INFINITE LOOP - Replay when finished
-        onPlaybackStatusUpdate={handleVideoStatusUpdate}
-        posterSource={thumbnail ? { uri: thumbnail } : undefined}
-        posterStyle={styles.poster}
-        // AUDIO CONTROL: Mute when not active, unmute when active
-        volume={isActive ? 1.0 : 0.0} // Only active video has sound
-        isMuted={!isActive} // Mute when off screen
-        // Ultra-Fast Chunk Settings - 0.1s chunks for instant playback
-        progressUpdateIntervalMillis={10} // 10ms updates for ultra-responsive
-        positionMillis={0}
-        // Zero buffer configuration for instant start
-        // Ultra low latency settings
-        rate={1.0}
-        shouldCorrectPitch={false}
-        // BunnyCDN Fast Start - Force lowest bitrate first
-        // This ensures instant start even on bad network
-        // The HLS playlist will automatically scale up quality
-      />
+    <SafeAreaView style={styles.safeArea}>
+      <View style={[styles.container, { height: videoDimensions.height }]}>
+        <Video
+          ref={videoRef}
+          style={[
+            styles.video, 
+            { 
+              width: videoDimensions.width,
+              height: videoDimensions.height,
+              left: videoDimensions.xOffset,
+              position: 'absolute'
+            }
+          ]}
+          source={{ uri: videoUrl }}
+          useNativeControls={false}
+          resizeMode={ResizeMode.COVER} // FULL SCREEN FILL - 9:16 aspect
+          shouldPlay={autoPlay && isActive} // AUDIO CONTROL: Only play if active
+          isLooping={autoReplayEnabled} // AUTO-REPLAY CONTROL: Toggle based on touch
+          onPlaybackStatusUpdate={handleVideoStatusUpdate}
+          posterSource={thumbnail ? { uri: thumbnail } : undefined}
+          posterStyle={styles.poster}
+          // AUDIO CONTROL: Mute when not active, unmute when active
+          volume={isActive ? 1.0 : 0.0} // Only active video has sound
+          isMuted={!isActive} // Mute when off screen
+          // Ultra-Fast Chunk Settings - 0.1s chunks for instant playback
+          progressUpdateIntervalMillis={10} // 10ms updates for ultra-responsive
+          positionMillis={0}
+          // Zero buffer configuration for instant start
+          // Ultra low latency settings
+          rate={1.0}
+          shouldCorrectPitch={false}
+          // BunnyCDN Fast Start - Force lowest bitrate first
+          // This ensures instant start even on bad network
+          // The HLS playlist will automatically scale up quality
+        />
 
       {/* ZERO LOADING - Never show spinner */}
       {showLoadingIndicator && !firstChunkLoaded && false && (
@@ -292,63 +341,21 @@ export default function VideoPlayer({
           </View>
         </View>
 
-        {/* Center Play Button */}
-        <TouchableOpacity 
-          style={styles.centerPlayButton} 
-          onPress={togglePlayPause}
-        >
-          <View style={styles.playButtonCircle}>
-            <MaterialIcons 
-              name={isPlaying ? "pause" : "play-arrow"} 
-              size={40} 
-              color="#fff" 
-            />
-          </View>
-        </TouchableOpacity>
-
-        {/* Bottom Controls */}
-        <View style={styles.bottomControls}>
-          {/* Progress Bar */}
-          <View style={styles.progressContainer}>
-            <Text style={styles.timeText}>
-              {formatTime(isSeeking ? position : (status?.isLoaded ? status.positionMillis || 0 : 0))}
-            </Text>
-            
-            <Slider
-              style={styles.progressBar}
-              minimumValue={0}
-              maximumValue={100}
-              value={duration > 0 ? (position / duration) * 100 : 0}
-              onSlidingStart={() => setIsSeeking(true)}
-              onSlidingComplete={handleSeek}
-              minimumTrackTintColor={theme.colors.primary.main}
-              maximumTrackTintColor="rgba(255, 255, 255, 0.3)"
-            />
-            
-            <Text style={styles.timeText}>
-              {formatTime(duration)}
-            </Text>
-          </View>
-
-          {/* Control Buttons */}
-          <View style={styles.controlButtons}>
-            <TouchableOpacity style={styles.controlButton}>
-              <MaterialIcons name="skip-previous" size={24} color="#fff" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.controlButton}>
-              <MaterialIcons name="skip-next" size={24} color="#fff" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.controlButton}>
-              <Ionicons name="volume-high" size={24} color="#fff" />
-            </TouchableOpacity>
-          </View>
-        </View>
+        {/* NO OVERLAY BUTTONS - CLEAN VIDEO */}
+        {/* Center Play Button - REMOVED */}
+        {/* Top Controls - REMOVED */}
+        {/* Bottom Controls - REMOVED */}
       </Animated.View>
     </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
   container: {
     backgroundColor: '#000',
     position: 'relative',
@@ -492,6 +499,17 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 12,
     height: 40,
+  },
+  playPauseButton: {
+    position: 'absolute',
+    bottom: 40,
+    right: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   sliderThumb: {
     width: 12,

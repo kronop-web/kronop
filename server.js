@@ -32,6 +32,7 @@ const earningsRoutes = require('./api/earnings');
 const authRoutes = require('./api/auth');
 const notificationRoutes = require('./api/notifications');
 const autosyncRoutes = require('./api/autosync');
+const supportRoutes = require('./api/support'); // SUPPORT API
  
 const viralRoutes = require('./api/viral');
 
@@ -415,6 +416,7 @@ apiRouter.use('/earnings', earningsRoutes);
 apiRouter.use('/auth', authRoutes);
 apiRouter.use('/notifications', notificationRoutes);
 apiRouter.use('/viral', viralRoutes);
+apiRouter.use('/support', supportRoutes); // SUPPORT ROUTES
 
 // Auto-Sync Service Routes
 apiRouter.get('/sync/status', (req, res) => {

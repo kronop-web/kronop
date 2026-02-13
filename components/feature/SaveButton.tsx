@@ -11,6 +11,7 @@ interface SaveButtonProps {
   onSaveChange?: (itemId: string, isSaved: boolean) => void;
   size?: 'small' | 'medium' | 'large';
   showCount?: boolean;
+  layout?: 'horizontal' | 'vertical'; // TIKTOK STYLE
 }
 
 export const SaveButton: React.FC<SaveButtonProps> = ({
@@ -19,7 +20,8 @@ export const SaveButton: React.FC<SaveButtonProps> = ({
   isInitiallySaved = false,
   onSaveChange,
   size = 'medium',
-  showCount = true
+  showCount = true,
+  layout = 'vertical' // TIKTOK STYLE
 }) => {
   const [isSaved, setIsSaved] = useState(isInitiallySaved);
   const [isLoading, setIsLoading] = useState(false);

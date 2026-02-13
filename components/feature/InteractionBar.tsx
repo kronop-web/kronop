@@ -21,7 +21,7 @@ interface InteractionBarProps {
   onSupportChange?: (itemId: string, isSupported: boolean, count: number) => void;
   size?: 'small' | 'medium' | 'large';
   showCounts?: boolean;
-  layout?: 'horizontal' | 'vertical'; // LAYOUT OPTION for button arrangement
+  layout?: 'horizontal' | 'vertical'; // TIKTOK STYLE - Default vertical
 }
 
 export const InteractionBar: React.FC<InteractionBarProps> = ({
@@ -38,7 +38,7 @@ export const InteractionBar: React.FC<InteractionBarProps> = ({
   onSaveChange,
   size = 'medium',
   showCounts = true,
-  layout = 'horizontal' // Default horizontal
+  layout = 'vertical' // TIKTOK STYLE - Default vertical
 }) => {
   // Determine container style based on layout
   const containerStyle = layout === 'vertical' 
@@ -47,6 +47,7 @@ export const InteractionBar: React.FC<InteractionBarProps> = ({
 
   return (
     <View style={containerStyle}>
+      {/* TIKTOK STYLE VERTICAL ACTIONS */}
       <LikeButton
         itemId={itemId}
         initialCount={likes}
@@ -54,24 +55,27 @@ export const InteractionBar: React.FC<InteractionBarProps> = ({
         onLikeChange={onLikeChange}
         size={size}
         showCount={showCounts}
+        layout="vertical" // TIKTOK STYLE
       />
-
+      
       <CommentButton
         itemId={itemId}
         comments={comments}
         onCommentPress={onCommentPress}
         size={size}
         showCount={showCounts}
+        layout="vertical" // TIKTOK STYLE
       />
-
+      
       <ShareButton
         itemId={itemId}
         initialCount={shares}
         onShareChange={onShareChange}
         size={size}
         showCount={showCounts}
+        layout="vertical" // TIKTOK STYLE
       />
-
+      
       <SaveButton
         itemId={itemId}
         itemType="reel"
@@ -79,6 +83,7 @@ export const InteractionBar: React.FC<InteractionBarProps> = ({
         onSaveChange={onSaveChange}
         size={size}
         showCount={showCounts}
+        layout="vertical" // TIKTOK STYLE
       />
     </View>
   );

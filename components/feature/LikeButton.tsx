@@ -10,6 +10,7 @@ interface LikeButtonProps {
   onLikeChange?: (itemId: string, isLiked: boolean, count: number) => void;
   size?: 'small' | 'medium' | 'large';
   showCount?: boolean;
+  layout?: 'horizontal' | 'vertical'; // TIKTOK STYLE
 }
 
 export const LikeButton: React.FC<LikeButtonProps> = ({
@@ -18,7 +19,8 @@ export const LikeButton: React.FC<LikeButtonProps> = ({
   isInitiallyLiked = false,
   onLikeChange,
   size = 'medium',
-  showCount = true
+  showCount = true,
+  layout = 'vertical' // TIKTOK STYLE
 }) => {
   const [isLiked, setIsLiked] = useState(isInitiallyLiked);
   const [count, setCount] = useState(initialCount);
