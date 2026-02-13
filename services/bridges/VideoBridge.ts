@@ -2,7 +2,8 @@
 // Library ID: 593795 - BunnyCDN Stream API
 // Dedicated service for Video upload and management
 
-import { BUNNY_CONFIG } from '../../constants/Config';
+// LEVEL 2: Main Config Import (from envConfig.ts)
+import { ENV_CONFIG } from '../../../config/envConfig';
 
 export interface VideoUploadResult {
   success: boolean;
@@ -31,7 +32,8 @@ const DEFAULT_USER_ID = 'guest_user';
  * Uses BunnyCDN Stream API with Library ID: 593795
  */
 export class VideoBridge {
-  private readonly config = BUNNY_CONFIG.video;
+  // LEVEL 3: Bridge Configuration (from Main Config)
+  private readonly config = ENV_CONFIG.bunny.libraries.video;
   private readonly libraryId = this.config.libraryId;
 
   /**

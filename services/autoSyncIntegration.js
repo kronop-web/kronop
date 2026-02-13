@@ -1,7 +1,7 @@
 // Auto-Sync Integration Script
 // Integrates Auto-Sync Scheduler with main Kronop app
 
-const { getScheduler } = require('./services/autoSyncScheduler');
+const { getScheduler } = require('./autoSyncScheduler');
 
 class AutoSyncIntegration {
   constructor() {

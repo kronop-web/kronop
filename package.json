@@ -121,6 +121,7 @@
     "mongoose": "^9.1.4",
     "multer": "^2.0.2",
     "nativewind": "^4.1.23",
+    "node-cron": "^4.2.1",
     "nodemailer": "^7.0.12",
     "onesignal-node": "^3.4.0",
     "path-to-regexp": "^1.9.0",
