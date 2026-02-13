@@ -39,6 +39,10 @@ const DEFAULT_USER_ID = 'guest_user';
 export class ShayariBridge {
   // DIRECT ENV ACCESS: No centralized config, use environment variables directly
   private readonly storageZoneName = SHAYARI_STORAGE_NAME; // Use from env
+  private readonly config = {
+    host: process.env.EXPO_PUBLIC_BUNNY_SHAYARI_STORAGE_ZONE || 'kronop-shayari.b-cdn.net',
+    apiKey: process.env.EXPO_PUBLIC_BUNNY_SHAYARI_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY_SHAYARI
+  };
 
   /**
    * Upload shayari image to BunnyCDN Storage
@@ -79,9 +83,9 @@ export class ShayariBridge {
       const uploadResponse = await fetch(uploadUrl, {
         method: 'PUT',
         headers: {
-          'AccessKey': process.env.EXPO_PUBLIC_BUNNY_SHAYARI_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY_SHAYARI,
+          'AccessKey': process.env.EXPO_PUBLIC_BUNNY_SHAYARI_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY_SHAYARI || '',
           'Content-Type': file.type || 'image/jpeg'
-        },
+        } as HeadersInit,
         body: fileBlob
       });
 
@@ -212,8 +216,8 @@ export class ShayariBridge {
       const response = await fetch(deleteUrl, {
         method: 'DELETE',
         headers: {
-          'AccessKey': process.env.EXPO_PUBLIC_BUNNY_SHAYARI_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY_SHAYARI
-        }
+          'AccessKey': process.env.EXPO_PUBLIC_BUNNY_SHAYARI_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY_SHAYARI || ''
+        } as HeadersInit
       });
 
       if (!response.ok) {
@@ -244,8 +248,8 @@ export class ShayariBridge {
       const response = await fetch(getUrl, {
         method: 'HEAD',
         headers: {
-          'AccessKey': process.env.EXPO_PUBLIC_BUNNY_SHAYARI_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY_SHAYARI
-        }
+          'AccessKey': process.env.EXPO_PUBLIC_BUNNY_SHAYARI_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY_SHAYARI || ''
+        } as HeadersInit
       });
 
       if (!response.ok) {
@@ -288,8 +292,8 @@ export class ShayariBridge {
       
       const response = await fetch(listUrl, {
         headers: {
-          'AccessKey': this.config.apiKey
-        }
+          'AccessKey': this.config.apiKey || ''
+        } as HeadersInit
       });
 
       if (!response.ok) {
@@ -369,8 +373,8 @@ export class ShayariBridge {
       const response = await fetch(statsUrl, {
         method: 'GET',
         headers: {
-          'AccessKey': process.env.EXPO_PUBLIC_BUNNY_SHAYARI_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY_SHAYARI
-        }
+          'AccessKey': process.env.EXPO_PUBLIC_BUNNY_SHAYARI_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY_SHAYARI || ''
+        } as HeadersInit
       });
 
       if (!response.ok) {

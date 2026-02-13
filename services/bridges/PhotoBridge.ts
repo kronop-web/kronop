@@ -76,9 +76,9 @@ export class PhotoBridge {
       const uploadResponse = await fetch(uploadUrl, {
         method: 'PUT',
         headers: {
-          'AccessKey': process.env.EXPO_PUBLIC_BUNNY_PHOTO_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY_PHOTO,
+          'AccessKey': process.env.EXPO_PUBLIC_BUNNY_PHOTO_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY_PHOTO || '',
           'Content-Type': file.type || 'image/jpeg'
-        },
+        } as HeadersInit,
         body: fileBlob
       });
 
@@ -197,8 +197,8 @@ export class PhotoBridge {
       const response = await fetch(deleteUrl, {
         method: 'DELETE',
         headers: {
-          'AccessKey': process.env.EXPO_PUBLIC_BUNNY_PHOTO_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY_PHOTO
-        }
+          'AccessKey': process.env.EXPO_PUBLIC_BUNNY_PHOTO_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY_PHOTO || ''
+        } as HeadersInit
       });
 
       if (!response.ok) {
@@ -229,8 +229,8 @@ export class PhotoBridge {
       const response = await fetch(getUrl, {
         method: 'HEAD',
         headers: {
-          'AccessKey': process.env.EXPO_PUBLIC_BUNNY_PHOTO_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY_PHOTO
-        }
+          'AccessKey': process.env.EXPO_PUBLIC_BUNNY_PHOTO_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY_PHOTO || ''
+        } as HeadersInit
       });
 
       if (!response.ok) {
@@ -264,8 +264,8 @@ export class PhotoBridge {
       const response = await fetch(listUrl, {
         method: 'GET',
         headers: {
-          'AccessKey': process.env.EXPO_PUBLIC_BUNNY_PHOTO_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY_PHOTO
-        }
+          'AccessKey': process.env.EXPO_PUBLIC_BUNNY_PHOTO_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY_PHOTO || ''
+        } as HeadersInit
       });
 
       if (!response.ok) {
@@ -345,8 +345,8 @@ export class PhotoBridge {
       const response = await fetch(statsUrl, {
         method: 'GET',
         headers: {
-          'AccessKey': process.env.EXPO_PUBLIC_BUNNY_PHOTO_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY_PHOTO
-        }
+          'AccessKey': process.env.EXPO_PUBLIC_BUNNY_PHOTO_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY_PHOTO || ''
+        } as HeadersInit
       });
 
       if (!response.ok) {

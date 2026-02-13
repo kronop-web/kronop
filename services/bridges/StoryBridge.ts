@@ -32,8 +32,13 @@ const DEFAULT_USER_ID = 'guest_user';
  * Uses BunnyCDN Storage API with Storage Zone: storiy
  */
 export class StoryBridge {
-  private readonly config = BUNNY_CONFIG.story;
-  private readonly storageZoneName = process.env.EXPO_PUBLIC_BUNNY_STORAGE_NAME_STORY || 'storiy'; // Use from env
+  // DIRECT ENV ACCESS: No centralized config, use environment variables directly
+  private readonly storageZoneName = STORY_STORAGE_NAME; // Use from env
+  private readonly config = {
+    host: process.env.EXPO_PUBLIC_BUNNY_STORAGE_ZONE || 'kronop-storage.b-cdn.net',
+    apiKey: process.env.EXPO_PUBLIC_BUNNY_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY,
+    storageKey: process.env.EXPO_PUBLIC_BUNNY_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY
+  };
 
   /**
    * Upload story content to BunnyCDN Storage
@@ -74,9 +79,9 @@ export class StoryBridge {
       const uploadResponse = await fetch(uploadUrl, {
         method: 'PUT',
         headers: {
-          'AccessKey': (this.config as any).storageKey || this.config.apiKey,
+          'AccessKey': this.config.storageKey || this.config.apiKey || '',
           'Content-Type': file.type || 'application/octet-stream'
-        },
+        } as HeadersInit,
         body: fileBlob
       });
 
@@ -151,8 +156,8 @@ export class StoryBridge {
       const response = await fetch(deleteUrl, {
         method: 'DELETE',
         headers: {
-          'AccessKey': this.config.apiKey
-        }
+          'AccessKey': this.config.apiKey || ''
+        } as HeadersInit
       });
 
       if (!response.ok) {
@@ -183,8 +188,8 @@ export class StoryBridge {
       const response = await fetch(getUrl, {
         method: 'HEAD',
         headers: {
-          'AccessKey': this.config.apiKey
-        }
+          'AccessKey': this.config.apiKey || ''
+        } as HeadersInit
       });
 
       if (!response.ok) {
@@ -214,8 +219,8 @@ export class StoryBridge {
       
       const response = await fetch(listUrl, {
         headers: {
-          'AccessKey': this.config.apiKey
-        }
+          'AccessKey': this.config.apiKey || ''
+        } as HeadersInit
       });
 
       if (!response.ok) {
@@ -293,8 +298,8 @@ export class StoryBridge {
       const response = await fetch(statsUrl, {
         method: 'GET',
         headers: {
-          'AccessKey': this.config.apiKey
-        }
+          'AccessKey': this.config.apiKey || ''
+        } as HeadersInit
       });
 
       if (!response.ok) {

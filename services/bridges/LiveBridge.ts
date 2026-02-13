@@ -35,8 +35,17 @@ const DEFAULT_USER_ID = 'guest_user';
  * Uses BunnyCDN Stream API with Library ID: 594452
  */
 export class LiveBridge {
-  private readonly config = BUNNY_CONFIG.live;
-  private readonly libraryId = this.config.libraryId;
+  // DIRECT ENV ACCESS: No centralized config, use environment variables directly
+  private readonly libraryId = process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_LIVE || '594452';
+  private readonly apiKey = process.env.EXPO_PUBLIC_BUNNY_API_KEY_LIVE || 'your-live-api-key';
+  private readonly host = process.env.EXPO_PUBLIC_BUNNY_HOST_LIVE || 'vz-your-live-host.b-cdn.net';
+  private readonly streamKey = process.env.EXPO_PUBLIC_BUNNY_STREAM_KEY_LIVE || this.apiKey;
+  private readonly config = {
+    libraryId: this.libraryId,
+    apiKey: this.apiKey,
+    streamKey: this.streamKey,
+    host: this.host
+  };
 
   /**
    * Upload live stream content to BunnyCDN Stream

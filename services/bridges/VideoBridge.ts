@@ -1,3 +1,4 @@
+
 // ==================== VIDEO BRIDGE ====================
 // Library ID: 593795 - BunnyCDN Stream API
 // Dedicated service for Video upload and management
@@ -36,6 +37,11 @@ export class VideoBridge {
   private readonly libraryId = VIDEO_LIBRARY_ID;
   private readonly apiKey = process.env.EXPO_PUBLIC_BUNNY_API_KEY_VIDEO || 'cfa113db-233a-453d-ac580bde7245-1219-4537';
   private readonly host = process.env.EXPO_PUBLIC_BUNNY_HOST_VIDEO || 'vz-718b59c2-05f.b-cdn.net';
+  private readonly streamKey = process.env.EXPO_PUBLIC_BUNNY_STREAM_KEY_VIDEO || this.apiKey;
+  private readonly config = {
+    apiKey: this.apiKey,
+    streamKey: this.streamKey
+  };
 
   /**
    * Upload a video to BunnyCDN Stream
