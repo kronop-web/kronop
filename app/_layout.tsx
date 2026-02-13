@@ -1,7 +1,6 @@
 import React from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { VideoProvider } from '../context/VideoContext'; 
 import { AlertProvider } from '../template/ui';
 import { AuthProvider } from '../template';
 import StatusBarOverlay from '../components/common/StatusBarOverlay';
@@ -15,8 +14,7 @@ export default function RootLayout() {
       <StatusBarOverlay style="light" backgroundColor="transparent" translucent={true} />
       
       <AlertProvider>
-        <VideoProvider>
-          <AuthProvider>
+        <AuthProvider>
             <RealtimeSyncManager showDebugInfo={__DEV__}>
               <Stack screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="(tabs)" />
@@ -24,10 +22,16 @@ export default function RootLayout() {
                 <Stack.Screen name="settings" />
                 <Stack.Screen name="help-center" />
                 <Stack.Screen name="chat" />
+                <Stack.Screen 
+                  name="video/[id]" 
+                  options={{ 
+                    headerShown: true,
+                    presentation: 'modal',
+                  }} 
+                />
               </Stack>
             </RealtimeSyncManager>
-          </AuthProvider>
-        </VideoProvider>
+        </AuthProvider>
       </AlertProvider>
     </>
   );

@@ -4,9 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { VideoCard, StoryViewer } from '../../components/feature';
+import { StoryViewer } from '../../components/feature';
 import { StorySection } from '../../components/feature/StorySection';
-import { useVideo } from '../../hooks/useVideo';
 import { theme } from '../../constants/theme';
 import { useAlert } from '../../template';
 import { Story } from '../../types/story';
@@ -46,7 +45,6 @@ interface GroupedStory {
 }
 
 export default function HomeScreen() {
-  const { videos, loading } = useVideo();
   const router = useRouter();
   const { showAlert } = useAlert();
   const insets = useSafeAreaInsets(); // Get safe area insets
@@ -333,7 +331,7 @@ export default function HomeScreen() {
           <MaterialIcons name="search" size={20} color={theme.colors.text.tertiary} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search videos, images..."
+            placeholder="Search images..."
             placeholderTextColor={theme.colors.text.tertiary}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -360,11 +358,9 @@ export default function HomeScreen() {
       </View>
 
       <FlatList
-        data={videos}
-        keyExtractor={item => item.id}
-        renderItem={({ item }) => (
-          <VideoCard video={item} onPress={() => router.push(`/video/${item.id}`)} />
-        )}
+        data={[]}
+        keyExtractor={() => ''}
+        renderItem={() => null}
         ListHeaderComponent={
           <>
             {/* Stories Section - Simple Horizontal Boxes */}
