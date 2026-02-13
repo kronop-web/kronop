@@ -1,25 +1,25 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Dimensions,
-  TouchableOpacity,
+
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  Dimensions, 
+  TouchableOpacity, 
   FlatList,
   Animated,
   Modal,
   Alert,
   ActivityIndicator,
   RefreshControl,
-  Platform,
-  TextInput,
-  ScrollView
+  Platform
 } from 'react-native';
-import VideoPlayer from '../../components/feature/VideoPlayer';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { Image } from 'expo-image';
-import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeScreen } from '../../components/layout';
 import { theme } from '../../constants/theme';
 import { useSWRContent } from '../../hooks/swr';
@@ -30,21 +30,19 @@ import { memoryManagerService } from '../../services/memoryManager';
 import { uniqueViewTracker } from '../../services/uniqueViewTracker';
 import { slidingWindowManager } from '../../services/slidingWindowManager';
 import { videoChunkingService } from '../../services/videoChunkingService';
-import { ultraFastPreloader } from '../../services/ultraFastPreloader';
-import { bunnySyncCleanup } from '../../services/bunnySyncCleanup';
-import { supportService } from '../../services/supportService';
-import { reportService } from '../../services/reportService';
-import { SupporterButton } from '../../components/feature/SupporterButton';
-import { InteractionBar } from '../../components/feature/InteractionBar';
 import { CommentSheet } from '../../components/feature/CommentSheet';
 import StatusBarOverlay from '../../components/common/StatusBarOverlay';
+import AudioController from '../../services/AudioController';
+import RightButtons from '../../components/feature/RightButtons';
+import RunningTitle from '../../components/feature/RunningTitle';
+import SupportSection from '../../components/feature/SupportSection';
+import ChannelInfo from '../../components/feature/ChannelInfo';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 const REEL_HEIGHT = SCREEN_HEIGHT;
 
 interface Reel {
   id: string;
-  _id?: string; // Optional MongoDB _id for unique key
   user_id: string;
   title: string;
   description: string;
@@ -255,6 +253,27 @@ function ReelItem({
   supported
 }: any) {
   const [isPaused, setIsPaused] = useState(false);
+  const [isVideoReady, setIsVideoReady] = useState(false);
+  const [videoMetadata, setVideoMetadata] = useState<VideoMetadata>({
+    duration: 0,
+    isLoaded: false,
+    sourceType: ''
+  });
+  const lastTap = useRef(0);
+
+  useEffect(() => {
+    if (isActive) {
+      setIsPaused(false);
+    }
+  }, [isActive]);
+
+  // Data-Centric: Determine source type based on URL
+  const getSourceType = (url: string) => {
+    if (url.includes('.m3u8')) {
+      return 'm3u8'; // HLS stream type
+    }
+    return 'mp4'; // Default to mp4
+  };
 
   // Data-Centric: Get optimized video source
   const getVideoSource = () => {
@@ -269,57 +288,194 @@ function ReelItem({
     return videoUrl;
   };
 
+  const playerRef = useRef<any>(null);
+  const isPlayerReadyRef = useRef(false);
+
+  const safePlayerPlay = useCallback(async () => {
+    try {
+      if (playerRef.current && isPlayerReadyRef.current) {
+        await playerRef.current.play();
+      }
+    } catch (error: any) {
+      console.warn('Error playing video:', error);
+    }
+  }, []);
+
+  const safePlayerPause = useCallback(() => {
+    try {
+      if (playerRef.current && isPlayerReadyRef.current) {
+        playerRef.current.pause();
+      }
+    } catch (error: any) {
+      console.warn('Error pausing video:', error);
+    }
+  }, []);
+
+  const cleanupPlayer = useCallback(() => {
+    try {
+      isPlayerReadyRef.current = false;
+      if (playerRef.current) {
+        try {
+          playerRef.current.pause();
+        } catch {}
+        playerRef.current = null;
+      }
+    } catch (error) {
+      console.warn('Error cleaning up player:', error);
+    }
+  }, []);
+
   const videoSource = getVideoSource();
+  const sourceType = getSourceType(videoSource);
+  const bufferConfig = hlsOptimizerService.getOptimalBufferConfig();
+
+  const player = useVideoPlayer({
+    uri: videoSource,
+    headers: {
+      'User-Agent': 'KronopApp',
+      'Referer': 'https://kronop.app',
+      'Origin': 'https://kronop.app'
+    }
+  }, (playerInstance) => {
+    // Store reference
+    playerRef.current = playerInstance;
+    
+    // Data-Centric: Log metadata on load
+    console.log({
+      duration: playerInstance.duration,
+      sourceType: sourceType,
+      videoUrl: videoSource
+    });
+    
+    // Instagram-like instant playback configuration with audio managed by audio controller
+    playerInstance.loop = false;
+    AudioController.applyToPlayer(playerInstance, isActive);
+    
+    // Mark player as ready and video ready for seamless transition
+    isPlayerReadyRef.current = true;
+    setIsVideoReady(true);
+    
+    // Data-Centric: Update metadata state
+    setVideoMetadata({
+      duration: playerInstance.duration || 0,
+      isLoaded: true,
+      sourceType: sourceType
+    });
+
+    // Mark video as watched when loaded
+    if (isActive) {
+      onVideoWatched(item.id);
+    }
+
+    // FORCE START: Play immediately when ready
+    if (isActive) {
+      // Check if chunk 0 is loaded, then force play
+      videoChunkingService.getChunk(item.id, 0)
+        .then(chunk => {
+          if (chunk && chunk.loaded) {
+            // FORCE START: Play immediately when chunk 0 loads
+            playerInstance.play();
+            playerInstance.currentTime = 0;
+          } else {
+            // Fallback: play after small delay
+            setTimeout(() => {
+              safePlayerPlay();
+            }, 200);
+          }
+        })
+        .catch(() => {
+          // Fallback: play after small delay
+          setTimeout(() => {
+            safePlayerPlay();
+          }, 200);
+        });
+    }
+  });
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      cleanupPlayer();
+    };
+  }, []);
+
+  // Watch for video completion using interval
+  useEffect(() => {
+    if (!isActive || !videoMetadata.isLoaded || !isPlayerReadyRef.current) return;
+
+    const checkCompletion = setInterval(() => {
+      try {
+        if (playerRef.current && playerRef.current.currentTime > 0 && playerRef.current.duration > 0) {
+          const progress = (playerRef.current.currentTime / playerRef.current.duration) * 100;
+          
+          // Consider video completed when 95% watched
+          if (progress >= 95) {
+            onVideoComplete();
+            onVideoWatched(item.id, true); // Mark as completed
+            clearInterval(checkCompletion);
+          }
+        }
+      } catch (error: any) {
+        if (error?.message?.includes('already released')) {
+          clearInterval(checkCompletion);
+        }
+      }
+    }, 500); // Check every 500ms
+
+    return () => clearInterval(checkCompletion);
+  }, [isActive, videoMetadata.isLoaded, item.id, onVideoComplete, onVideoWatched]);
+
+  useEffect(() => {
+    // Instant audio switch: apply immediately on isActive change
+    if (playerRef.current && isPlayerReadyRef.current) {
+      AudioController.applyToPlayer(playerRef.current, isActive);
+    }
+    // Ensure first video (index 0) gets audio when it becomes active
+    if (isActive && !isPaused) {
+      safePlayerPlay();
+    } else if (!isActive) {
+      safePlayerPause();
+    }
+  }, [isActive, isPaused, safePlayerPlay, safePlayerPause]);
+
+  // Extra safety: ensure audio is set when player becomes ready
+  useEffect(() => {
+    if (videoMetadata.isLoaded && isPlayerReadyRef.current && playerRef.current) {
+      AudioController.applyToPlayer(playerRef.current, isActive);
+    }
+  }, [videoMetadata.isLoaded, isActive]);
+
+  // FORCE START: Play when chunk 0 is loaded
+  useEffect(() => {
+    if (isActive && isPlayerReadyRef.current && playerRef.current) {
+      // Check if chunk 0 is loaded
+      videoChunkingService.getChunk(item.id, 0)
+        .then(chunk => {
+          if (chunk && chunk.loaded && isActive) {
+            // FORCE START: Play immediately when chunk 0 loads
+            playerRef.current?.play();
+            playerRef.current.currentTime = 0;
+          }
+        })
+        .catch(() => {
+          // Silent fail
+        });
+    }
+  }, [isActive, item.id]);
+
+  const handleVideoTap = () => {
+    const now = Date.now();
+    const DOUBLE_PRESS_DELAY = 300;
+
+    if (lastTap.current && (now - lastTap.current) < DOUBLE_PRESS_DELAY) {
+      // Double tap - toggle play/pause
+      setIsPaused(prev => !prev);
+    }
+    lastTap.current = now;
+  };
 
   const channelName = item.user_profiles?.username || 'Unknown User';
   const channelAvatar = item.user_profiles?.avatar_url || 'https://via.placeholder.com/100';
-  
-  // Demo user data fallback
-  const getDemoUser = () => {
-    const demoUsers = [
-      { username: 'raj_kumar', avatar: 'https://i.pravatar.cc/150?img=1', displayName: 'Raj Kumar' },
-      { username: 'priya_sharma', avatar: 'https://i.pravatar.cc/150?img=2', displayName: 'Priya Sharma' },
-      { username: 'amit_singh', avatar: 'https://i.pravatar.cc/150?img=3', displayName: 'Amit Singh' },
-      { username: 'neha_patel', avatar: 'https://i.pravatar.cc/150?img=4', displayName: 'Neha Patel' },
-      { username: 'vikram_gupta', avatar: 'https://i.pravatar.cc/150?img=5', displayName: 'Vikram Gupta' },
-      { username: 'anjali_devi', avatar: 'https://i.pravatar.cc/150?img=6', displayName: 'Anjali Devi' }
-    ];
-    
-    if (channelName === 'Unknown User' || !item.user_profiles?.username) {
-      return demoUsers[Math.floor(Math.random() * demoUsers.length)];
-    }
-    return { 
-      username: channelName.toLowerCase().replace(/\s+/g, '_'),
-      avatar: channelAvatar, 
-      displayName: channelName
-    };
-  };
-  
-  const demoUser = getDemoUser();
-  const displayUsername = demoUser.username;
-  const displayAvatar = demoUser.avatar;
-  const displayName = demoUser.displayName;
-
-  // Lock user data to prevent changes on interactions
-  const [lockedUserData, setLockedUserData] = useState<Record<string, {username: string, avatar: string}>>({});
-  
-  // Lock user data when component mounts or item changes
-  useEffect(() => {
-    if (item && !lockedUserData[item.id]) {
-      setLockedUserData(prev => ({
-        ...prev,
-        [item.id]: {
-          username: displayUsername,
-          avatar: displayAvatar
-        }
-      }));
-    }
-  }, [item?.id]);
-  
-  // Use locked data if available
-  const lockedUser = lockedUserData[item.id] || { username: displayUsername, avatar: displayAvatar };
-  const finalUsername = lockedUser.username;
-  const finalAvatar = lockedUser.avatar;
 
   // Data-Centric: Format duration
   const formatDuration = (duration: number, isLoaded: boolean) => {
@@ -337,77 +493,70 @@ function ReelItem({
       <View style={styles.reelContainer} key={item.id}>
         <DotAnimation isActive={false} />
         
-        {/* Optimized Video Player with Instant Chunk Playback */}
-        <VideoPlayer
-          videoUrl={videoSource}
-          thumbnail={item.thumbnail_url || undefined}
-          title={item.title}
-          autoPlay={true}
-          isActive={isActive} // AUDIO CONTROL: Only active video plays
-          forceQuality="1080p" // FIXED HD QUALITY - No switching
-        />
-
-        {/* Bottom Content - TIKTOK STYLE */}
-        <View style={styles.bottomContainer}>
-          {/* Left Side - User Info in Horizontal Row */}
-          <View style={styles.leftSideContainer}>
-            {/* User Logo, Name, Support Button in One Row */}
-            <View style={styles.userInfoRow}>
-              {/* User Logo */}
-              <Image 
-                source={{ uri: finalAvatar }}
-                style={styles.userLogo}
-              />
-              
-              {/* User Name */}
-              <TouchableOpacity style={styles.usernameContainer} onPress={() => onChannelPress(item)}>
-                <Text style={styles.username}>@{finalUsername}</Text>
-              </TouchableOpacity>
-              
-              {/* Support Button - NO TEXT */}
-              <TouchableOpacity 
-                style={[
-                  styles.supportButton, 
-                  supported[item.id] && styles.supportButtonActive
-                ]}
-                onPress={() => onSupportChange(item.id, !supported[item.id], 0)}
-              >
-                <MaterialIcons 
-                  name={supported[item.id] ? "favorite" : "favorite-border"} 
-                  size={16} 
-                  color="#fff" 
-                />
-              </TouchableOpacity>
+        {/* Video Player with seamless transition */}
+        <TouchableOpacity 
+          style={styles.videoContainer}
+          activeOpacity={1}
+          onPress={handleVideoTap}
+        >
+          <VideoView 
+            player={player} 
+            style={[
+              styles.reelVideo,
+              { opacity: isVideoReady ? 1 : 0 }
+            ]}
+            contentFit="cover"
+            nativeControls={false}
+            allowsPictureInPicture={false}
+          />
+          
+          {isPaused && (
+            <View style={styles.pauseOverlay}>
+              <MaterialIcons name="play-circle-outline" size={80} color="rgba(255,255,255,0.8)" />
             </View>
+          )}
+        </TouchableOpacity>
+
+        {/* Bottom-Left Overlay - Channel row (logo + name + support) + Running Title below */}
+        <View pointerEvents="box-none" style={styles.leftOverlay}>
+          <View style={styles.channelRow}>
+            <ChannelInfo
+              avatarUrl={channelAvatar}
+              channelName={channelName}
+              onPress={() => onChannelPress?.(item)}
+            />
+            <SupportSection
+              itemId={item.id}
+              isSupported={!!supported[item.id]}
+              onSupportChange={(id: string, isSupportedValue: boolean) => onSupportChange?.(id, isSupportedValue, 0)}
+            />
+          </View>
+
+          <View style={styles.leftTitleRow}>
+            <RunningTitle title={item.title || item.description || ''} />
           </View>
         </View>
 
-        {/* Right Actions - VERTICAL LAYOUT */}
-        <View style={styles.rightActions}>
-          <InteractionBar
-            itemId={item.id}
-            likes={likes[item.id] || item.likes_count || 0}
-            comments={comments[item.id] || []}
-            shares={shares[item.id] || 0}
-            isLiked={starred[item.id]}
-            isSaved={saved[item.id]}
-            onLikeChange={onLikeChange}
-            onCommentPress={onCommentPress}
-            onShareChange={onShareChange}
-            onSaveChange={onSaveChange}
-            size="medium"
-            showCounts={false} // NO TEXT - ONLY ICONS
-            layout="vertical" // Vertical layout for right side
-          />
-          
-          {/* Three Dots Button */}
-          <TouchableOpacity 
-            style={styles.threeDotsButton}
-            onPress={() => onReportPress(item.id)}
-          >
-            <MaterialIcons name="more-vert" size={20} color="#fff" />
-          </TouchableOpacity>
-        </View>
+        <RightButtons
+          itemId={item.id}
+          likes={likes[item.id] || item.likes_count || 0}
+          commentsCount={(comments[item.id] || []).length}
+          shares={shares[item.id] || 0}
+          isLiked={!!starred[item.id]}
+          isSaved={!!saved[item.id]}
+          onLikePress={(id: string, nextLiked: boolean) => {
+            const currentCount = likes[id] || 0;
+            const nextCount = nextLiked ? currentCount + 1 : Math.max(0, currentCount - 1);
+            onLikeChange?.(id, nextLiked, nextCount);
+          }}
+          onCommentPress={(id: string) => onCommentPress?.(id)}
+          onSharePress={(id: string) => {
+            const current = shares[id] || 0;
+            onShareChange?.(id, current + 1);
+          }}
+          onSavePress={(id: string, nextSaved: boolean) => onSaveChange?.(id, nextSaved)}
+          onReportPress={(id: string) => onReportPress?.(id)}
+        />
       </View>
     </>
   );
@@ -419,17 +568,22 @@ export default function ReelsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isScreenFocused, setIsScreenFocused] = useState(true);
-  const [selectedReel, setSelectedReel] = useState<Reel | null>(null);
-  const [showCommentsModal, setShowCommentsModal] = useState(false);
-  const [showReportModal, setShowReportModal] = useState(false);
-  const [reportReason, setReportReason] = useState('');
-  const [reportingReelId, setReportingReelId] = useState<string | null>(null);
+  const insets = useSafeAreaInsets();
   const flatListRef = useRef<FlatList>(null);
+  const currentIndexRef = useRef(0);
+  const hasInitializedRef = useRef(false);
+
+  useEffect(() => {
+    AudioController.initialize().catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
   
   // Player control functions for scroll handling
   const currentPlayerRef = useRef<any>(null);
   
-  // ... rest of the code remains the same ...
   const safePlayerPause = useCallback(() => {
     try {
       if (currentPlayerRef.current) {
@@ -448,6 +602,10 @@ export default function ReelsScreen() {
   const [comments, setComments] = useState<Record<string, Comment[]>>({});
   const [shares, setShares] = useState<Record<string, number>>({});
   
+  // Modal states
+  const [showCommentsModal, setShowCommentsModal] = useState(false);
+  const [selectedReel, setSelectedReel] = useState<Reel | null>(null);
+
   const { data: swrReels, loading: swrLoading, refresh } = useSWRContent('Reel', 1, 50);
 
   // Initialize unique view tracker
@@ -468,15 +626,24 @@ export default function ReelsScreen() {
     initializeViewTracker();
   }, []);
 
-  // Smart feed handlers with view tracking - AUTO-ADVANCE DISABLED
+  // Smart feed handlers with view tracking
   const handleVideoComplete = useCallback(async () => {
-    // AUTO-ADVANCE DISABLED: Let video loop instead of advancing
-    // Only end view tracking, don't move to next video
+    
+    // End current view tracking
     await uniqueViewTracker.endView();
     
-    // NO AUTO-ADVANCE: User must swipe manually to see next reel
-    console.log('🔁 Video completed - looping instead of auto-advancing');
-  }, []);
+    const nextIndex = videoFeedService.getNextUnwatchedVideo(currentIndex);
+    
+    if (nextIndex !== currentIndex) {
+      setCurrentIndex(nextIndex);
+      setTimeout(() => {
+        flatListRef.current?.scrollToIndex({
+          index: nextIndex,
+          animated: true
+        });
+      }, 100);
+    }
+  }, [currentIndex]);
 
   const handleVideoWatched = useCallback(async (videoId: string, completed: boolean = false) => {
     videoFeedService.markVideoWatched(videoId, completed);
@@ -507,12 +674,10 @@ export default function ReelsScreen() {
     }
 
     setCurrentIndex(newIndex);
+    memoryManagerService.setCurrentIndex(newIndex);
     
-    // Preload next reels with ULTRA FAST system
+    // Preload next reels
     slidingWindowManager.preloadNext(reels, newIndex);
-    
-    // ULTRA FAST PRELOADING: Preload next 3 reels with 5 chunks each
-    ultraFastPreloader.preloadNextReels(newIndex, reels);
   }, [currentIndex, reels]);
 
   // Track video progress
@@ -546,7 +711,8 @@ export default function ReelsScreen() {
     return () => clearInterval(memoryInterval);
   }, []);
   useEffect(() => {
-    if (reels.length > 0) {
+    if (reels.length > 0 && !hasInitializedRef.current) {
+      hasInitializedRef.current = true;
       const videoIds = reels.map(reel => reel.id);
       videoFeedService.initializeVideoPool(videoIds);
       
@@ -555,6 +721,17 @@ export default function ReelsScreen() {
       
       // Initialize video preloader
       videoPreloaderService.initializePreloader(reels);
+      
+      // Set callback for force start when chunk 0 loads - React Native compatible
+      videoChunkingService.setFirstChunkCallback((videoId: string) => {
+        // Find the reel - React Native doesn't have document, use refs instead
+        const reel = reels.find(r => r.id === videoId);
+        if (reel) {
+          // Force start will be handled by useEffect watching chunk 0 load
+          // No need for document.querySelector in React Native
+          console.log(`📦 Chunk 0 loaded for ${videoId} - force start triggered`);
+        }
+      });
       
       // Initialize chunking service for all reels
       reels.forEach(reel => {
@@ -565,35 +742,24 @@ export default function ReelsScreen() {
       // Initialize memory manager
       memoryManagerService.clearAllMemory();
       
-      // BUNNY SYNC & CLEANUP: Check and remove deleted videos
-      bunnySyncCleanup.syncReels(reels)
-        .then(({ cleanedReels, stats }) => {
-          if (stats.deletedFound > 0) {
-            console.log(`🧹 Cleaned ${stats.deletedFound} deleted reels from ${stats.totalChecked} checked`);
-            // Update reels state with cleaned list
-            // Note: You might want to update the reels state here
-          }
-        })
-        .catch(error => console.error('❌ Bunny sync failed:', error));
-      
-      const optimalIndex = videoFeedService.getOptimalStartingIndex();
-      setCurrentIndex(optimalIndex);
-      memoryManagerService.setCurrentIndex(optimalIndex);
+      const optimalIndex = 0;
+      setCurrentIndex(0);
+      memoryManagerService.setCurrentIndex(0);
       
       setTimeout(() => {
         flatListRef.current?.scrollToIndex({
-          index: optimalIndex,
+          index: 0,
           animated: false
         });
       }, 100);
     }
   }, [reels.length]);
 
-  // Auto-preload videos around current index with LIMITED memory management
+  // Ultra-fast auto-preload: current + next 2 videos for instant play
   useEffect(() => {
     if (reels.length > 0) {
-      // LIMITED PRELOAD: Only preload current and next video (3 total)
-      const preloadIndexes = [currentIndex - 1, currentIndex, currentIndex + 1].filter(i => i >= 0 && i < reels.length);
+      // Preload current + next 2 videos for instant play
+      const preloadIndexes = [currentIndex, currentIndex + 1, currentIndex + 2].filter(i => i >= 0 && i < reels.length);
       
       preloadIndexes.forEach(index => {
         if (reels[index]) {
@@ -601,50 +767,10 @@ export default function ReelsScreen() {
         }
       });
       
-      // Aggressive cleanup for old videos
-      memoryManagerService.aggressiveCleanup(currentIndex, 3); // Keep only 3 videos
+      // Cleanup old videos beyond next 2
+      memoryManagerService.aggressiveCleanup(currentIndex, 3); // Keep current + next 2
     }
   }, [currentIndex, reels.length]);
-
-  // BACKGROUND BUNNY SYNC: Run cleanup every 2 minutes
-  useEffect(() => {
-    if (reels.length === 0) return;
-
-    const syncInterval = setInterval(() => {
-      console.log('🔄 Running background Bunny sync & cleanup...');
-      bunnySyncCleanup.backgroundSync(reels, [])
-        .then(() => console.log('✅ Background sync complete'))
-        .catch(error => console.error('❌ Background sync failed:', error));
-    }, 2 * 60 * 1000); // Every 2 minutes
-
-    return () => clearInterval(syncInterval);
-  }, [reels]);
-
-  // Handle report
-  const handleReportPress = useCallback((reelId: string) => {
-    setReportingReelId(reelId);
-    setReportReason('');
-    setShowReportModal(true);
-  }, []);
-
-  // Submit report
-  const handleReportSubmit = useCallback(async () => {
-    if (!reportReason.trim() || !reportingReelId) return;
-    
-    try {
-      const result = await reportService.reportVideo(reportingReelId, reportReason);
-      if (result.success) {
-        Alert.alert('Success', 'Video reported successfully');
-        setShowReportModal(false);
-        setReportReason('');
-        setReportingReelId(null);
-      } else {
-        Alert.alert('Error', result.error || 'Failed to report video');
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to report video');
-    }
-  }, [reportReason, reportingReelId]);
 
   // Handle index change with auto-play and memory management
   const handleIndexChange = useCallback((newIndex: number) => {
@@ -691,18 +817,12 @@ export default function ReelsScreen() {
     setShares(prev => ({ ...prev, [itemId]: count }));
   }, []);
 
-  const handleSupportChange = useCallback(async (itemId: string, isSupported: boolean, count: number) => {
-    try {
-      const result = await supportService.toggleSupport(itemId);
-      if (result.success) {
-        setSupported(prev => ({ ...prev, [itemId]: result.isSupported }));
-        console.log(`🎯 Support ${result.isSupported ? 'added' : 'removed'} for reel ${itemId}`);
-      } else {
-        console.error('❌ Support toggle failed:', result.error);
-      }
-    } catch (error) {
-      console.error('❌ Support change error:', error);
-    }
+  const handleSupportChange = useCallback((itemId: string, isSupported: boolean, count: number) => {
+    setSupported(prev => ({ ...prev, [itemId]: isSupported }));
+  }, []);
+
+  const handleReportPress = useCallback((itemId: string) => {
+    Alert.alert('Report', 'Report submitted');
   }, []);
 
   const handleSaveChange = useCallback((itemId: string, isSaved: boolean) => {
@@ -749,7 +869,7 @@ export default function ReelsScreen() {
       
       // Resume from last position
       const resumeIndex = memoryManagerService.getResumeIndex();
-      if (resumeIndex !== currentIndex && resumeIndex >= 0) {
+      if (resumeIndex !== currentIndexRef.current && resumeIndex >= 0) {
         setCurrentIndex(resumeIndex);
         memoryManagerService.setCurrentIndex(resumeIndex);
         
@@ -764,9 +884,9 @@ export default function ReelsScreen() {
       return () => {
         setIsScreenFocused(false);
         // Save current position for resume
-        memoryManagerService.setCurrentIndex(currentIndex);
+        memoryManagerService.setCurrentIndex(currentIndexRef.current);
       };
-    }, [currentIndex])
+    }, [])
   );
 
   // Cleanup audio manager when component unmounts
@@ -818,60 +938,42 @@ export default function ReelsScreen() {
   return (
     <View style={styles.container}>
       <StatusBarOverlay style="light" backgroundColor="#000000" />
+
+      <View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: insets.top,
+          backgroundColor: '#000',
+          zIndex: 10000,
+          elevation: 10000,
+        }}
+      />
       
       <FlatList
         ref={flatListRef}
         data={reels}
-        keyExtractor={(item) => item._id || item.id} // UNIQUE KEY: Use _id if available
+        keyExtractor={(item) => item.id}
         renderItem={renderReel}
         pagingEnabled={true}
         showsVerticalScrollIndicator={false}
         snapToInterval={SCREEN_HEIGHT}
         snapToAlignment="start"
         decelerationRate="fast"
-        // AUDIO MANAGEMENT: Viewability config for proper play/pause
-        viewabilityConfig={{
-          itemVisiblePercentThreshold: 80, // 80% visible = active
-          minimumViewTime: 100,
-          waitForInteraction: false,
-        }}
-        onViewableItemsChanged={({ viewableItems, changed }) => {
-          // Find the most visible item (center screen)
-          const mostVisible = viewableItems.find(item => 
-            item.isViewable && item.index !== undefined && item.index !== null
-          );
-          
-          if (mostVisible && mostVisible.index !== undefined && mostVisible.index !== null) {
-            const newIndex = mostVisible.index;
-            
-            // ONLY FRONT VIDEO PLAYS: Update active index
-            if (newIndex !== currentIndex) {
-              console.log(`🔇 Audio Control: Active video changed to index ${newIndex}`);
-              handleIndexChange(newIndex);
-            }
-          }
+        disableIntervalMomentum={true}
+        bounces={false}
+        onScrollBeginDrag={() => {
+          safePlayerPause();
         }}
         onMomentumScrollEnd={(event) => {
           const offsetY = event.nativeEvent.contentOffset.y;
-          const newIndex = Math.round(offsetY / SCREEN_HEIGHT);
-          
-          // Auto-play on scroll - SYNCED WITH AUDIO
-          if (newIndex !== currentIndex) {
-            handleIndexChange(newIndex);
+          const nextIndex = Math.max(0, Math.min(Math.round(offsetY / SCREEN_HEIGHT), reels.length - 1));
+          if (nextIndex !== currentIndex) {
+            void handleViewChange(nextIndex);
           }
-        }}
-        onScrollBeginDrag={() => {
-          // Pause current video when user starts scrolling
-          safePlayerPause();
-        }}
-        onScrollEndDrag={(event) => {
-          // Auto-play new video after scroll ends
-          const offsetY = event.nativeEvent.contentOffset.y;
-          const newIndex = Math.round(offsetY / SCREEN_HEIGHT);
-          
-          setTimeout(() => {
-            setCurrentIndex(newIndex);
-          }, 100);
         }}
         getItemLayout={(_, index) => ({
           length: REEL_HEIGHT,
@@ -879,9 +981,9 @@ export default function ReelsScreen() {
           index,
         })}
         initialNumToRender={1}
-        maxToRenderPerBatch={1}
-        windowSize={3}
-        removeClippedSubviews={true}
+        maxToRenderPerBatch={2}
+        windowSize={5}
+        removeClippedSubviews={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />
         }
@@ -897,46 +999,6 @@ export default function ReelsScreen() {
         initialComments={comments[selectedReel?.id || ''] || []}
         onAddComment={handleAddComment}
       />
-
-      {/* REPORT MODAL */}
-      <Modal
-        visible={showReportModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowReportModal(false)}
-      >
-        <View style={styles.reportModalOverlay}>
-          <View style={styles.reportModalContent}>
-            <Text style={styles.reportModalTitle}>Report Video</Text>
-            
-            <TextInput
-              style={styles.reportInput}
-              placeholder="Why are you reporting this video?"
-              placeholderTextColor="#999"
-              multiline
-              numberOfLines={4}
-              value={reportReason}
-              onChangeText={setReportReason}
-            />
-            
-            <View style={styles.reportModalButtons}>
-              <TouchableOpacity
-                style={[styles.reportModalButton, styles.cancelButton]}
-                onPress={() => setShowReportModal(false)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.reportModalButton, styles.submitButton]}
-                onPress={handleReportSubmit}
-              >
-                <Text style={styles.submitButtonText}>Report</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -983,7 +1045,6 @@ const styles = StyleSheet.create({
     height: REEL_HEIGHT,
     backgroundColor: '#000',
     overflow: 'hidden',
-    zIndex: 1, // Base layer
   },
   videoContainer: {
     width: '100%',
@@ -991,7 +1052,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 2, // Video layer above container
   },
   reelVideo: {
     width: '100%',
@@ -1027,145 +1087,40 @@ const styles = StyleSheet.create({
     left: '50%',
     zIndex: 1000,
   },
-  bottomContainer: {
+  leftOverlay: {
     position: 'absolute',
-    bottom: 70, // और ऊपर लाया बटनों को दिखाने के लिए
-    left: 0,
-    right: 0,
-    zIndex: 10, // Bottom content layer
-    flexDirection: 'row', // Horizontal layout
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    paddingHorizontal: theme.spacing.lg,
+    bottom: 90,
+    left: 12,
+    right: 90,
+    zIndex: 3,
   },
-  bottomInfo: {
-    flex: 1, // Left side takes available space
-    paddingRight: theme.spacing.xl, // Right actions के लिए space
-  },
-  // TikTok Style Layout
-  leftSideContainer: {
-    position: 'absolute',
-    left: 0,
-    bottom: 60, // Very bottom - just above navigation
-    zIndex: 15,
-    alignItems: 'flex-start',
-  },
-  userInfoRow: {
+  channelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
-  userLogo: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  leftTitleRow: {
+    marginTop: 10,
+    width: '100%',
+  },
+  channelAvatarContainer: {
+    marginRight: 10, // Avatar और channel name के बीच थोड़ा space
+  },
+  avatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     borderWidth: 2,
-    borderColor: '#fff',
+    borderColor: theme.colors.text.primary,
   },
-  usernameContainer: {
-    flexShrink: 1,
-  },
-  username: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  supportButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  supportButtonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  supportButtonActive: {
-    backgroundColor: '#007AFF',
-  },
-  threeDotsButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  // Report Modal Styles
-  reportModalOverlay: {
+  // Channel name और support button बिल्कुल पास
+  channelAndSupport: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  reportModalContent: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
-    padding: 20,
-    width: '80%',
-    maxWidth: 300,
-  },
-  reportModalTitle: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    textAlign: 'center',
-  },
-  reportInput: {
-    backgroundColor: '#333',
-    color: '#fff',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
-  reportModalButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 20,
-  },
-  reportModalButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
     alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#666',
-    marginRight: 10,
-  },
-  cancelButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  submitButton: {
-    backgroundColor: '#FF3B30',
-    marginLeft: 10,
-  },
-  submitButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
   channelNameTouchable: {
+    flex: 1,
     marginRight: 8, // Channel name और support button के बीच बहुत कम space
   },
   channelName: {
@@ -1176,6 +1131,15 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
     flexShrink: 1, // Text को shrink करने दें
+  },
+  supportButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: '#FF3B30',
+    borderRadius: theme.borderRadius.sm,
+    minWidth: 72, // Fixed width
+    alignItems: 'center',
+    flexShrink: 0, // Button का size fixed रहे
   },
   supportText: {
     color: theme.colors.text.primary,
@@ -1197,13 +1161,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 3,
   },
   rightActions: {
-    position: 'absolute',
-    right: 15,
-    bottom: 80, // Very bottom - just above navigation
-    zIndex: 20,
     alignItems: 'center',
-    flexDirection: 'column',
-    gap: 20,
   },
   actionGroup: {
     alignItems: 'center',

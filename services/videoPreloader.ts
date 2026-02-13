@@ -12,7 +12,7 @@ interface PreloadVideo {
 class VideoPreloaderService {
   private preloadedVideos: Map<string, PreloadVideo> = new Map();
   private preloadQueue: string[] = [];
-  private maxPreloadCount = 2; // LIMITED: preload only next 2 videos
+  private maxPreloadCount = 3; // Preload current + next 2 videos for instant play
   private isPreloading = false;
   private aggressiveMode = false; // DISABLE aggressive pre-fetching
   private preloadingStatus: Map<string, 'preloading' | 'completed' | 'failed'> = new Map();
@@ -33,7 +33,7 @@ class VideoPreloaderService {
     });
   }
 
-  // LIMITED pre-warming - keep only next 1 video ready
+  // Ultra-fast pre-warming - load current + next 2 videos for instant play
   async preloadAroundIndex(currentIndex: number, totalVideos: { id: string; video_url: string }[]) {
     if (this.isPreloading) return;
     
@@ -43,10 +43,10 @@ class VideoPreloaderService {
       // Clear videos that are too far from current index
       this.clearDistantPreloads(currentIndex);
       
-      // LIMITED: Load only next 1 video
+      // Load current + next 2 videos for instant play
       const preloadPromises: Promise<void>[] = [];
       
-      for (let i = 0; i <= 1; i++) { // Include current + next 1
+      for (let i = 0; i <= 2; i++) { // Include current + next 2
         const nextIndex = (currentIndex + i) % totalVideos.length;
         const video = totalVideos[nextIndex];
         
@@ -87,9 +87,9 @@ class VideoPreloaderService {
       this.preloadingStatus.set(videoId, 'preloading');
       console.log('🔥 LIMITED PRELOAD STARTING:', videoId);
 
-      // Create AbortController for timeout
+      // Create AbortController for timeout - increased to 15s for slow networks
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
 
       try {
         // Strict URL validation with HEAD request first
@@ -104,8 +104,8 @@ class VideoPreloaderService {
 
         clearTimeout(timeoutId);
 
-        // KILL 404 PRELOAD: Strict response check
-        if (!headResponse.ok || headResponse.status !== 200) {
+        // Accept 200 (OK) and 206 (Partial Content) - both are valid for Range requests
+        if (!headResponse.ok && headResponse.status !== 206) {
           console.log(`⚠️ Skipping preload - URL not accessible: ${videoId} Status: ${headResponse.status}`);
           this.preloadingStatus.set(videoId, 'failed');
           return;
@@ -120,7 +120,8 @@ class VideoPreloaderService {
           }
         });
 
-        if (!response.ok) {
+        // Accept 200 (OK) and 206 (Partial Content) - Status 206 is valid for Range requests
+        if (!response.ok && response.status !== 206) {
           console.log(`⚠️ Preload failed - Bad response: ${videoId} Status: ${response.status}`);
           this.preloadingStatus.set(videoId, 'failed');
           return;
