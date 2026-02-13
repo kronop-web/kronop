@@ -37,16 +37,6 @@ export const userApi = {
     });
   },
   
-  getEarnings: async (userId: string) => {
-    return await apiCall(`/users/${userId}/earnings`);
-  },
-  
-  requestWithdrawal: async (userId: string, amount: number, method: string) => {
-    return await apiCall(`/users/${userId}/withdrawal`, {
-      method: 'POST',
-      body: JSON.stringify({ amount, method }),
-    });
-  },
 };
 
 // ==================== CONTENT API ====================

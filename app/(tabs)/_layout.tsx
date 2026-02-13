@@ -2,7 +2,7 @@ import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../constants/theme';
-import { Sparkles, Monitor, Radio, Shapes, Command, Settings2 } from 'lucide-react-native';
+import { Home, Sparkles, Monitor, Radio, Database, User } from 'lucide-react-native';
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
@@ -11,35 +11,39 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#FFFFFF',
-        tabBarInactiveTintColor: '#FFFFFF',
+        tabBarActiveTintColor: theme.colors.primary.main,
+        tabBarInactiveTintColor: theme.colors.text.tertiary,
         tabBarShowLabel: false,
         tabBarStyle: {
-          backgroundColor: '#000000', // Dark background
-          borderTopColor: '#333333',
+          backgroundColor: theme.colors.background.primary,
+          borderTopColor: theme.colors.border.primary,
           borderTopWidth: 1,
           height: Platform.select({
-            ios: insets.bottom + 35,
-            android: insets.bottom + 35,
-            default: 45,
+            ios: insets.bottom + 50,
+            android: insets.bottom + 50,
+            default: 56,
           }),
-          paddingTop: 2,
+          paddingTop: 6,
           paddingBottom: Platform.select({
-            ios: insets.bottom + 2,
-            android: insets.bottom + 2,
-            default: 2,
+            ios: insets.bottom + 6,
+            android: insets.bottom + 6,
+            default: 6,
           }),
           paddingHorizontal: 8,
         },
         tabBarLabelStyle: {
-          fontSize: 0,
+          fontSize: 11,
           fontWeight: theme.typography.fontWeight.medium,
-          marginTop: 0,
+          marginTop: 2,
           marginBottom: 0,
         },
         tabBarIconStyle: {
           marginTop: 0,
           marginBottom: 0,
+        },
+        tabBarItemStyle: {
+          alignItems: 'center',
+          justifyContent: 'center',
         },
       }}
     >
@@ -47,42 +51,42 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <Shapes size={24} color={color} strokeWidth={1.0} />,
+          tabBarIcon: ({ color }) => <Home size={24} color={color} strokeWidth={2} />,
         }}
       />
       <Tabs.Screen
         name="reels"
         options={{
           title: 'Reels',
-          tabBarIcon: ({ color }) => <Sparkles size={24} color={color} strokeWidth={1.0} />,
+          tabBarIcon: ({ color }) => <Sparkles size={24} color={color} strokeWidth={2} />,
         }}
       />
       <Tabs.Screen
         name="video"
         options={{
           title: 'Video',
-          tabBarIcon: ({ color }) => <Monitor size={24} color={color} strokeWidth={1.0} />,
+          tabBarIcon: ({ color }) => <Monitor size={24} color={color} strokeWidth={2} />,
         }}
       />
       <Tabs.Screen
         name="live"
         options={{
           title: 'Live',
-          tabBarIcon: ({ color }) => <Radio size={24} color={color} strokeWidth={1.0} />,
+          tabBarIcon: ({ color }) => <Radio size={24} color={color} strokeWidth={2} />,
         }}
       />
       <Tabs.Screen
         name="userdata"
         options={{
-          title: 'Dashboard',
-          tabBarIcon: ({ color }) => <Command size={24} color={color} strokeWidth={1.0} />,
+          title: 'Database',
+          tabBarIcon: ({ color }) => <Database size={24} color={color} strokeWidth={2} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color }) => <Settings2 size={24} color={color} strokeWidth={1.0} />,
+          tabBarIcon: ({ color }) => <User size={24} color={color} strokeWidth={2} />,
         }}
       />
       <Tabs.Screen

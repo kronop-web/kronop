@@ -29,7 +29,6 @@ export const API_ENDPOINTS = {
   
   // User endpoints
   USER_PROFILE: `${BASE_URL}/user/profile`,
-  USER_EARNINGS: `${BASE_URL}/user/earnings`,
   
   // Auth endpoints
   LOGIN: `${BASE_URL}/auth/login`,

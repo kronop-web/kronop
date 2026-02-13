@@ -10,7 +10,6 @@ import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { userProfileApi, reelsApi, videosApi, photosApi, liveApi, savedApi } from '../../services/api';
-import EarningsSummary from '../../components/feature/EarningsSummary';
 import userContentService, { ContentType } from '../../services/userContentService';
 
 type TabType = 'reels' | 'video' | 'live' | 'photo' | 'save';
@@ -95,12 +94,8 @@ export default function ProfileScreen() {
   const [supportingModalVisible, setSupportingModalVisible] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [showUserDataModal, setShowUserDataModal] = useState(false);
-  const [showEarningsSection, setShowEarningsSection] = useState(false);
   const [supportersList, setSupportersList] = useState<any[]>([]);
   const [supportingList, setSupportingList] = useState<any[]>([]);
-  const [showBankModal, setShowBankModal] = useState(false);
-  const [showDepartmentModal, setShowDepartmentModal] = useState(false);
-
   const [photos, setPhotos] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
   const [reels, setReels] = useState<any[]>([]);
@@ -746,10 +741,7 @@ export default function ProfileScreen() {
             
             <TouchableOpacity 
               style={styles.statItem}
-              onPress={() => {
-                setSupportersModalVisible(true);
-                setShowEarningsSection(true);
-              }}
+              onPress={() => setSupportersModalVisible(true)}
             >
               <Text style={styles.statNumber}>{stats.supporters.toLocaleString()}</Text>
               <Text style={styles.statLabel}>Supporters</Text>
@@ -757,10 +749,7 @@ export default function ProfileScreen() {
             
             <TouchableOpacity 
               style={styles.statItem}
-              onPress={() => {
-                setSupportingModalVisible(true);
-                setShowEarningsSection(true);
-              }}
+              onPress={() => setSupportingModalVisible(true)}
             >
               <Text style={styles.statNumber}>{stats.supporting}</Text>
               <Text style={styles.statLabel}>Supporting</Text>
@@ -782,9 +771,6 @@ export default function ProfileScreen() {
               <Text style={[styles.infoText, styles.websiteText]}>{profileData.website}</Text>
             </TouchableOpacity>
           )}
-
-          {/* Earnings Summary Section */}
-          <EarningsSummary onPress={() => router.push('/men/earnings')} />
 
           {/* Action Button - Only Edit Profile */}
           <TouchableOpacity style={styles.editButton} onPress={() => setEditModalVisible(true)}>
@@ -816,25 +802,6 @@ export default function ProfileScreen() {
           ))}
         </View>
 
-        {/* Quick Actions */}
-        <View style={styles.quickActionsContainer}>
-          <TouchableOpacity 
-            style={styles.quickActionButton}
-            onPress={() => setShowBankModal(true)}
-          >
-            <MaterialIcons name="account-balance-wallet" size={20} color={theme.colors.primary.main} />
-            <Text style={styles.quickActionText}>Bank Details</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.quickActionButton}
-            onPress={() => setShowDepartmentModal(true)}
-          >
-            <MaterialIcons name="storage" size={20} color={theme.colors.primary.main} />
-            <Text style={styles.quickActionText}>Department Database</Text>
-          </TouchableOpacity>
-        </View>
-
         {/* Content Grid */}
         {renderContent()}
       </ScrollView>
@@ -849,36 +816,6 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
           <ScrollView style={styles.supportListScroll} showsVerticalScrollIndicator={false}>
-            {showEarningsSection && (
-              <View style={styles.earningSection}>
-                <View style={styles.earningHeader}>
-                  <MaterialIcons name="trending-up" size={24} color="#4CAF50" />
-                  <Text style={styles.earningTitle}>You Are Earning</Text>
-                </View>
-                <View style={styles.earningStats}>
-                  <View style={styles.earningStat}>
-                    <Text style={styles.earningAmount}>$2,450</Text>
-                    <Text style={styles.earningLabel}>This Month</Text>
-                  </View>
-                  <View style={styles.earningStat}>
-                    <Text style={styles.earningAmount}>$28,500</Text>
-                    <Text style={styles.earningLabel}>Total Earnings</Text>
-                  </View>
-                </View>
-                <TouchableOpacity 
-                  style={styles.viewEarningsButton}
-                  onPress={() => {
-                    router.push('/men/earnings');
-                    setSupportersModalVisible(false);
-                    setShowEarningsSection(false);
-                  }}
-                >
-                  <Text style={styles.viewEarningsButtonText}>View Full Earnings</Text>
-                  <MaterialIcons name="arrow-forward" size={16} color="#fff" />
-                </TouchableOpacity>
-              </View>
-            )}
-            
             {supportersList.length === 0 ? (
               <View style={styles.emptySupport}>
                 <MaterialIcons name="people-outline" size={60} color={theme.colors.text.tertiary} />
@@ -913,36 +850,6 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
           <ScrollView style={styles.supportListScroll} showsVerticalScrollIndicator={false}>
-            {showEarningsSection && (
-              <View style={styles.earningSection}>
-                <View style={styles.earningHeader}>
-                  <MaterialIcons name="trending-up" size={24} color="#4CAF50" />
-                  <Text style={styles.earningTitle}>You Are Earning</Text>
-                </View>
-                <View style={styles.earningStats}>
-                  <View style={styles.earningStat}>
-                    <Text style={styles.earningAmount}>$2,450</Text>
-                    <Text style={styles.earningLabel}>This Month</Text>
-                  </View>
-                  <View style={styles.earningStat}>
-                    <Text style={styles.earningAmount}>$28,500</Text>
-                    <Text style={styles.earningLabel}>Total Earnings</Text>
-                  </View>
-                </View>
-                <TouchableOpacity 
-                  style={styles.viewEarningsButton}
-                  onPress={() => {
-                    router.push('/men/earnings');
-                    setSupportingModalVisible(false);
-                    setShowEarningsSection(false);
-                  }}
-                >
-                  <Text style={styles.viewEarningsButtonText}>View Full Earnings</Text>
-                  <MaterialIcons name="arrow-forward" size={16} color="#fff" />
-                </TouchableOpacity>
-              </View>
-            )}
-            
             {supportingList.length === 0 ? (
               <View style={styles.emptySupport}>
                 <MaterialIcons name="people-outline" size={60} color={theme.colors.text.tertiary} />
@@ -971,7 +878,7 @@ export default function ProfileScreen() {
       <Modal visible={showAnalyticsModal} animationType="slide" presentationStyle="pageSheet">
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>User Analytics & Earnings</Text>
+            <Text style={styles.modalTitle}>User Analytics</Text>
             <TouchableOpacity onPress={() => setShowAnalyticsModal(false)}>
               <MaterialIcons name="close" size={24} color={theme.colors.text.primary} />
             </TouchableOpacity>
@@ -997,36 +904,6 @@ export default function ProfileScreen() {
               <Text style={styles.analyticsSubtext}>From all content</Text>
             </View>
 
-            {/* Earnings Breakdown */}
-            <View style={styles.analyticsSection}>
-              <View style={styles.analyticsHeader}>
-                <MaterialIcons name="attach-money" size={24} color={theme.colors.primary.main} />
-                <Text style={styles.analyticsSectionTitle}>Earnings Breakdown</Text>
-              </View>
-              <View style={styles.earningsGrid}>
-                <View style={styles.earningsItem}>
-                  <MaterialIcons name="auto-stories" size={20} color="#FF0000" />
-                  <Text style={styles.earningsLabel}>Stories</Text>
-                  <Text style={styles.earningsAmount}>$125.50</Text>
-                </View>
-                <View style={styles.earningsItem}>
-                  <MaterialIcons name="photo" size={20} color="#2196F3" />
-                  <Text style={styles.earningsLabel}>Photos</Text>
-                  <Text style={styles.earningsAmount}>$340.75</Text>
-                </View>
-                <View style={styles.earningsItem}>
-                  <MaterialIcons name="theaters" size={20} color="#9C27B0" />
-                  <Text style={styles.earningsLabel}>Reels</Text>
-                  <Text style={styles.earningsAmount}>$892.25</Text>
-                </View>
-                <View style={styles.earningsItem}>
-                  <MaterialIcons name="videocam" size={20} color="#FF9800" />
-                  <Text style={styles.earningsLabel}>Videos</Text>
-                  <Text style={styles.earningsAmount}>$567.00</Text>
-                </View>
-              </View>
-            </View>
-
             {/* Total Count */}
             <View style={styles.analyticsSection}>
               <View style={styles.analyticsHeader}>
@@ -1049,21 +926,6 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            {/* Final Total Earnings */}
-            <View style={[styles.analyticsSection, styles.totalEarningsSection]}>
-              <View style={styles.analyticsHeader}>
-                <MaterialIcons name="account-balance-wallet" size={24} color="#FF0000" />
-                <Text style={styles.analyticsSectionTitle}>Total Earnings</Text>
-              </View>
-              <Text style={styles.totalEarningsAmount}>$1,925.50</Text>
-              <Text style={styles.analyticsSubtext}>All time earnings combined</Text>
-              <View style={styles.earningsProgress}>
-                <View style={styles.progressBar}>
-                  <View style={[styles.progressFill, { width: '75%', backgroundColor: '#FF0000' }]} />
-                </View>
-                <Text style={styles.progressText}>75% to next milestone</Text>
-              </View>
-            </View>
           </ScrollView>
         </View>
       </Modal>
@@ -1656,24 +1518,6 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
     marginTop: 12,
   },
-  earningsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FF0000',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    marginTop: 16,
-    marginBottom: 16,
-    width: '100%',
-  },
-  earningsButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
   userDataButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1701,11 +1545,6 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 12,
   },
-  totalEarningsSection: {
-    backgroundColor: 'rgba(255, 0, 0, 0.1)',
-    borderWidth: 1,
-    borderColor: '#FF0000',
-  },
   analyticsHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1727,30 +1566,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.colors.text.secondary,
   },
-  earningsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  earningsItem: {
-    width: '48%',
-    backgroundColor: theme.colors.background.primary,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  earningsLabel: {
-    fontSize: 12,
-    color: theme.colors.text.secondary,
-    marginTop: 4,
-    marginBottom: 2,
-  },
-  earningsAmount: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.colors.text.primary,
-  },
   contentCount: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -1767,31 +1582,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: theme.colors.text.secondary,
     marginTop: 4,
-  },
-  totalEarningsAmount: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#FF0000',
-    marginBottom: 8,
-  },
-  earningsProgress: {
-    marginTop: 12,
-  },
-  progressBar: {
-    height: 6,
-    backgroundColor: theme.colors.border.primary,
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 3,
-  },
-  progressText: {
-    fontSize: 12,
-    color: theme.colors.text.secondary,
-    marginTop: 8,
-    textAlign: 'center',
   },
   userDataContent: {
     backgroundColor: theme.colors.background.secondary,
@@ -1848,138 +1638,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.colors.text.secondary,
     fontWeight: '500',
-  },
-  earningSection: {
-    backgroundColor: 'rgba(76, 175, 80, 0.1)',
-    margin: 16,
-    marginBottom: 20,
-    padding: 20,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(76, 175, 80, 0.3)',
-  },
-  earningHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  earningTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#4CAF50',
-    marginLeft: 12,
-  },
-  earningStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 16,
-  },
-  earningStat: {
-    alignItems: 'center',
-  },
-  earningAmount: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: theme.colors.text.primary,
-    marginBottom: 4,
-  },
-  earningLabel: {
-    fontSize: 12,
-    color: theme.colors.text.secondary,
-  },
-  viewEarningsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#4CAF50',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    gap: 8,
-  },
-  viewEarningsButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  quickActionsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: theme.colors.background.secondary,
-    marginVertical: 8,
-    borderRadius: 12,
-  },
-  quickActionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.background.primary,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: theme.colors.border.primary,
-  },
-  quickActionText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: theme.colors.text.primary,
-    marginLeft: 6,
-  },
-  bankSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border.primary,
-  },
-  bankLabel: {
-    fontSize: 14,
-    color: theme.colors.text.secondary,
-    flex: 1,
-  },
-  bankValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: theme.colors.text.primary,
-    flex: 2,
-    textAlign: 'right',
-  },
-  departmentSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border.primary,
-  },
-  departmentLabel: {
-    fontSize: 14,
-    color: theme.colors.text.secondary,
-    flex: 1,
-  },
-  departmentValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: theme.colors.text.primary,
-    flex: 2,
-    textAlign: 'right',
-  },
-  syncButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.primary.main,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginTop: 16,
-  },
-  syncButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
-    marginLeft: 8,
   },
 });

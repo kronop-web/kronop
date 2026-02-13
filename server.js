@@ -28,7 +28,6 @@ const SignedUrlService = require('./services/signedUrlService');
 // ==================== ROUTES ====================
 const contentRoutes = require('./api/content');
 const userRoutes = require('./api/users');
-const earningsRoutes = require('./api/earnings');
 const authRoutes = require('./api/auth');
 const notificationRoutes = require('./api/notifications');
 const autosyncRoutes = require('./api/autosync');
@@ -412,7 +411,6 @@ apiRouter.get('/health', (req, res) => {
 
 apiRouter.use('/content', contentRoutes);
 apiRouter.use('/users', userRoutes);
-apiRouter.use('/earnings', earningsRoutes);
 apiRouter.use('/auth', authRoutes);
 apiRouter.use('/notifications', notificationRoutes);
 apiRouter.use('/viral', viralRoutes);

@@ -239,10 +239,6 @@ export const KRONOP_KNOWLEDGE_BASE = {
       factors: ["user interests", "viewing history", "engagement patterns"],
       categories: ["Personalized feed", "Trending content", "Category-based"]
     },
-    monetization: {
-      methods: ["Direct support", "Ad revenue sharing", "Premium features"],
-      payout: "Monthly payouts to verified creators"
-    },
     realTime: {
       notifications: "Push notifications for interactions",
       liveStreaming: "Real-time video streaming",

@@ -806,15 +806,6 @@ export const userProfileApi = {
     return await apiCall('/users/supporting');
   },
 
-  getEarnings: async (userId?: string) => {
-    const endpoint = userId ? `/users/${userId}/earnings` : '/users/earnings';
-    return await apiCall(endpoint);
-  },
-
-  getTransactions: async (userId?: string) => {
-    const endpoint = userId ? `/users/${userId}/transactions` : '/users/transactions';
-    return await apiCall(endpoint);
-  }
 };
 
 // ==================== CHUNK UPLOAD HELPER ====================

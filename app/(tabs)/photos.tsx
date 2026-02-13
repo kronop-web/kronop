@@ -236,17 +236,6 @@ export default function PhotosScreen() {
         }
       />
 
-      {/* PHOTOS EARNINGS BUTTON */}
-      <TouchableOpacity 
-        style={styles.earningsButton}
-        onPress={() => {
-          // Open user's photo earnings list
-          // TODO: Navigate to earnings list modal
-        }}
-      >
-        <MaterialIcons name="trending-up" size={20} color="#fff" />
-        <Text style={styles.earningsButtonText}>My Photo Earnings</Text>
-      </TouchableOpacity>
     </SafeScreen>
   );
 }
@@ -495,30 +484,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.xs,
-  },
-  earningsButton: {
-    position: 'absolute',
-    bottom: theme.spacing.xl,
-    right: theme.spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
-    backgroundColor: theme.colors.primary.main,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    borderRadius: theme.borderRadius.full,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  earningsButtonText: {
-    fontSize: theme.typography.fontSize.sm,
-    fontWeight: theme.typography.fontWeight.semibold,
-    color: '#fff',
   },
 });

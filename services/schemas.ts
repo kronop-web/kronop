@@ -1,5 +1,5 @@
 // ==================== KRONOP DATABASE SCHEMAS ====================
-// Complete database schemas for User Profile, Content Analytics, and Earnings
+// Complete database schemas for User Profile and Content Analytics
 
 import { Document } from 'mongodb';
 
@@ -40,34 +40,11 @@ export interface User extends Document {
     totalViews: number;
   };
   
-  // Wallet & Earnings
-  wallet: {
-    totalEarnings: number; // In cents/currency units
-    currentBalance: number;
-    pendingWithdrawals: number;
-    totalWithdrawn: number;
-    currency: string; // USD, EUR, etc.
-  };
-  
-  // Subscription & Monetization
-  monetization: {
-    isMonetized: boolean;
-    subscriptionPrice?: number;
-    supporterCount: number;
-    subscriptionTiers: {
-      name: string;
-      price: number;
-      benefits: string[];
-      subscriberCount: number;
-    }[];
-  };
-  
   // Settings
   settings: {
     privacy: 'public' | 'friends' | 'private';
     allowComments: boolean;
     allowDownloads: boolean;
-    showEarnings: boolean;
     notifications: {
       likes: boolean;
       comments: boolean;
@@ -193,40 +170,6 @@ export interface Content extends Document {
   
   // Analytics Reference
   analyticsId?: string; // Reference to ContentAnalytics
-}
-
-// ==================== TRANSACTION SCHEMA ====================
-export interface Transaction extends Document {
-  _id?: string;
-  id: string;
-  userId: string;
-  
-  // Transaction Details
-  type: 'earning' | 'withdrawal' | 'refund' | 'bonus';
-  amount: number;
-  currency: string;
-  
-  // Source Information
-  source: {
-    type: 'ad' | 'subscription' | 'direct' | 'system';
-    contentId?: string; // If from specific content
-    supporterId?: string; // If from subscription
-    description: string;
-  };
-  
-  // Status
-  status: 'pending' | 'completed' | 'failed' | 'cancelled';
-  
-  // Processing Details
-  processing: {
-    initiatedAt: Date;
-    completedAt?: Date;
-    method?: string; // bank_transfer, paypal, crypto
-    transactionId?: string; // External transaction ID
-  };
-  
-  createdAt: Date;
-  updatedAt: Date;
 }
 
 // ==================== SEARCH INDEX SCHEMA ====================

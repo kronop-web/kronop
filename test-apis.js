@@ -92,12 +92,6 @@ async function runTests() {
   await testEndpoint('GET', '/users/profile', null, 'Get Profile');
   await testEndpoint('POST', '/users/sync', { userId: 'test_user' }, 'Sync User');
   
-  // Test Earnings APIs
-  console.log('\n💰 Testing Earnings APIs...');
-  await testEndpoint('GET', '/earnings/data', null, 'Get Earnings Data');
-  await testEndpoint('GET', '/earnings/balance', null, 'Get Balance');
-  await testEndpoint('GET', '/earnings/points', null, 'Get Points');
-  
   // Test Auth APIs
   console.log('\n🔐 Testing Auth APIs...');
   await testEndpoint('POST', '/auth/login', { 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, FlatList, StyleSheet, TouchableOpacity, Text, TextInput, ActivityIndicator, Platform, SafeAreaView } from 'react-native';
+import { View, FlatList, StyleSheet, TouchableOpacity, Text, ActivityIndicator, Platform, SafeAreaView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -48,8 +48,6 @@ export default function HomeScreen() {
   const router = useRouter();
   const { showAlert } = useAlert();
   const insets = useSafeAreaInsets(); // Get safe area insets
-  const [searchQuery, setSearchQuery] = useState('');
-
   // Stories state - Grouped by user
   const [groupedStories, setGroupedStories] = useState<GroupedStory[]>([]);
   const [storiesLoading, setStoriesLoading] = useState(true);
@@ -181,39 +179,6 @@ export default function HomeScreen() {
     }
   };
 
-  const handleImageSearch = () => {
-    router.push('/image-search');
-  };
-
-  const handleCameraSearch = async () => {
-    try {
-      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-      
-      if (permissionResult.granted === false) {
-        showAlert('Permission Required', 'Camera permission is needed for camera search');
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        quality: 1,
-      });
-
-      if (!result.canceled) {
-        showAlert('Camera Search', 'Searching with camera image...');
-      }
-    } catch (error: any) {
-      console.error('Camera search error:', error);
-      showAlert('Error', error.message || 'Failed to open camera');
-    }
-  };
-
-  const handleTextSearch = () => {
-    if (searchQuery.trim()) {
-      router.push('/search');
-    }
-  };
-
   const handleCategoryPress = async (categoryId: string) => {
     setSelectedCategory(categoryId);
     setPhotosPage(1);
@@ -292,14 +257,6 @@ export default function HomeScreen() {
           <Text style={styles.appTitle}>Kronop</Text>
           <View style={styles.headerActions}>
             <TouchableOpacity 
-              onPress={handleImageSearch}
-              hitSlop={theme.hitSlop.md}
-              activeOpacity={0.7}
-              style={styles.headerButton}
-            >
-              <MaterialIcons name="image-search" size={theme.iconSize.lg} color={theme.colors.text.primary} />
-            </TouchableOpacity>
-            <TouchableOpacity 
               onPress={() => router.push('/chat')}
               hitSlop={theme.hitSlop.md}
               activeOpacity={0.7}
@@ -325,37 +282,6 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
         </View>
-
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <MaterialIcons name="search" size={20} color={theme.colors.text.tertiary} style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search images..."
-            placeholderTextColor={theme.colors.text.tertiary}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            onSubmitEditing={handleTextSearch}
-            returnKeyType="search"
-          />
-          <TouchableOpacity 
-            onPress={handleImageSearch}
-            hitSlop={theme.hitSlop.sm}
-            activeOpacity={0.7}
-            style={styles.searchAction}
-          >
-            <MaterialIcons name="image" size={20} color={theme.colors.text.tertiary} />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={handleCameraSearch}
-            hitSlop={theme.hitSlop.sm}
-            activeOpacity={0.7}
-            style={styles.searchAction}
-          >
-            <MaterialIcons name="camera-alt" size={20} color={theme.colors.text.tertiary} />
-          </TouchableOpacity>
-        </View>
-      </View>
 
       <FlatList
         data={[]}
@@ -488,34 +414,6 @@ const styles = StyleSheet.create({
   uploadButton: {
     padding: theme.spacing.xs,
   },
-  searchContainer: {
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border.primary,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.background.tertiary,
-    borderRadius: theme.borderRadius.full,
-    height: 40,
-    paddingHorizontal: theme.spacing.md,
-  },
-  searchIcon: {
-    marginRight: theme.spacing.sm,
-  },
-  searchInput: {
-    flex: 1,
-    color: theme.colors.text.primary,
-    fontSize: theme.typography.fontSize.sm,
-    padding: 0,
-  },
-  searchAction: {
-    marginLeft: theme.spacing.sm,
-    padding: theme.spacing.xs,
-  },
-
   // Photo Categories - HORIZONTAL SCROLL, TEXT ONLY
   photoCategoriesContainer: {
     paddingVertical: theme.spacing.sm,

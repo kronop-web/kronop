@@ -141,14 +141,6 @@ router.get('/supporting', async (req, res) => {
   }
 });
 
-router.get('/earnings', async (req, res) => {
-  try {
-    res.json({ success: true, data: null });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 router.get('/:id', async (req, res) => {
   try {
     const data = await ProfileService.getProfile({ userId: req.params.id });
@@ -176,14 +168,6 @@ router.put('/:id', upload.any(), async (req, res) => {
     res.json({ success: true, message: 'Profile updated successfully', data: user });
   } catch (error) {
     console.error('Update User Error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-router.get('/:id/earnings', async (req, res) => {
-  try {
-    res.json({ success: true, data: null });
-  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });

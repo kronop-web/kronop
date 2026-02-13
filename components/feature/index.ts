@@ -2,7 +2,6 @@ export { VideoCard } from './VideoCard';
 export { CommentItem } from './CommentItem';
 export { StoryItem } from './StoryItem';
 export { PhotoCategoryCard } from './PhotoCategoryCard';
-export { default as EarningsSection } from './EarningsSection';
 export { default as SettingsSection } from './SettingsSection';
 export { StoryViewer } from './StoryViewer';
 
