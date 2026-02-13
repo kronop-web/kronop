@@ -19,6 +19,7 @@ import { Image } from 'expo-image';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeScreen } from '../../components/layout';
 import { theme } from '../../constants/theme';
 import { useSWRContent } from '../../hooks/swr';
@@ -29,10 +30,13 @@ import { memoryManagerService } from '../../services/memoryManager';
 import { uniqueViewTracker } from '../../services/uniqueViewTracker';
 import { slidingWindowManager } from '../../services/slidingWindowManager';
 import { videoChunkingService } from '../../services/videoChunkingService';
-import { SupporterButton } from '../../components/feature/SupporterButton';
-import { InteractionBar } from '../../components/feature/InteractionBar';
 import { CommentSheet } from '../../components/feature/CommentSheet';
 import StatusBarOverlay from '../../components/common/StatusBarOverlay';
+import AudioController from '../../services/AudioController';
+import RightButtons from '../../components/feature/RightButtons';
+import RunningTitle from '../../components/feature/RunningTitle';
+import SupportSection from '../../components/feature/SupportSection';
+import ChannelInfo from '../../components/feature/ChannelInfo';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 const REEL_HEIGHT = SCREEN_HEIGHT;
@@ -240,6 +244,7 @@ function ReelItem({
   onShareChange,
   onSaveChange,
   onSupportChange,
+  onReportPress,
   likes,
   comments,
   shares,
@@ -248,12 +253,19 @@ function ReelItem({
   supported
 }: any) {
   const [isPaused, setIsPaused] = useState(false);
+  const [isVideoReady, setIsVideoReady] = useState(false);
   const [videoMetadata, setVideoMetadata] = useState<VideoMetadata>({
     duration: 0,
     isLoaded: false,
     sourceType: ''
   });
   const lastTap = useRef(0);
+
+  useEffect(() => {
+    if (isActive) {
+      setIsPaused(false);
+    }
+  }, [isActive]);
 
   // Data-Centric: Determine source type based on URL
   const getSourceType = (url: string) => {
@@ -335,13 +347,13 @@ function ReelItem({
       videoUrl: videoSource
     });
     
-    // Instagram-like instant playback configuration with audio managed by audio manager
+    // Instagram-like instant playback configuration with audio managed by audio controller
     playerInstance.loop = false;
-    playerInstance.muted = true; // Start muted, audio manager will handle
-    playerInstance.volume = 0;
+    AudioController.applyToPlayer(playerInstance, isActive);
     
-    // Mark player as ready
+    // Mark player as ready and video ready for seamless transition
     isPlayerReadyRef.current = true;
+    setIsVideoReady(true);
     
     // Data-Centric: Update metadata state
     setVideoMetadata({
@@ -397,13 +409,24 @@ function ReelItem({
   }, [isActive, videoMetadata.isLoaded, item.id, onVideoComplete, onVideoWatched]);
 
   useEffect(() => {
+    // Instant audio switch: apply immediately on isActive change
+    if (playerRef.current && isPlayerReadyRef.current) {
+      AudioController.applyToPlayer(playerRef.current, isActive);
+    }
+    // Ensure first video (index 0) gets audio when it becomes active
     if (isActive && !isPaused) {
       safePlayerPlay();
     } else if (!isActive) {
-      // When video becomes inactive, pause it
       safePlayerPause();
     }
   }, [isActive, isPaused, safePlayerPlay, safePlayerPause]);
+
+  // Extra safety: ensure audio is set when player becomes ready
+  useEffect(() => {
+    if (videoMetadata.isLoaded && isPlayerReadyRef.current && playerRef.current) {
+      AudioController.applyToPlayer(playerRef.current, isActive);
+    }
+  }, [videoMetadata.isLoaded, isActive]);
 
   const handleVideoTap = () => {
     const now = Date.now();
@@ -435,7 +458,7 @@ function ReelItem({
       <View style={styles.reelContainer} key={item.id}>
         <DotAnimation isActive={false} />
         
-        {/* Video Player */}
+        {/* Video Player with seamless transition */}
         <TouchableOpacity 
           style={styles.videoContainer}
           activeOpacity={1}
@@ -443,7 +466,10 @@ function ReelItem({
         >
           <VideoView 
             player={player} 
-            style={styles.reelVideo}
+            style={[
+              styles.reelVideo,
+              { opacity: isVideoReady ? 1 : 0 }
+            ]}
             contentFit="cover"
             nativeControls={false}
             allowsPictureInPicture={false}
@@ -456,37 +482,46 @@ function ReelItem({
           )}
         </TouchableOpacity>
 
-        {/* Bottom Content - MODULAR DESIGN */}
-        <View style={styles.bottomContainer}>
-          <View style={styles.bottomInfo}>
-            {/* Channel Info with Support Button */}
-            <View style={styles.channelInfoContainer}>
-              <View style={styles.channelLeftSide}>
-              </View>
-            </View>
+        {/* Bottom-Left Overlay - Channel row (logo + name + support) + Running Title below */}
+        <View pointerEvents="box-none" style={styles.leftOverlay}>
+          <View style={styles.channelRow}>
+            <ChannelInfo
+              avatarUrl={channelAvatar}
+              channelName={channelName}
+              onPress={() => onChannelPress?.(item)}
+            />
+            <SupportSection
+              itemId={item.id}
+              isSupported={!!supported[item.id]}
+              onSupportChange={(id: string, isSupportedValue: boolean) => onSupportChange?.(id, isSupportedValue, 0)}
+            />
           </View>
-          
-          {/* WORKING MARQUEE TEXT */}
-          <MarqueeText text={item.description} />
+
+          <View style={styles.leftTitleRow}>
+            <RunningTitle title={item.title || item.description || ''} />
+          </View>
         </View>
 
-        {/* Right Actions - MODULAR */}
-        <View style={styles.rightActions}>
-          <InteractionBar
-            itemId={item.id}
-            likes={likes[item.id] || item.likes_count || 0}
-            comments={comments[item.id] || []}
-            shares={shares[item.id] || 0}
-            isLiked={starred[item.id]}
-            isSaved={saved[item.id]}
-            onLikeChange={onLikeChange}
-            onCommentPress={onCommentPress}
-            onShareChange={onShareChange}
-            onSaveChange={onSaveChange}
-            size="medium"
-            showCounts={true}
-          />
-        </View>
+        <RightButtons
+          itemId={item.id}
+          likes={likes[item.id] || item.likes_count || 0}
+          commentsCount={(comments[item.id] || []).length}
+          shares={shares[item.id] || 0}
+          isLiked={!!starred[item.id]}
+          isSaved={!!saved[item.id]}
+          onLikePress={(id: string, nextLiked: boolean) => {
+            const currentCount = likes[id] || 0;
+            const nextCount = nextLiked ? currentCount + 1 : Math.max(0, currentCount - 1);
+            onLikeChange?.(id, nextLiked, nextCount);
+          }}
+          onCommentPress={(id: string) => onCommentPress?.(id)}
+          onSharePress={(id: string) => {
+            const current = shares[id] || 0;
+            onShareChange?.(id, current + 1);
+          }}
+          onSavePress={(id: string, nextSaved: boolean) => onSaveChange?.(id, nextSaved)}
+          onReportPress={(id: string) => onReportPress?.(id)}
+        />
       </View>
     </>
   );
@@ -498,7 +533,18 @@ export default function ReelsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isScreenFocused, setIsScreenFocused] = useState(true);
+  const insets = useSafeAreaInsets();
   const flatListRef = useRef<FlatList>(null);
+  const currentIndexRef = useRef(0);
+  const hasInitializedRef = useRef(false);
+
+  useEffect(() => {
+    AudioController.initialize().catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
   
   // Player control functions for scroll handling
   const currentPlayerRef = useRef<any>(null);
@@ -593,6 +639,7 @@ export default function ReelsScreen() {
     }
 
     setCurrentIndex(newIndex);
+    memoryManagerService.setCurrentIndex(newIndex);
     
     // Preload next reels
     slidingWindowManager.preloadNext(reels, newIndex);
@@ -629,7 +676,8 @@ export default function ReelsScreen() {
     return () => clearInterval(memoryInterval);
   }, []);
   useEffect(() => {
-    if (reels.length > 0) {
+    if (reels.length > 0 && !hasInitializedRef.current) {
+      hasInitializedRef.current = true;
       const videoIds = reels.map(reel => reel.id);
       videoFeedService.initializeVideoPool(videoIds);
       
@@ -648,24 +696,24 @@ export default function ReelsScreen() {
       // Initialize memory manager
       memoryManagerService.clearAllMemory();
       
-      const optimalIndex = videoFeedService.getOptimalStartingIndex();
-      setCurrentIndex(optimalIndex);
-      memoryManagerService.setCurrentIndex(optimalIndex);
+      const optimalIndex = 0;
+      setCurrentIndex(0);
+      memoryManagerService.setCurrentIndex(0);
       
       setTimeout(() => {
         flatListRef.current?.scrollToIndex({
-          index: optimalIndex,
+          index: 0,
           animated: false
         });
       }, 100);
     }
   }, [reels.length]);
 
-  // Auto-preload videos around current index with LIMITED memory management
+  // Ultra-fast auto-preload: current + next 2 videos for instant play
   useEffect(() => {
     if (reels.length > 0) {
-      // LIMITED PRELOAD: Only preload current and next video (3 total)
-      const preloadIndexes = [currentIndex - 1, currentIndex, currentIndex + 1].filter(i => i >= 0 && i < reels.length);
+      // Preload current + next 2 videos for instant play
+      const preloadIndexes = [currentIndex, currentIndex + 1, currentIndex + 2].filter(i => i >= 0 && i < reels.length);
       
       preloadIndexes.forEach(index => {
         if (reels[index]) {
@@ -673,8 +721,8 @@ export default function ReelsScreen() {
         }
       });
       
-      // Aggressive cleanup for old videos
-      memoryManagerService.aggressiveCleanup(currentIndex, 3); // Keep only 3 videos
+      // Cleanup old videos beyond next 2
+      memoryManagerService.aggressiveCleanup(currentIndex, 3); // Keep current + next 2
     }
   }, [currentIndex, reels.length]);
 
@@ -727,6 +775,10 @@ export default function ReelsScreen() {
     setSupported(prev => ({ ...prev, [itemId]: isSupported }));
   }, []);
 
+  const handleReportPress = useCallback((itemId: string) => {
+    Alert.alert('Report', 'Report submitted');
+  }, []);
+
   const handleSaveChange = useCallback((itemId: string, isSaved: boolean) => {
     setSaved(prev => ({ ...prev, [itemId]: isSaved }));
   }, []);
@@ -771,7 +823,7 @@ export default function ReelsScreen() {
       
       // Resume from last position
       const resumeIndex = memoryManagerService.getResumeIndex();
-      if (resumeIndex !== currentIndex && resumeIndex >= 0) {
+      if (resumeIndex !== currentIndexRef.current && resumeIndex >= 0) {
         setCurrentIndex(resumeIndex);
         memoryManagerService.setCurrentIndex(resumeIndex);
         
@@ -786,9 +838,9 @@ export default function ReelsScreen() {
       return () => {
         setIsScreenFocused(false);
         // Save current position for resume
-        memoryManagerService.setCurrentIndex(currentIndex);
+        memoryManagerService.setCurrentIndex(currentIndexRef.current);
       };
-    }, [currentIndex])
+    }, [])
   );
 
   // Cleanup audio manager when component unmounts
@@ -814,6 +866,7 @@ export default function ReelsScreen() {
         onShareChange={handleShareChange}
         onSaveChange={handleSaveChange}
         onSupportChange={handleSupportChange}
+        onReportPress={handleReportPress}
         likes={likes}
         comments={comments}
         shares={shares}
@@ -839,6 +892,20 @@ export default function ReelsScreen() {
   return (
     <View style={styles.container}>
       <StatusBarOverlay style="light" backgroundColor="#000000" />
+
+      <View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: insets.top,
+          backgroundColor: '#000',
+          zIndex: 10000,
+          elevation: 10000,
+        }}
+      />
       
       <FlatList
         ref={flatListRef}
@@ -850,27 +917,17 @@ export default function ReelsScreen() {
         snapToInterval={SCREEN_HEIGHT}
         snapToAlignment="start"
         decelerationRate="fast"
-        onMomentumScrollEnd={(event) => {
-          const offsetY = event.nativeEvent.contentOffset.y;
-          const newIndex = Math.round(offsetY / SCREEN_HEIGHT);
-          
-          // Auto-play on scroll
-          if (newIndex !== currentIndex) {
-            handleIndexChange(newIndex);
-          }
-        }}
+        disableIntervalMomentum={true}
+        bounces={false}
         onScrollBeginDrag={() => {
-          // Pause current video when user starts scrolling
           safePlayerPause();
         }}
-        onScrollEndDrag={(event) => {
-          // Auto-play new video after scroll ends
+        onMomentumScrollEnd={(event) => {
           const offsetY = event.nativeEvent.contentOffset.y;
-          const newIndex = Math.round(offsetY / SCREEN_HEIGHT);
-          
-          setTimeout(() => {
-            setCurrentIndex(newIndex);
-          }, 100);
+          const nextIndex = Math.max(0, Math.min(Math.round(offsetY / SCREEN_HEIGHT), reels.length - 1));
+          if (nextIndex !== currentIndex) {
+            void handleViewChange(nextIndex);
+          }
         }}
         getItemLayout={(_, index) => ({
           length: REEL_HEIGHT,
@@ -878,9 +935,9 @@ export default function ReelsScreen() {
           index,
         })}
         initialNumToRender={1}
-        maxToRenderPerBatch={1}
-        windowSize={3}
-        removeClippedSubviews={true}
+        maxToRenderPerBatch={2}
+        windowSize={5}
+        removeClippedSubviews={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />
         }
@@ -984,28 +1041,21 @@ const styles = StyleSheet.create({
     left: '50%',
     zIndex: 1000,
   },
-  bottomContainer: {
+  leftOverlay: {
     position: 'absolute',
-    bottom: 70, // और ऊपर लाया बटनों को दिखाने के लिए
-    left: 0,
-    right: 0,
-    zIndex: 2,
-    flexDirection: 'row', // Horizontal layout
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    paddingHorizontal: theme.spacing.lg,
+    bottom: 90,
+    left: 12,
+    right: 90,
+    zIndex: 3,
   },
-  bottomInfo: {
-    flex: 1, // Left side takes available space
-    paddingRight: theme.spacing.xl, // Right actions के लिए space
-  },
-  // Channel Info Container
-  channelInfoContainer: {
-    marginBottom: 8, // कम किया
-  },
-  channelLeftSide: {
+  channelRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+  },
+  leftTitleRow: {
+    marginTop: 10,
+    width: '100%',
   },
   channelAvatarContainer: {
     marginRight: 10, // Avatar और channel name के बीच थोड़ा space

@@ -12,7 +12,7 @@ interface PreloadVideo {
 class VideoPreloaderService {
   private preloadedVideos: Map<string, PreloadVideo> = new Map();
   private preloadQueue: string[] = [];
-  private maxPreloadCount = 2; // LIMITED: preload only next 2 videos
+  private maxPreloadCount = 3; // Preload current + next 2 videos for instant play
   private isPreloading = false;
   private aggressiveMode = false; // DISABLE aggressive pre-fetching
   private preloadingStatus: Map<string, 'preloading' | 'completed' | 'failed'> = new Map();
@@ -33,7 +33,7 @@ class VideoPreloaderService {
     });
   }
 
-  // LIMITED pre-warming - keep only next 1 video ready
+  // Ultra-fast pre-warming - load current + next 2 videos for instant play
   async preloadAroundIndex(currentIndex: number, totalVideos: { id: string; video_url: string }[]) {
     if (this.isPreloading) return;
     
@@ -43,10 +43,10 @@ class VideoPreloaderService {
       // Clear videos that are too far from current index
       this.clearDistantPreloads(currentIndex);
       
-      // LIMITED: Load only next 1 video
+      // Load current + next 2 videos for instant play
       const preloadPromises: Promise<void>[] = [];
       
-      for (let i = 0; i <= 1; i++) { // Include current + next 1
+      for (let i = 0; i <= 2; i++) { // Include current + next 2
         const nextIndex = (currentIndex + i) % totalVideos.length;
         const video = totalVideos[nextIndex];
         

@@ -11,18 +11,20 @@ interface VideoChunk {
 }
 
 interface ChunkConfig {
-  chunkSize: number; // 2MB chunks
-  preloadChunks: number; // Preload next 3 chunks
+  chunkSize: number; // 50KB chunks for ultra-fast loading
+  preloadChunks: number; // Preload next 5 chunks
   maxMemoryChunks: number; // Max chunks in memory
+  chunkDuration: number; // 0.05s per chunk = 20 chunks per second
   qualityLevels: string[]; // Available quality levels
 }
 
 class VideoChunkingService {
   private static instance: VideoChunkingService;
   private config: ChunkConfig = {
-    chunkSize: 2 * 1024 * 1024, // 2MB
-    preloadChunks: 3,
-    maxMemoryChunks: 10,
+    chunkSize: 50 * 1024, // 50KB chunks for ultra-fast loading
+    preloadChunks: 5,
+    maxMemoryChunks: 20,
+    chunkDuration: 0.05, // 0.05s per chunk = 20 chunks per second
     qualityLevels: ['360p', '480p', '720p', '1080p']
   };
   
