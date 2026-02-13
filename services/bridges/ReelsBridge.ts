@@ -34,12 +34,11 @@ const DEFAULT_USER_ID = 'guest_user';
  * Uses BunnyCDN Stream API with Library ID: 593793
  */
 export class ReelsBridge {
-  // LEVEL 3: Bridge Configuration (from Main Config)
-  private readonly config = ENV_CONFIG.bunny.libraries.reels;
-  private readonly libraryId = this.config.libraryId;
-  private readonly apiKey = this.config.apiKey;
-  private readonly host = this.config.hostname;
-  private readonly streamKey = this.config.streamKey;
+  // DIRECT ENV ACCESS: No centralized config, use environment variables directly
+  private readonly libraryId = REELS_LIBRARY_ID;
+  private readonly apiKey = REELS_API_KEY;
+  private readonly host = REELS_HOST;
+  private readonly streamKey = process.env.EXPO_PUBLIC_BUNNY_API_KEY_REELS || REELS_API_KEY;
 
   /**
    * Upload a reel to BunnyCDN Stream
