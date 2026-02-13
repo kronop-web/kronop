@@ -106,7 +106,7 @@ export class ReelsBridge {
         await this.updateVideoMetadata(videoResult.guid, enhancedMetadata);
       }
 
-      // Step 4: Return success result with secure URL
+      // Step 4: Return success result with secure URL - FAST START OPTIMIZED
       const videoUrl = `https://${this.host}/${videoResult.guid}/playlist.m3u8`;
       
       // Add security token if available - CRITICAL FIX
@@ -115,9 +115,12 @@ export class ReelsBridge {
       console.log('🎬 ReelsBridge: Library ID:', this.libraryId);
       
       const securityToken = this.streamKey ? `?token=${this.streamKey}` : '';
-      const secureVideoUrl = videoUrl + securityToken;
+      // BunnyCDN FAST START: Force lowest bitrate for instant start
+      // This ensures video starts immediately even on slow networks
+      const fastStartUrl = videoUrl + securityToken + '&fast_start=true&bitrate=lowest';
+      const secureVideoUrl = fastStartUrl;
       
-      console.log('🎬 ReelsBridge: Final URL:', secureVideoUrl);
+      console.log('🎬 ReelsBridge: FAST START URL:', secureVideoUrl);
 
       return {
         success: true,

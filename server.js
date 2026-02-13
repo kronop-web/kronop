@@ -18,6 +18,7 @@ const Content = require('./models/Content');
 const BunnyContentService = require('./services/bunnyContentService');
 const BunnySyncService = require('./services/bunnySyncService');
 const DatabaseService = require('./services/databaseService');
+const autoSyncIntegration = require('./services/autoSyncIntegration');
 const AutoSyncService = require('./services/autoSyncService');
 const RealtimeService = require('./services/realtimeService');
 const RedisCacheService = require('./services/redisCacheService');
@@ -30,6 +31,7 @@ const userRoutes = require('./api/users');
 const earningsRoutes = require('./api/earnings');
 const authRoutes = require('./api/auth');
 const notificationRoutes = require('./api/notifications');
+const autosyncRoutes = require('./api/autosync');
  
 const viralRoutes = require('./api/viral');
 
@@ -444,6 +446,7 @@ app.use('/api/users', userRouteNew);
 app.use('/content', contentRouteNew);
 app.use('/users', userRouteNew);
 app.use('/notifications', notificationRoutes);
+app.use('/autosync', autosyncRoutes);
 
 apiRouter.get('/notifications/list', async (_req, res) => {
   res.json({ success: true, data: [] });
@@ -1553,6 +1556,22 @@ function setupChangeStreams() {
 // Setup change streams after MongoDB connection
 mongoose.connection.once('open', () => {
   setupChangeStreams();
+  
+  // Initialize Auto-Sync Scheduler in background
+  console.log('🔄 Initializing Auto-Sync Scheduler...');
+  autoSyncIntegration.initialize()
+    .then((success) => {
+      if (success) {
+        console.log('✅ Auto-Sync Scheduler started successfully!');
+        console.log('📅 Background sync will run every minute');
+        console.log('🔗 BunnyCDN ↔ MongoDB sync active');
+      } else {
+        console.log('❌ Failed to start Auto-Sync Scheduler');
+      }
+    })
+    .catch((error) => {
+      console.error('❌ Auto-Sync initialization error:', error);
+    });
 });
 
 // Manual broadcast function for testing

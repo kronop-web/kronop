@@ -11,19 +11,23 @@ interface VideoChunk {
 }
 
 interface ChunkConfig {
-  chunkSize: number; // 2MB chunks
-  preloadChunks: number; // Preload next 3 chunks
+  chunkSize: number; // 1MB chunks for instant loading
+  chunkDuration: number; // 0.2 seconds per chunk (5 chunks per second)
+  preloadChunks: number; // Preload next 5 chunks
   maxMemoryChunks: number; // Max chunks in memory
   qualityLevels: string[]; // Available quality levels
+  instantPlayThreshold: number; // First chunk instant play
 }
 
 class VideoChunkingService {
   private static instance: VideoChunkingService;
   private config: ChunkConfig = {
-    chunkSize: 2 * 1024 * 1024, // 2MB
-    preloadChunks: 3,
-    maxMemoryChunks: 10,
-    qualityLevels: ['360p', '480p', '720p', '1080p']
+    chunkSize: 1 * 1024 * 1024, // 1MB for instant loading
+    chunkDuration: 0.2, // 0.2 seconds per chunk (5 chunks per second)
+    preloadChunks: 5, // Preload next 5 chunks
+    maxMemoryChunks: 15, // More chunks for smooth playback
+    qualityLevels: ['360p', '480p', '720p', '1080p'],
+    instantPlayThreshold: 1 // First chunk instant play
   };
   
   private activeStreams: Map<string, {
@@ -51,7 +55,8 @@ class VideoChunkingService {
 
       // Get video metadata
       const metadata = await this.getVideoMetadata(videoUrl);
-      const totalChunks = Math.ceil(metadata.duration / 30); // 30-second chunks
+      // NEW MATH: 5 chunks per second (0.2s each)
+      const totalChunks = Math.ceil(metadata.duration / this.config.chunkDuration); // 30s * 5 = 150 chunks
 
       const stream = {
         chunks: new Map<number, VideoChunk>(),
@@ -65,8 +70,8 @@ class VideoChunkingService {
       for (let i = 0; i < totalChunks; i++) {
         const chunk: VideoChunk = {
           url: this.createChunkUrl(videoUrl, i, quality),
-          start: i * 30,
-          end: Math.min((i + 1) * 30, metadata.duration),
+          start: i * this.config.chunkDuration,
+          end: Math.min((i + 1) * this.config.chunkDuration, metadata.duration),
           index: i,
           loaded: false
         };
@@ -89,10 +94,10 @@ class VideoChunkingService {
   // Get video metadata
   private async getVideoMetadata(videoUrl: string): Promise<{ duration: number; size: number }> {
     // In a real implementation, you'd use ffprobe or similar
-    // For now, return mock data
+    // For now, return mock data for 30 second reel
     return {
-      duration: 180, // 3 minutes
-      size: 50 * 1024 * 1024 // 50MB
+      duration: 30, // 30 seconds for reels
+      size: 10 * 1024 * 1024 // 10MB
     };
   }
 
@@ -100,8 +105,12 @@ class VideoChunkingService {
   private createChunkUrl(videoUrl: string, chunkIndex: number, quality: string): string {
     const separator = videoUrl.includes('?') ? '&' : '?';
     
-    // Add chunk parameters for CDN
-    return `${videoUrl}${separator}chunk=${chunkIndex}&quality=${quality}&range=${chunkIndex * 30}-${(chunkIndex + 1) * 30}`;
+    // INSTANT PLAY: 0.2 second chunks (5 chunks per second)
+    const startTime = chunkIndex * this.config.chunkDuration;
+    const endTime = (chunkIndex + 1) * this.config.chunkDuration;
+    
+    // Add chunk parameters for CDN with instant play
+    return `${videoUrl}${separator}chunk=${chunkIndex}&quality=${quality}&start=${startTime}&end=${endTime}&instant=${chunkIndex === 0}`;
   }
 
   // Preload initial chunks
@@ -111,9 +120,21 @@ class VideoChunkingService {
 
     const preloadCount = Math.min(this.config.preloadChunks, stream.totalChunks);
     
-    for (let i = 0; i < preloadCount; i++) {
-      await this.loadChunk(videoId, i);
+    // INSTANT PLAY: Load first chunk immediately
+    const firstChunk = stream.chunks.get(0);
+    if (firstChunk && !firstChunk.loaded) {
+      console.log(`⚡ INSTANT PLAY: Loading first chunk for ${videoId}`);
+      await this.loadChunk(videoId, 0);
     }
+    
+    // Preload remaining chunks in parallel
+    const preloadPromises = [];
+    for (let i = 1; i < preloadCount; i++) {
+      preloadPromises.push(this.loadChunk(videoId, i));
+    }
+    
+    await Promise.allSettled(preloadPromises);
+    console.log(`📦 Loaded ${preloadCount} chunks for ${videoId}`);
   }
 
   // Load individual chunk

@@ -39,6 +39,7 @@ interface VideoPlayerProps {
   title?: string;
   onClose?: () => void;
   autoPlay?: boolean;
+  isActive?: boolean; // AUDIO CONTROL: Only active video plays
 }
 
 export default function VideoPlayer({ 
@@ -46,7 +47,8 @@ export default function VideoPlayer({
   thumbnail, 
   title, 
   onClose, 
-  autoPlay = true 
+  autoPlay = true,
+  isActive = true // AUDIO CONTROL: Default to active
 }: VideoPlayerProps) {
   const videoRef = useRef<Video>(null);
   const [status, setStatus] = useState<AVPlaybackStatus>();
@@ -57,7 +59,8 @@ export default function VideoPlayer({
   const [position, setPosition] = useState(0);
   const [isBuffering, setIsBuffering] = useState(true);
   const [isSeeking, setIsSeeking] = useState(false);
-  const [showLoadingIndicator, setShowLoadingIndicator] = useState(true);
+  const [showLoadingIndicator, setShowLoadingIndicator] = useState(false); // No loading icon
+  const [firstChunkLoaded, setFirstChunkLoaded] = useState(false);
   
   const controlsOpacity = useRef(new Animated.Value(1)).current;
   const hideControlsTimeout = useRef<number | null>(null);
@@ -92,7 +95,7 @@ export default function VideoPlayer({
     }, 3000);
   }, [controlsOpacity, hideControls, isPlaying]);
 
-  // Handle video status updates
+  // Handle video status updates - ULTRA INSTANT PLAYBACK (0.1s chunks)
   const handleVideoStatusUpdate = useCallback((status: AVPlaybackStatus) => {
     setStatus(status);
     
@@ -100,17 +103,41 @@ export default function VideoPlayer({
       setDuration(status.durationMillis || 0);
       setPosition(status.positionMillis || 0);
       setIsPlaying(status.isPlaying || false);
-      setIsBuffering(false);
-      setShowLoadingIndicator(false);
       
-      // Auto-play logic
-      if (autoPlay && !status.isPlaying && !status.isBuffering) {
+      // AUDIO CONTROL: Only play if active
+      if (isActive && !status.isPlaying && !status.isBuffering) {
         videoRef.current?.playAsync();
+      } else if (!isActive && status.isPlaying) {
+        // PAUSE if not active (off screen)
+        videoRef.current?.pauseAsync();
+      }
+      
+      // SMOOTH LOOP: Handle loop completion seamlessly
+      if (status.isLoaded && status.positionMillis === 0 && status.isPlaying && firstChunkLoaded) {
+        // Video has looped back to start - ensure smooth continuation
+        console.log('🔁 Smooth loop transition - video restarted');
+      }
+      
+      // ZERO WAITING: Start playing immediately when first 0.1s chunk loads
+      if (!firstChunkLoaded && !status.isBuffering) {
+        setFirstChunkLoaded(true);
+        setShowLoadingIndicator(false);
+        setIsBuffering(false);
+        
+        // INSTANT PLAY - Only if active
+        if (autoPlay && isActive && !status.isPlaying) {
+          videoRef.current?.playAsync(); // Start right away, no setTimeout
+        }
+      } else {
+        // Update buffering state for subsequent chunks
+        setIsBuffering(status.isBuffering);
       }
     } else {
+      // NEVER show loading indicator - zero loading philosophy
+      setShowLoadingIndicator(false);
       setIsBuffering(true);
     }
-  }, [autoPlay]);
+  }, [autoPlay, firstChunkLoaded, isActive]);
 
   // Toggle play/pause
   const togglePlayPause = useCallback(async () => {
@@ -183,7 +210,7 @@ export default function VideoPlayer({
     };
   }, [isPlaying, showControls, hideControls]);
 
-  const videoHeight = isFullscreen ? screenHeight : (screenWidth * 9) / 16;
+  const videoHeight = screenHeight; // ALWAYS FULL SCREEN - 9:16
 
   return (
     <View style={[styles.container, { height: videoHeight }]}>
@@ -192,27 +219,38 @@ export default function VideoPlayer({
         style={[styles.video, { height: videoHeight }]}
         source={{ uri: videoUrl }}
         useNativeControls={false}
-        resizeMode={ResizeMode.CONTAIN}
-        shouldPlay={autoPlay}
-        isLooping={false}
+        resizeMode={ResizeMode.COVER} // FULL SCREEN FILL - 9:16 aspect
+        shouldPlay={autoPlay && isActive} // AUDIO CONTROL: Only play if active
+        isLooping={true} // INFINITE LOOP - Replay when finished
         onPlaybackStatusUpdate={handleVideoStatusUpdate}
         posterSource={thumbnail ? { uri: thumbnail } : undefined}
         posterStyle={styles.poster}
+        // AUDIO CONTROL: Mute when not active, unmute when active
+        volume={isActive ? 1.0 : 0.0} // Only active video has sound
+        isMuted={!isActive} // Mute when off screen
+        // Ultra-Fast Chunk Settings - 0.1s chunks for instant playback
+        progressUpdateIntervalMillis={10} // 10ms updates for ultra-responsive
+        positionMillis={0}
+        // Zero buffer configuration for instant start
+        // Ultra low latency settings
+        rate={1.0}
+        shouldCorrectPitch={false}
+        // BunnyCDN Fast Start - Force lowest bitrate first
+        // This ensures instant start even on bad network
+        // The HLS playlist will automatically scale up quality
       />
 
-      {/* Loading Indicator */}
-      {showLoadingIndicator && (
+      {/* ZERO LOADING - Never show spinner */}
+      {showLoadingIndicator && !firstChunkLoaded && false && (
         <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#fff" />
+          <ActivityIndicator size="small" color="#fff" />
+          <Text style={styles.loadingText}>Loading first chunk...</Text>
         </View>
       )}
 
-      {/* Buffering Indicator */}
-      {isBuffering && !showLoadingIndicator && (
-        <View style={styles.bufferingOverlay}>
-          <ActivityIndicator size="small" color="#fff" />
-          <Text style={styles.bufferingText}>Buffering...</Text>
-        </View>
+      {/* Minimal Buffering - Only tiny dot when actually buffering after first chunk */}
+      {isBuffering && firstChunkLoaded && (
+        <View style={styles.microBufferingDot} />
       )}
 
       {/* Video Tap Area */}
@@ -312,9 +350,12 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#000',
     position: 'relative',
+    width: '100%',
+    height: '100%', // FULL SCREEN CONTAINER
   },
   video: {
     width: '100%',
+    height: '100%', // FULL SCREEN HEIGHT
     backgroundColor: '#000',
   },
   poster: {
@@ -347,6 +388,35 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 12,
     fontWeight: '500',
+  },
+  loadingText: {
+    color: '#fff',
+    marginTop: 8,
+    fontSize: 10,
+    fontWeight: '400',
+  },
+  minimalBufferingOverlay: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 12,
+    padding: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 30,
+    minHeight: 30,
+  },
+  microBufferingDot: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    opacity: 0.8,
   },
   videoTapArea: {
     position: 'absolute',

@@ -14,7 +14,7 @@ import {
   RefreshControl,
   Platform
 } from 'react-native';
-import { useVideoPlayer, VideoView } from 'expo-video';
+import VideoPlayer from '../../components/feature/VideoPlayer';
 import { Image } from 'expo-image';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -29,6 +29,8 @@ import { memoryManagerService } from '../../services/memoryManager';
 import { uniqueViewTracker } from '../../services/uniqueViewTracker';
 import { slidingWindowManager } from '../../services/slidingWindowManager';
 import { videoChunkingService } from '../../services/videoChunkingService';
+import { ultraFastPreloader } from '../../services/ultraFastPreloader';
+import { bunnySyncCleanup } from '../../services/bunnySyncCleanup';
 import { SupporterButton } from '../../components/feature/SupporterButton';
 import { InteractionBar } from '../../components/feature/InteractionBar';
 import { CommentSheet } from '../../components/feature/CommentSheet';
@@ -39,6 +41,7 @@ const REEL_HEIGHT = SCREEN_HEIGHT;
 
 interface Reel {
   id: string;
+  _id?: string; // Optional MongoDB _id for unique key
   user_id: string;
   title: string;
   description: string;
@@ -248,20 +251,6 @@ function ReelItem({
   supported
 }: any) {
   const [isPaused, setIsPaused] = useState(false);
-  const [videoMetadata, setVideoMetadata] = useState<VideoMetadata>({
-    duration: 0,
-    isLoaded: false,
-    sourceType: ''
-  });
-  const lastTap = useRef(0);
-
-  // Data-Centric: Determine source type based on URL
-  const getSourceType = (url: string) => {
-    if (url.includes('.m3u8')) {
-      return 'm3u8'; // HLS stream type
-    }
-    return 'mp4'; // Default to mp4
-  };
 
   // Data-Centric: Get optimized video source
   const getVideoSource = () => {
@@ -276,149 +265,7 @@ function ReelItem({
     return videoUrl;
   };
 
-  const playerRef = useRef<any>(null);
-  const isPlayerReadyRef = useRef(false);
-
-  const safePlayerPlay = useCallback(async () => {
-    try {
-      if (playerRef.current && isPlayerReadyRef.current) {
-        await playerRef.current.play();
-      }
-    } catch (error: any) {
-      console.warn('Error playing video:', error);
-    }
-  }, []);
-
-  const safePlayerPause = useCallback(() => {
-    try {
-      if (playerRef.current && isPlayerReadyRef.current) {
-        playerRef.current.pause();
-      }
-    } catch (error: any) {
-      console.warn('Error pausing video:', error);
-    }
-  }, []);
-
-  const cleanupPlayer = useCallback(() => {
-    try {
-      isPlayerReadyRef.current = false;
-      if (playerRef.current) {
-        try {
-          playerRef.current.pause();
-        } catch {}
-        playerRef.current = null;
-      }
-    } catch (error) {
-      console.warn('Error cleaning up player:', error);
-    }
-  }, []);
-
   const videoSource = getVideoSource();
-  const sourceType = getSourceType(videoSource);
-  const bufferConfig = hlsOptimizerService.getOptimalBufferConfig();
-
-  const player = useVideoPlayer({
-    uri: videoSource,
-    headers: {
-      'User-Agent': 'KronopApp',
-      'Referer': 'https://kronop.app',
-      'Origin': 'https://kronop.app'
-    }
-  }, (playerInstance) => {
-    // Store reference
-    playerRef.current = playerInstance;
-    
-    // AUDIO FIX: Ensure audio is enabled
-    playerInstance.muted = false;
-    playerInstance.volume = 1.0;
-    
-    // Data-Centric: Log metadata on load
-    console.log({
-      duration: playerInstance.duration,
-      sourceType: sourceType,
-      videoUrl: videoSource
-    });
-    
-    // Instagram-like instant playback configuration with audio enabled
-    playerInstance.loop = false;
-    playerInstance.muted = false; // AUDIO FIX: Keep audio enabled
-    playerInstance.playbackRate = 1.0;
-    
-    // Mark player as ready
-    isPlayerReadyRef.current = true;
-    
-    // Data-Centric: Update metadata state
-    setVideoMetadata({
-      duration: playerInstance.duration || 0,
-      isLoaded: true,
-      sourceType: sourceType
-    });
-
-    // Mark video as watched when loaded
-    if (isActive) {
-      onVideoWatched(item.id);
-    }
-
-    // Auto-play for active videos with safety check
-    if (isActive) {
-      setTimeout(() => {
-        safePlayerPlay();
-      }, 100); // Small delay for smooth transition
-    }
-  });
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      cleanupPlayer();
-    };
-  }, []);
-
-  // Watch for video completion using interval
-  useEffect(() => {
-    if (!isActive || !videoMetadata.isLoaded || !isPlayerReadyRef.current) return;
-
-    const checkCompletion = setInterval(() => {
-      try {
-        if (playerRef.current && playerRef.current.currentTime > 0 && playerRef.current.duration > 0) {
-          const progress = (playerRef.current.currentTime / playerRef.current.duration) * 100;
-          
-          // Consider video completed when 95% watched
-          if (progress >= 95) {
-            onVideoComplete();
-            onVideoWatched(item.id, true); // Mark as completed
-            clearInterval(checkCompletion);
-          }
-        }
-      } catch (error: any) {
-        if (error?.message?.includes('already released')) {
-          clearInterval(checkCompletion);
-        }
-      }
-    }, 500); // Check every 500ms
-
-    return () => clearInterval(checkCompletion);
-  }, [isActive, videoMetadata.isLoaded, item.id, onVideoComplete, onVideoWatched]);
-
-  useEffect(() => {
-    if (isActive && !isPaused) {
-      safePlayerPlay();
-    } else if (!isActive) {
-      // When video becomes inactive, pause it
-      safePlayerPause();
-    }
-  }, [isActive, isPaused, safePlayerPlay, safePlayerPause]);
-
-  const handleVideoTap = () => {
-    const now = Date.now();
-    const DOUBLE_PRESS_DELAY = 300;
-
-    if (lastTap.current && (now - lastTap.current) < DOUBLE_PRESS_DELAY) {
-      // Double tap - toggle play/pause
-      setIsPaused(prev => !prev);
-    }
-    lastTap.current = now;
-  };
 
   const channelName = item.user_profiles?.username || 'Unknown User';
   const channelAvatar = item.user_profiles?.avatar_url || 'https://via.placeholder.com/100';
@@ -439,26 +286,14 @@ function ReelItem({
       <View style={styles.reelContainer} key={item.id}>
         <DotAnimation isActive={false} />
         
-        {/* Video Player */}
-        <TouchableOpacity 
-          style={styles.videoContainer}
-          activeOpacity={1}
-          onPress={handleVideoTap}
-        >
-          <VideoView 
-            player={player} 
-            style={styles.reelVideo}
-            contentFit="cover"
-            nativeControls={false}
-            allowsPictureInPicture={false}
-          />
-          
-          {isPaused && (
-            <View style={styles.pauseOverlay}>
-              <MaterialIcons name="play-circle-outline" size={80} color="rgba(255,255,255,0.8)" />
-            </View>
-          )}
-        </TouchableOpacity>
+        {/* Optimized Video Player with Instant Chunk Playback */}
+        <VideoPlayer
+          videoUrl={videoSource}
+          thumbnail={item.thumbnail_url || undefined}
+          title={item.title}
+          autoPlay={true}
+          isActive={isActive} // AUDIO CONTROL: Only active video plays
+        />
 
         {/* Bottom Content - MODULAR DESIGN */}
         <View style={styles.bottomContainer}>
@@ -474,7 +309,7 @@ function ReelItem({
           <MarqueeText text={item.description} />
         </View>
 
-        {/* Right Actions - MODULAR */}
+        {/* Right Actions - VERTICAL LAYOUT */}
         <View style={styles.rightActions}>
           <InteractionBar
             itemId={item.id}
@@ -489,6 +324,7 @@ function ReelItem({
             onSaveChange={onSaveChange}
             size="medium"
             showCounts={true}
+            layout="vertical" // Vertical layout for right side
           />
         </View>
       </View>
@@ -549,24 +385,15 @@ export default function ReelsScreen() {
     initializeViewTracker();
   }, []);
 
-  // Smart feed handlers with view tracking
+  // Smart feed handlers with view tracking - AUTO-ADVANCE DISABLED
   const handleVideoComplete = useCallback(async () => {
-    
-    // End current view tracking
+    // AUTO-ADVANCE DISABLED: Let video loop instead of advancing
+    // Only end view tracking, don't move to next video
     await uniqueViewTracker.endView();
     
-    const nextIndex = videoFeedService.getNextUnwatchedVideo(currentIndex);
-    
-    if (nextIndex !== currentIndex) {
-      setCurrentIndex(nextIndex);
-      setTimeout(() => {
-        flatListRef.current?.scrollToIndex({
-          index: nextIndex,
-          animated: true
-        });
-      }, 100);
-    }
-  }, [currentIndex]);
+    // NO AUTO-ADVANCE: User must swipe manually to see next reel
+    console.log('🔁 Video completed - looping instead of auto-advancing');
+  }, []);
 
   const handleVideoWatched = useCallback(async (videoId: string, completed: boolean = false) => {
     videoFeedService.markVideoWatched(videoId, completed);
@@ -598,8 +425,11 @@ export default function ReelsScreen() {
 
     setCurrentIndex(newIndex);
     
-    // Preload next reels
+    // Preload next reels with ULTRA FAST system
     slidingWindowManager.preloadNext(reels, newIndex);
+    
+    // ULTRA FAST PRELOADING: Preload next 3 reels with 5 chunks each
+    ultraFastPreloader.preloadNextReels(newIndex, reels);
   }, [currentIndex, reels]);
 
   // Track video progress
@@ -652,6 +482,17 @@ export default function ReelsScreen() {
       // Initialize memory manager
       memoryManagerService.clearAllMemory();
       
+      // BUNNY SYNC & CLEANUP: Check and remove deleted videos
+      bunnySyncCleanup.syncReels(reels)
+        .then(({ cleanedReels, stats }) => {
+          if (stats.deletedFound > 0) {
+            console.log(`🧹 Cleaned ${stats.deletedFound} deleted reels from ${stats.totalChecked} checked`);
+            // Update reels state with cleaned list
+            // Note: You might want to update the reels state here
+          }
+        })
+        .catch(error => console.error('❌ Bunny sync failed:', error));
+      
       const optimalIndex = videoFeedService.getOptimalStartingIndex();
       setCurrentIndex(optimalIndex);
       memoryManagerService.setCurrentIndex(optimalIndex);
@@ -681,6 +522,20 @@ export default function ReelsScreen() {
       memoryManagerService.aggressiveCleanup(currentIndex, 3); // Keep only 3 videos
     }
   }, [currentIndex, reels.length]);
+
+  // BACKGROUND BUNNY SYNC: Run cleanup every 2 minutes
+  useEffect(() => {
+    if (reels.length === 0) return;
+
+    const syncInterval = setInterval(() => {
+      console.log('🔄 Running background Bunny sync & cleanup...');
+      bunnySyncCleanup.backgroundSync(reels, [])
+        .then(() => console.log('✅ Background sync complete'))
+        .catch(error => console.error('❌ Background sync failed:', error));
+    }, 2 * 60 * 1000); // Every 2 minutes
+
+    return () => clearInterval(syncInterval);
+  }, [reels]);
 
   // Handle index change with auto-play and memory management
   const handleIndexChange = useCallback((newIndex: number) => {
@@ -847,18 +702,40 @@ export default function ReelsScreen() {
       <FlatList
         ref={flatListRef}
         data={reels}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item._id || item.id} // UNIQUE KEY: Use _id if available
         renderItem={renderReel}
         pagingEnabled={true}
         showsVerticalScrollIndicator={false}
         snapToInterval={SCREEN_HEIGHT}
         snapToAlignment="start"
         decelerationRate="fast"
+        // AUDIO MANAGEMENT: Viewability config for proper play/pause
+        viewabilityConfig={{
+          itemVisiblePercentThreshold: 80, // 80% visible = active
+          minimumViewTime: 100,
+          waitForInteraction: false,
+        }}
+        onViewableItemsChanged={({ viewableItems, changed }) => {
+          // Find the most visible item (center screen)
+          const mostVisible = viewableItems.find(item => 
+            item.isViewable && item.index !== undefined && item.index !== null
+          );
+          
+          if (mostVisible && mostVisible.index !== undefined && mostVisible.index !== null) {
+            const newIndex = mostVisible.index;
+            
+            // ONLY FRONT VIDEO PLAYS: Update active index
+            if (newIndex !== currentIndex) {
+              console.log(`🔇 Audio Control: Active video changed to index ${newIndex}`);
+              handleIndexChange(newIndex);
+            }
+          }
+        }}
         onMomentumScrollEnd={(event) => {
           const offsetY = event.nativeEvent.contentOffset.y;
           const newIndex = Math.round(offsetY / SCREEN_HEIGHT);
           
-          // Auto-play on scroll
+          // Auto-play on scroll - SYNCED WITH AUDIO
           if (newIndex !== currentIndex) {
             handleIndexChange(newIndex);
           }
@@ -1069,7 +946,13 @@ const styles = StyleSheet.create({
     textShadowRadius: 3,
   },
   rightActions: {
+    position: 'absolute',
+    right: 15, // RIGHT SIDE POSITION
+    bottom: 100, // Above bottom text
     alignItems: 'center',
+    zIndex: 10,
+    flexDirection: 'column', // Vertical stack
+    gap: 20, // Proper spacing between buttons
   },
   actionGroup: {
     alignItems: 'center',

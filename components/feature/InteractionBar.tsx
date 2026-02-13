@@ -18,8 +18,10 @@ interface InteractionBarProps {
   onCommentPress?: (itemId: string) => void;
   onShareChange?: (itemId: string, count: number) => void;
   onSaveChange?: (itemId: string, isSaved: boolean) => void;
+  onSupportChange?: (itemId: string, isSupported: boolean, count: number) => void;
   size?: 'small' | 'medium' | 'large';
   showCounts?: boolean;
+  layout?: 'horizontal' | 'vertical'; // LAYOUT OPTION for button arrangement
 }
 
 export const InteractionBar: React.FC<InteractionBarProps> = ({
@@ -35,10 +37,16 @@ export const InteractionBar: React.FC<InteractionBarProps> = ({
   onShareChange,
   onSaveChange,
   size = 'medium',
-  showCounts = true
+  showCounts = true,
+  layout = 'horizontal' // Default horizontal
 }) => {
+  // Determine container style based on layout
+  const containerStyle = layout === 'vertical' 
+    ? [styles.container, styles.verticalContainer]
+    : styles.container;
+
   return (
-    <View style={styles.container}>
+    <View style={containerStyle}>
       <LikeButton
         itemId={itemId}
         initialCount={likes}
@@ -79,5 +87,10 @@ export const InteractionBar: React.FC<InteractionBarProps> = ({
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
+  },
+  verticalContainer: {
+    alignItems: 'center',
+    flexDirection: 'column', // VERTICAL LAYOUT
+    gap: 15, // Space between buttons
   },
 });
