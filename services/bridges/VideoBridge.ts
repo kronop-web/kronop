@@ -66,7 +66,7 @@ export class VideoBridge {
       const createResponse = await fetch(createVideoUrl, {
         method: 'POST',
         headers: {
-          'AccessKey': this.config.streamKey || this.config.apiKey,
+          'AccessKey': this.streamKey || this.apiKey,
           'Content-Type': 'application/json',
           'accept': 'application/json'
         },
@@ -100,10 +100,10 @@ export class VideoBridge {
       }
 
       // Step 4: Return success result with secure URL
-      const videoUrl = `https://${this.config.host}/${videoResult.guid}/playlist.m3u8`;
+      const videoUrl = `https://${this.host}/${videoResult.guid}/playlist.m3u8`;
       
       // Add security token if available
-      const securityToken = this.config.streamKey ? `?token=${this.config.streamKey}` : '';
+      const securityToken = this.streamKey ? `?token=${this.streamKey}` : '';
       const secureVideoUrl = videoUrl + securityToken;
 
       return {
@@ -143,7 +143,7 @@ export class VideoBridge {
     const uploadResponse = await fetch(uploadUrl, {
       method: 'PUT',
       headers: {
-        'AccessKey': this.config.streamKey || this.config.apiKey,
+        'AccessKey': this.streamKey || this.apiKey,
         'Content-Type': 'application/octet-stream'
       },
       body: fileBlob
@@ -171,7 +171,7 @@ export class VideoBridge {
     const initResponse = await fetch(`https://video.bunnycdn.com/library/${this.libraryId}/videos/${videoGuid}/uploads`, {
       method: 'POST',
       headers: {
-        'AccessKey': this.config.streamKey || this.config.apiKey,
+        'AccessKey': this.streamKey || this.apiKey,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -208,7 +208,7 @@ export class VideoBridge {
             {
               method: 'POST',
               headers: {
-                'AccessKey': this.config.streamKey || this.config.apiKey,
+                'AccessKey': this.streamKey || this.apiKey,
               },
               body: formData
             }
@@ -242,7 +242,7 @@ export class VideoBridge {
     const finalizeResponse = await fetch(`https://video.bunnycdn.com/library/${this.libraryId}/videos/${videoGuid}/uploads/${uploadSessionId}/complete`, {
       method: 'POST',
       headers: {
-        'AccessKey': this.config.streamKey || this.config.apiKey,
+        'AccessKey': this.streamKey || this.apiKey,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
