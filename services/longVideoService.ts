@@ -2,7 +2,6 @@
 // Fetches long videos from MongoDB database through Bridge API (not direct BunnyCDN)
 
 import { videosApi } from './api';
-import { getBunnyConfigByType } from '../constants/Config';
 
 export interface LongVideo {
   id: string;
@@ -43,27 +42,27 @@ function formatViews(count: number): string {
   return count.toString();
 }
 
-// Transform MongoDB video data to LongVideo format
+// Transform MongoDB/Bridge API video data to LongVideo format
 function transformVideoData(item: any): LongVideo {
-  // Extract GUID for video URL construction
-  const guid = item.guid || item.bunny_id || (item.url && item.url.split('/')[3]) || '';
-  
-  // Get BunnyCDN config for video type
-  const contentType = item.type || item.contentType || 'video';
-  const bunnyConfig = getBunnyConfigByType(contentType);
-  const host = bunnyConfig.host || '';
-  
-  // Construct HLS streaming URL
-  let videoUrl = item.url || item.video_url || '';
-  if (guid && host) {
-    videoUrl = `https://${host}/${guid}/playlist.m3u8`;
-  }
-  
-  // Construct thumbnail URL
-  let thumbnail = item.thumbnail || item.thumbnail_url || '';
-  if (!thumbnail && guid && host) {
-    thumbnail = `https://${host}/${guid}/thumbnail.jpg`;
-  }
+  // The Bridge API is responsible for talking to BunnyCDN and returning
+  // fully-resolved playback and thumbnail URLs. The frontend NEVER builds
+  // URLs using library IDs, hosts or API keys.
+
+  // Video playback URL from Bridge API / MongoDB
+  const videoUrl =
+    item.playbackUrl ||
+    item.url ||
+    item.video_url ||
+    item.streamUrl ||
+    '';
+
+  // Thumbnail URL from Bridge API / MongoDB
+  const thumbnail =
+    item.thumbnail ||
+    item.thumbnail_url ||
+    item.thumbnailUrl ||
+    item.cover ||
+    '';
   
   // Clean title
   let cleanTitle = item.title || 'Untitled Video';
@@ -73,11 +72,11 @@ function transformVideoData(item: any): LongVideo {
   }
   
   // Format duration
-  const durationSeconds = item.duration || 0;
+  const durationSeconds = item.duration || item.durationSeconds || 0;
   const formattedDuration = formatDuration(durationSeconds);
   
   // Format views
-  const views = item.views || item.views_count || 0;
+  const views = item.views || item.views_count || item.viewCount || 0;
   const formattedViews = formatViews(views);
   
   // Get user info
@@ -85,10 +84,10 @@ function transformVideoData(item: any): LongVideo {
   const userAvatar = item.user_id?.avatar || item.user?.avatar || item.channelAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop';
   
   return {
-    id: item._id || item.id || guid || `video_${Date.now()}`,
+    id: item._id || item.id || item.guid || item.bunny_id || `video_${Date.now()}`,
     title: cleanTitle,
-    thumbnail: thumbnail,
-    videoUrl: videoUrl,
+    thumbnail,
+    videoUrl,
     duration: formattedDuration,
     views: formattedViews,
     likes: item.likes || item.likes_count || 0,

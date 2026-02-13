@@ -4,9 +4,9 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { theme } from '../../constants/theme';
-import { VideoCard } from '../../components/ui/VideoCard';
 import { useLongVideos } from '../../hooks/useLongVideos';
 import StatusBarOverlay from '../../components/common/StatusBarOverlay';
+import VideoItem from '../../components/feature/VideoItem';
 
 export default function LongVideosScreen() {
   const router = useRouter();
@@ -72,7 +72,7 @@ export default function LongVideosScreen() {
           data={filteredVideos}
           keyExtractor={item => item.id}
           renderItem={({ item }) => (
-            <VideoCard
+            <VideoItem
               video={item}
               onPress={() => handleVideoPress(item.id)}
             />

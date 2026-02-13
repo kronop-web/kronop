@@ -8,22 +8,35 @@ import { useState, useEffect } from 'react';
 import { theme } from '../../constants/theme';
 import { getLongVideoById, LongVideo } from '../../services/longVideoService';
 import StatusBarOverlay from '../../components/common/StatusBarOverlay';
-import { VideoActionButtons } from '../../components/feature/VideoActionButtons';
+import VideoButtons from '../../components/feature/VideoButtons';
 
 export default function VideoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  
+
   const [video, setVideo] = useState<LongVideo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
   const [isStarred, setIsStarred] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
 
-  // Fetch video data on mount
+  // Always call useVideoPlayer (hooks order). Use empty string when URL not yet available.
+  const videoUri = video?.videoUrl ?? '';
+  const player = useVideoPlayer({
+    uri: videoUri,
+    headers: {
+      'User-Agent': 'KronopApp',
+      'Referer': 'https://kronop.app',
+      'Origin': 'https://kronop.app',
+      'Accept': 'video/*',
+    }
+  }, (player) => {
+    player.loop = false;
+    if (videoUri) player.play();
+  });
+
   useEffect(() => {
     const loadVideo = async () => {
       if (!id) {
@@ -36,7 +49,7 @@ export default function VideoDetailScreen() {
         setLoading(true);
         setError(null);
         const fetchedVideo = await getLongVideoById(id);
-        
+
         if (fetchedVideo) {
           setVideo(fetchedVideo);
           setIsSupported(fetchedVideo.user.isSupported || false);
@@ -54,7 +67,15 @@ export default function VideoDetailScreen() {
     loadVideo();
   }, [id]);
 
-  // Loading State
+  const handleStar = () => setIsStarred(!isStarred);
+  const handleComment = () => console.log('Comment pressed');
+  const handleShare = () => console.log('Share pressed');
+  const handleSave = () => setIsSaved(!isSaved);
+  const handleReport = () => console.log('Report pressed');
+  const handleDownload = () => console.log('Download pressed');
+  const handleSupport = () => setIsSupported(!isSupported);
+
+  // Loading State (after all hooks)
   if (loading) {
     return (
       <View style={styles.container}>
@@ -67,7 +88,7 @@ export default function VideoDetailScreen() {
     );
   }
 
-  // Error State
+  // Error State (after all hooks)
   if (error || !video) {
     return (
       <View style={styles.container}>
@@ -82,29 +103,6 @@ export default function VideoDetailScreen() {
       </View>
     );
   }
-
-  // Configure video player for smooth CDN streaming
-  const player = useVideoPlayer({
-    uri: video.videoUrl,
-    headers: {
-      'User-Agent': 'KronopApp',
-      'Referer': 'https://kronop.app',
-      'Origin': 'https://kronop.app',
-      'Accept': 'video/*',
-    }
-  }, (player) => {
-    player.loop = false;
-    // Optimize for CDN streaming - smooth buffering
-    player.play();
-  });
-
-  const handleStar = () => setIsStarred(!isStarred);
-  const handleComment = () => console.log('Comment pressed');
-  const handleShare = () => console.log('Share pressed');
-  const handleSave = () => setIsSaved(!isSaved);
-  const handleReport = () => console.log('Report pressed');
-  const handleDownload = () => console.log('Download pressed');
-  const handleSupport = () => setIsSupported(!isSupported);
 
   return (
     <View style={styles.container}>
@@ -132,7 +130,7 @@ export default function VideoDetailScreen() {
         </View>
 
         {/* Action Buttons - 6 Buttons */}
-        <VideoActionButtons
+        <VideoButtons
           isStarred={isStarred}
           commentsCount={video.comments}
           sharesCount={0}
