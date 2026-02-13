@@ -2,7 +2,8 @@
 // Storage: storiy - BunnyCDN Storage API
 // Dedicated service for Story content upload and management
 
-import { BUNNY_CONFIG } from '../../constants/Config';
+// DIRECT ENV ACCESS: No centralized config, use environment variables directly
+const STORY_STORAGE_NAME = process.env.EXPO_PUBLIC_BUNNY_STORAGE_NAME_STORY || 'storiy';
 
 export interface StoryUploadResult {
   success: boolean;

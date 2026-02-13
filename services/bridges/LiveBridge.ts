@@ -2,7 +2,9 @@
 // Library ID: 594452 - BunnyCDN Stream API
 // Dedicated service for Live streaming content upload and management
 
-import { BUNNY_CONFIG } from '../../constants/Config';
+// DIRECT ENV ACCESS: No centralized config, use environment variables directly
+const STORY_STORAGE_NAME = process.env.EXPO_PUBLIC_BUNNY_STORAGE_NAME_STORY || 'storiy';
+const LIVE_LIBRARY_ID = process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_LIVE || '594452';
 
 export interface LiveUploadResult {
   success: boolean;

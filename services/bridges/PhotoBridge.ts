@@ -2,8 +2,8 @@
 // Storage: photu - BunnyCDN Storage API
 // Dedicated service for Photo upload and management
 
-// LEVEL 2: Main Config Import (from envConfig.ts)
-import { ENV_CONFIG } from '../../../config/envConfig';
+// DIRECT ENV ACCESS: No centralized config, use environment variables directly
+const PHOTO_STORAGE_NAME = process.env.EXPO_PUBLIC_BUNNY_STORAGE_NAME_PHOTO || 'photu';
 
 export interface PhotoUploadResult {
   success: boolean;

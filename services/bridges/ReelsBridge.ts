@@ -3,9 +3,6 @@
 // Dedicated service for Reels upload and management
 // NOTE: This bridge only handles BunnyCDN uploads, authentication is handled by MongoDB API
 
-// LEVEL 2: Main Config Import (from envConfig.ts)
-import { ENV_CONFIG } from '../../../config/envConfig';
-
 // DIRECT ENV ACCESS: No centralized config, use environment variables directly
 const REELS_LIBRARY_ID = process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_REELS || '593793';
 const REELS_API_KEY = process.env.EXPO_PUBLIC_BUNNY_API_KEY_REELS || 'cfa113db-233a-453d-ac580bde7245-1219-4537';

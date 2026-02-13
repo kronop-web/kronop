@@ -2,7 +2,8 @@
 // Storage: shayar - BunnyCDN Storage API
 // Dedicated service for Shayari content upload and management
 
-import { BUNNY_CONFIG } from '../../constants/Config';
+// DIRECT ENV ACCESS: No centralized config, use environment variables directly
+const SHAYARI_STORAGE_NAME = process.env.EXPO_PUBLIC_BUNNY_STORAGE_NAME_SHAYARI || 'shayar';
 
 export interface ShayariUploadResult {
   success: boolean;
