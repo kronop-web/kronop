@@ -367,11 +367,28 @@ function ReelItem({
       onVideoWatched(item.id);
     }
 
-    // Auto-play for active videos with safety check
+    // FORCE START: Play immediately when ready
     if (isActive) {
-      setTimeout(() => {
-        safePlayerPlay();
-      }, 100); // Small delay for smooth transition
+      // Check if chunk 0 is loaded, then force play
+      videoChunkingService.getChunk(item.id, 0)
+        .then(chunk => {
+          if (chunk && chunk.loaded) {
+            // FORCE START: Play immediately when chunk 0 loads
+            playerInstance.play();
+            playerInstance.currentTime = 0;
+          } else {
+            // Fallback: play after small delay
+            setTimeout(() => {
+              safePlayerPlay();
+            }, 200);
+          }
+        })
+        .catch(() => {
+          // Fallback: play after small delay
+          setTimeout(() => {
+            safePlayerPlay();
+          }, 200);
+        });
     }
   });
 
@@ -427,6 +444,24 @@ function ReelItem({
       AudioController.applyToPlayer(playerRef.current, isActive);
     }
   }, [videoMetadata.isLoaded, isActive]);
+
+  // FORCE START: Play when chunk 0 is loaded
+  useEffect(() => {
+    if (isActive && isPlayerReadyRef.current && playerRef.current) {
+      // Check if chunk 0 is loaded
+      videoChunkingService.getChunk(item.id, 0)
+        .then(chunk => {
+          if (chunk && chunk.loaded && isActive) {
+            // FORCE START: Play immediately when chunk 0 loads
+            playerRef.current?.play();
+            playerRef.current.currentTime = 0;
+          }
+        })
+        .catch(() => {
+          // Silent fail
+        });
+    }
+  }, [isActive, item.id]);
 
   const handleVideoTap = () => {
     const now = Date.now();
@@ -686,6 +721,17 @@ export default function ReelsScreen() {
       
       // Initialize video preloader
       videoPreloaderService.initializePreloader(reels);
+      
+      // Set callback for force start when chunk 0 loads - React Native compatible
+      videoChunkingService.setFirstChunkCallback((videoId: string) => {
+        // Find the reel - React Native doesn't have document, use refs instead
+        const reel = reels.find(r => r.id === videoId);
+        if (reel) {
+          // Force start will be handled by useEffect watching chunk 0 load
+          // No need for document.querySelector in React Native
+          console.log(`📦 Chunk 0 loaded for ${videoId} - force start triggered`);
+        }
+      });
       
       // Initialize chunking service for all reels
       reels.forEach(reel => {

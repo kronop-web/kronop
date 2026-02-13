@@ -23,9 +23,9 @@ class SlidingWindowManager {
   private window: Map<string, ReelItem> = new Map();
   private currentIndex: number = 0;
   private config: WindowConfig = {
-    windowSize: 3,
-    preloadAhead: 1,
-    unloadBehind: 1,
+    windowSize: 4, // Increased to keep at least 2 videos in memory
+    preloadAhead: 2, // Preload next 2 videos
+    unloadBehind: 2, // Keep 2 videos behind current
     memoryThreshold: 50 // 50MB
   };
   
@@ -91,9 +91,9 @@ class SlidingWindowManager {
     const oldIndex = this.currentIndex;
     this.currentIndex = newIndex;
 
-    // Calculate new window bounds
-    const windowStart = Math.max(0, newIndex - 10); // Keep 10 behind
-    const windowEnd = Math.min(allReels.length, newIndex + this.config.windowSize - 10);
+    // Calculate new window bounds - keep at least 2 videos in memory
+    const windowStart = Math.max(0, newIndex - 1); // Keep 1 behind
+    const windowEnd = Math.min(allReels.length, newIndex + this.config.windowSize); // Keep current + next 2
 
     console.log(`🪟 Moving window from ${oldIndex} to ${newIndex}`);
 
@@ -282,17 +282,20 @@ class SlidingWindowManager {
     return this.memoryUsage;
   }
 
-  // Force cleanup to free memory
+  // Force cleanup to free memory - but keep at least 2 videos
   forceCleanup(): void {
-    console.log('🧹 Force cleanup triggered...');
+    // Keep at least 2 videos in memory - don't delete if only 2 or less
+    if (this.window.size <= 2) {
+      return; // Stop aggressive cleanup - keep videos in memory
+    }
     
-    // Keep only current video
     const toDelete: string[] = [];
     for (const [reelId, reel] of this.window.entries()) {
       const distance = Math.abs(reel.lastAccessed - Date.now());
       
-      // Remove videos not accessed in last 30 seconds
-      if (distance > 30000) {
+      // Remove videos not accessed in last 60 seconds (increased from 30s)
+      // But ensure we keep at least 2 videos
+      if (distance > 60000 && this.window.size - toDelete.length > 2) {
         toDelete.push(reelId);
       }
     }
@@ -300,8 +303,6 @@ class SlidingWindowManager {
     toDelete.forEach(reelId => {
       this.cleanupReel(reelId);
     });
-    
-    console.log(`🧹 Force cleanup: removed ${toDelete.length} reels`);
   }
 
   // Update configuration

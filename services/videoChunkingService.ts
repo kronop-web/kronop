@@ -38,6 +38,7 @@ class VideoChunkingService {
 
   private memoryUsage: number = 0;
   private networkSpeed: number = 0; // bps
+  private onFirstChunkLoaded?: (videoId: string) => void; // Callback for force start
 
   static getInstance(): VideoChunkingService {
     if (!VideoChunkingService.instance) {
@@ -132,21 +133,35 @@ class VideoChunkingService {
         await this.cleanupOldChunks(videoId);
       }
 
-      // Fetch chunk data
+      // Fetch chunk data with proper Range header for Bunny CDN
+      const startByte = chunkIndex * 262144; // 256KB per chunk
+      const endByte = (chunkIndex + 1) * 262144 - 1;
+      
       const response = await fetch(chunk.url, {
         headers: {
-          'Range': `bytes=${chunk.start * 1000}-${chunk.end * 1000}` // Approximate
+          'Range': `bytes=${startByte}-${endByte}`,
+          'Accept': 'video/*',
+          'User-Agent': 'KronopApp'
         }
       });
 
-      if (response.ok) {
+      // Accept 200 (OK) and 206 (Partial Content) - Status 206 is valid for Range requests
+      if (response.ok || response.status === 206) {
         const blob = await response.blob();
-        chunk.blob = blob;
-        chunk.loaded = true;
-        
-        this.memoryUsage += blob.size;
-        
-        console.log(`📦 Loaded chunk ${chunkIndex} for ${videoId} (${blob.size} bytes)`);
+        if (blob.size > 0) {
+          chunk.blob = blob;
+          chunk.loaded = true;
+          
+          this.memoryUsage += blob.size;
+          
+          console.log(`📦 Loaded chunk ${chunkIndex} for ${videoId} (${blob.size} bytes)`);
+          
+          // FORCE START: When chunk 0 is loaded, trigger play
+          if (chunkIndex === 0) {
+            // Emit event or callback for force start
+            this.onFirstChunkLoaded?.(videoId);
+          }
+        }
       }
 
     } catch (error) {
@@ -326,6 +341,11 @@ class VideoChunkingService {
     console.log(`🧹 Cleaned up stream for ${videoId}`);
   }
 
+
+  // Set callback for first chunk loaded event
+  setFirstChunkCallback(callback: (videoId: string) => void): void {
+    this.onFirstChunkLoaded = callback;
+  }
 
   // Update configuration
   updateConfig(newConfig: Partial<ChunkConfig>): void {
