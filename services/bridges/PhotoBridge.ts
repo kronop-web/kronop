@@ -34,9 +34,8 @@ const DEFAULT_USER_ID = 'guest_user';
  * Uses BunnyCDN Storage API with Storage Zone: photu
  */
 export class PhotoBridge {
-  // LEVEL 3: Bridge Configuration (from Main Config)
-  private readonly config = ENV_CONFIG.bunny.libraries.photos;
-  private readonly storageZoneName = this.config.storageZoneName || 'photu'; // Use from config
+  // DIRECT ENV ACCESS: No centralized config, use environment variables directly
+  private readonly storageZoneName = PHOTO_STORAGE_NAME; // Use from env
 
   /**
    * Upload photo to BunnyCDN Storage
