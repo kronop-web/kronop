@@ -11,23 +11,25 @@ interface VideoChunk {
 }
 
 interface ChunkConfig {
-  chunkSize: number; // 1MB chunks for instant loading
-  chunkDuration: number; // 0.2 seconds per chunk (5 chunks per second)
-  preloadChunks: number; // Preload next 5 chunks
+  chunkSize: number; // 0.5MB chunks for ultra-fast loading
+  chunkDuration: number; // 0.066 seconds per chunk (15 chunks per second)
+  preloadChunks: number; // Preload next 10 chunks
   maxMemoryChunks: number; // Max chunks in memory
   qualityLevels: string[]; // Available quality levels
   instantPlayThreshold: number; // First chunk instant play
+  fixedQuality: string; // FIXED HD QUALITY - No switching
 }
 
 class VideoChunkingService {
   private static instance: VideoChunkingService;
   private config: ChunkConfig = {
-    chunkSize: 1 * 1024 * 1024, // 1MB for instant loading
-    chunkDuration: 0.2, // 0.2 seconds per chunk (5 chunks per second)
-    preloadChunks: 5, // Preload next 5 chunks
-    maxMemoryChunks: 15, // More chunks for smooth playback
-    qualityLevels: ['360p', '480p', '720p', '1080p'],
-    instantPlayThreshold: 1 // First chunk instant play
+    chunkSize: 0.5 * 1024 * 1024, // 0.5MB for ultra-fast loading
+    chunkDuration: 0.066, // 0.066 seconds per chunk (15 chunks per second)
+    preloadChunks: 10, // Preload next 10 chunks
+    maxMemoryChunks: 25, // More chunks for ultra-smooth playback
+    qualityLevels: ['1080p'], // FIXED HD QUALITY ONLY
+    instantPlayThreshold: 1, // First chunk instant play
+    fixedQuality: '1080p' // LOCKED TO HD - No switching
   };
   
   private activeStreams: Map<string, {
@@ -49,27 +51,27 @@ class VideoChunkingService {
   }
 
   // Initialize video streaming
-  async initializeStream(videoId: string, videoUrl: string, quality: string = '480p'): Promise<void> {
+  async initializeStream(videoId: string, videoUrl: string, quality: string = '1080p'): Promise<void> {
     try {
-      console.log(`🎬 Initializing stream for ${videoId} at ${quality}`);
+      console.log(`🎬 Initializing ULTRA-FAST stream for ${videoId} at FIXED HD (1080p)`);
 
       // Get video metadata
       const metadata = await this.getVideoMetadata(videoUrl);
-      // NEW MATH: 5 chunks per second (0.2s each)
-      const totalChunks = Math.ceil(metadata.duration / this.config.chunkDuration); // 30s * 5 = 150 chunks
+      // ULTRA-FAST MATH: 15 chunks per second (0.066s each)
+      const totalChunks = Math.ceil(metadata.duration / this.config.chunkDuration); // 30s * 15 = 450 chunks
 
       const stream = {
         chunks: new Map<number, VideoChunk>(),
         currentChunk: 0,
         totalChunks,
         videoUrl,
-        quality
+        quality: this.config.fixedQuality // FORCE HD QUALITY
       };
 
       // Create chunk URLs
       for (let i = 0; i < totalChunks; i++) {
         const chunk: VideoChunk = {
-          url: this.createChunkUrl(videoUrl, i, quality),
+          url: this.createChunkUrl(videoUrl, i, this.config.fixedQuality),
           start: i * this.config.chunkDuration,
           end: Math.min((i + 1) * this.config.chunkDuration, metadata.duration),
           index: i,
@@ -105,12 +107,12 @@ class VideoChunkingService {
   private createChunkUrl(videoUrl: string, chunkIndex: number, quality: string): string {
     const separator = videoUrl.includes('?') ? '&' : '?';
     
-    // INSTANT PLAY: 0.2 second chunks (5 chunks per second)
+    // ULTRA-FAST: 0.066 second chunks (15 chunks per second)
     const startTime = chunkIndex * this.config.chunkDuration;
     const endTime = (chunkIndex + 1) * this.config.chunkDuration;
     
-    // Add chunk parameters for CDN with instant play
-    return `${videoUrl}${separator}chunk=${chunkIndex}&quality=${quality}&start=${startTime}&end=${endTime}&instant=${chunkIndex === 0}`;
+    // Add chunk parameters for CDN with ultra-fast loading
+    return `${videoUrl}${separator}chunk=${chunkIndex}&quality=${this.config.fixedQuality}&start=${startTime}&end=${endTime}&instant=${chunkIndex === 0}&hd=locked`;
   }
 
   // Preload initial chunks
@@ -255,33 +257,23 @@ class VideoChunkingService {
     }
   }
 
-  // Adaptive quality based on network speed
+  // FIXED QUALITY - No adaptation based on network speed
   async adaptQuality(videoId: string, networkSpeed: number): Promise<string> {
     this.networkSpeed = networkSpeed;
     
     const stream = this.activeStreams.get(videoId);
-    if (!stream) return '480p';
+    if (!stream) return this.config.fixedQuality;
 
-    let newQuality = stream.quality;
-
-    // Quality adaptation logic
-    if (networkSpeed < 1 * 1024 * 1024) { // < 1 Mbps
-      newQuality = '360p';
-    } else if (networkSpeed < 3 * 1024 * 1024) { // < 3 Mbps
-      newQuality = '480p';
-    } else if (networkSpeed < 6 * 1024 * 1024) { // < 6 Mbps
-      newQuality = '720p';
-    } else {
-      newQuality = '1080p';
+    // QUALITY LOCKED TO HD - No switching based on network
+    console.log(`🔒 Quality LOCKED to ${this.config.fixedQuality} - Network speed: ${networkSpeed} bps`);
+    
+    // Only reinitialize if somehow quality changed (should never happen)
+    if (stream.quality !== this.config.fixedQuality) {
+      console.log(`� Fixing quality from ${stream.quality} to ${this.config.fixedQuality}`);
+      await this.reinitializeStream(videoId, this.config.fixedQuality);
     }
 
-    // Reinitialize stream if quality changed
-    if (newQuality !== stream.quality) {
-      console.log(`🔄 Adapting quality from ${stream.quality} to ${newQuality}`);
-      await this.reinitializeStream(videoId, newQuality);
-    }
-
-    return newQuality;
+    return this.config.fixedQuality;
   }
 
   // Reinitialize stream with new quality

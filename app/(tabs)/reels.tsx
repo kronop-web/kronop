@@ -293,6 +293,7 @@ function ReelItem({
           title={item.title}
           autoPlay={true}
           isActive={isActive} // AUDIO CONTROL: Only active video plays
+          forceQuality="1080p" // FIXED HD QUALITY - No switching
         />
 
         {/* Bottom Content - MODULAR DESIGN */}

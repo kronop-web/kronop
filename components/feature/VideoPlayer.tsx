@@ -40,6 +40,7 @@ interface VideoPlayerProps {
   onClose?: () => void;
   autoPlay?: boolean;
   isActive?: boolean; // AUDIO CONTROL: Only active video plays
+  forceQuality?: string; // FIXED HD QUALITY - No switching
 }
 
 export default function VideoPlayer({ 
@@ -48,7 +49,8 @@ export default function VideoPlayer({
   title, 
   onClose, 
   autoPlay = true,
-  isActive = true // AUDIO CONTROL: Default to active
+  isActive = true, // AUDIO CONTROL: Default to active
+  forceQuality = "1080p" // FIXED HD QUALITY - Default to 1080p
 }: VideoPlayerProps) {
   const videoRef = useRef<Video>(null);
   const [status, setStatus] = useState<AVPlaybackStatus>();
