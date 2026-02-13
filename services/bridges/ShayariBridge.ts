@@ -37,8 +37,8 @@ const DEFAULT_USER_ID = 'guest_user';
  * Uses BunnyCDN Storage API with Storage Zone: shayar
  */
 export class ShayariBridge {
-  private readonly config = BUNNY_CONFIG.shayari;
-  private readonly storageZoneName = this.config.storageZoneName; // Use from config
+  // DIRECT ENV ACCESS: No centralized config, use environment variables directly
+  private readonly storageZoneName = SHAYARI_STORAGE_NAME; // Use from env
 
   /**
    * Upload shayari image to BunnyCDN Storage
@@ -74,12 +74,12 @@ export class ShayariBridge {
       }
 
       // Upload to BunnyCDN Storage
-      const uploadUrl = `https://${this.config.host}/${this.storageZoneName}/${fileName}`;
+      const uploadUrl = `https://${process.env.EXPO_PUBLIC_BUNNY_SHAYARI_STORAGE_ZONE || 'kronop-shayari.b-cdn.net'}/${this.storageZoneName}/${fileName}`;
       
       const uploadResponse = await fetch(uploadUrl, {
         method: 'PUT',
         headers: {
-          'AccessKey': this.config.apiKey,
+          'AccessKey': process.env.EXPO_PUBLIC_BUNNY_SHAYARI_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY_SHAYARI,
           'Content-Type': file.type || 'image/jpeg'
         },
         body: fileBlob
@@ -92,7 +92,7 @@ export class ShayariBridge {
       console.log('📝 ShayariBridge: Shayari uploaded successfully:', fileName);
 
       // Generate thumbnail URL
-      const thumbnailUrl = `https://${this.config.host}/${this.storageZoneName}/thumb_${fileName}`;
+      const thumbnailUrl = `https://${process.env.EXPO_PUBLIC_BUNNY_SHAYARI_STORAGE_ZONE || 'kronop-shayari.b-cdn.net'}/thumb_${fileName}`;
 
       return {
         success: true,
@@ -207,12 +207,12 @@ export class ShayariBridge {
    */
   async deleteShayari(fileName: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const deleteUrl = `https://${this.config.host}/${this.storageZoneName}/${fileName}`;
+      const deleteUrl = `https://${process.env.EXPO_PUBLIC_BUNNY_SHAYARI_STORAGE_ZONE || 'kronop-shayari.b-cdn.net'}/${this.storageZoneName}/${fileName}`;
       
       const response = await fetch(deleteUrl, {
         method: 'DELETE',
         headers: {
-          'AccessKey': this.config.apiKey
+          'AccessKey': process.env.EXPO_PUBLIC_BUNNY_SHAYARI_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY_SHAYARI
         }
       });
 
@@ -239,12 +239,12 @@ export class ShayariBridge {
    */
   async getShayariInfo(fileName: string): Promise<any> {
     try {
-      const getUrl = `https://${this.config.host}/${this.storageZoneName}/${fileName}`;
+      const getUrl = `https://${process.env.EXPO_PUBLIC_BUNNY_SHAYARI_STORAGE_ZONE || 'kronop-shayari.b-cdn.net'}/${this.storageZoneName}/${fileName}`;
       
       const response = await fetch(getUrl, {
         method: 'HEAD',
         headers: {
-          'AccessKey': this.config.apiKey
+          'AccessKey': process.env.EXPO_PUBLIC_BUNNY_SHAYARI_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY_SHAYARI
         }
       });
 
@@ -268,22 +268,6 @@ export class ShayariBridge {
   /**
    * List shayari by category
    * @param category - Category to filter by
-   * @returns Promise<any[]>
-   */
-  async listShayariByCategory(category: string): Promise<any[]> {
-    try {
-      const categoryPath = category.toLowerCase().replace(/[^a-z0-9]/g, '_');
-      const listUrl = `https://${this.config.host}/${this.storageZoneName}/${categoryPath}/`;
-      
-      const response = await fetch(listUrl, {
-        headers: {
-          'AccessKey': this.config.apiKey
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Shayari: Failed to list shayari by category: ${response.status}`);
-      }
 
       const data = await response.json();
       return data.ArrayOfFileInfo?.FileInfo || [];
@@ -380,12 +364,12 @@ export class ShayariBridge {
    */
   async getStorageStats(): Promise<any> {
     try {
-      const statsUrl = `https://${this.config.host}/${this.storageZoneName}/`;
+      const statsUrl = `https://${process.env.EXPO_PUBLIC_BUNNY_SHAYARI_STORAGE_ZONE || 'kronop-shayari.b-cdn.net'}/${this.storageZoneName}/`;
       
       const response = await fetch(statsUrl, {
         method: 'GET',
         headers: {
-          'AccessKey': this.config.apiKey
+          'AccessKey': process.env.EXPO_PUBLIC_BUNNY_SHAYARI_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY_SHAYARI
         }
       });
 

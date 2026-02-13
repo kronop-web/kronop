@@ -71,12 +71,12 @@ export class PhotoBridge {
       }
 
       // Upload to BunnyCDN Storage
-      const uploadUrl = `https://${this.config.host}/${this.storageZoneName}/${fileName}`;
+      const uploadUrl = `https://${process.env.EXPO_PUBLIC_BUNNY_PHOTO_PULL_ZONE || 'kronop-photos.b-cdn.net'}/${this.storageZoneName}/${fileName}`;
       
       const uploadResponse = await fetch(uploadUrl, {
         method: 'PUT',
         headers: {
-          'AccessKey': this.config.apiKey,
+          'AccessKey': process.env.EXPO_PUBLIC_BUNNY_PHOTO_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY_PHOTO,
           'Content-Type': file.type || 'image/jpeg'
         },
         body: fileBlob
@@ -89,7 +89,7 @@ export class PhotoBridge {
       console.log('📸 PhotoBridge: Photo uploaded successfully:', fileName);
 
       // Generate thumbnail URL using Pull Zone from config (not hardcoded)
-      const pullZoneHost = this.config.hostname || process.env.EXPO_PUBLIC_BUNNY_PHOTO_PULL_ZONE || 'kronop-photos.b-cdn.net';
+      const pullZoneHost = process.env.EXPO_PUBLIC_BUNNY_PHOTO_PULL_ZONE || 'kronop-photos.b-cdn.net';
       const thumbnailUrl = `https://${pullZoneHost}/thumb_${fileName}`;
 
       return {
@@ -192,12 +192,12 @@ export class PhotoBridge {
    */
   async deletePhoto(fileName: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const deleteUrl = `https://${this.config.host}/${this.storageZoneName}/${fileName}`;
+      const deleteUrl = `https://${process.env.EXPO_PUBLIC_BUNNY_PHOTO_PULL_ZONE || 'kronop-photos.b-cdn.net'}/${this.storageZoneName}/${fileName}`;
       
       const response = await fetch(deleteUrl, {
         method: 'DELETE',
         headers: {
-          'AccessKey': this.config.apiKey
+          'AccessKey': process.env.EXPO_PUBLIC_BUNNY_PHOTO_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY_PHOTO
         }
       });
 
@@ -224,12 +224,12 @@ export class PhotoBridge {
    */
   async getPhotoInfo(fileName: string): Promise<any> {
     try {
-      const getUrl = `https://${this.config.host}/${this.storageZoneName}/${fileName}`;
+      const getUrl = `https://${process.env.EXPO_PUBLIC_BUNNY_PHOTO_PULL_ZONE || 'kronop-photos.b-cdn.net'}/${this.storageZoneName}/${fileName}`;
       
       const response = await fetch(getUrl, {
         method: 'HEAD',
         headers: {
-          'AccessKey': this.config.apiKey
+          'AccessKey': process.env.EXPO_PUBLIC_BUNNY_PHOTO_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY_PHOTO
         }
       });
 
@@ -258,12 +258,13 @@ export class PhotoBridge {
   async listPhotos(prefix?: string): Promise<any[]> {
     try {
       const listUrl = prefix 
-        ? `https://${this.config.host}/${this.storageZoneName}/${prefix}/`
-        : `https://${this.config.host}/${this.storageZoneName}/`;
+        ? `https://${process.env.EXPO_PUBLIC_BUNNY_PHOTO_PULL_ZONE || 'kronop-photos.b-cdn.net'}/${this.storageZoneName}/${prefix}/`
+        : `https://${process.env.EXPO_PUBLIC_BUNNY_PHOTO_PULL_ZONE || 'kronop-photos.b-cdn.net'}/${this.storageZoneName}/`;
       
       const response = await fetch(listUrl, {
+        method: 'GET',
         headers: {
-          'AccessKey': this.config.apiKey
+          'AccessKey': process.env.EXPO_PUBLIC_BUNNY_PHOTO_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY_PHOTO
         }
       });
 
@@ -339,12 +340,12 @@ export class PhotoBridge {
    */
   async getStorageStats(): Promise<any> {
     try {
-      const statsUrl = `https://${this.config.host}/${this.storageZoneName}/`;
+      const statsUrl = `https://${process.env.EXPO_PUBLIC_BUNNY_PHOTO_PULL_ZONE || 'kronop-photos.b-cdn.net'}/${this.storageZoneName}/`;
       
       const response = await fetch(statsUrl, {
         method: 'GET',
         headers: {
-          'AccessKey': this.config.apiKey
+          'AccessKey': process.env.EXPO_PUBLIC_BUNNY_PHOTO_STORAGE_KEY || process.env.EXPO_PUBLIC_BUNNY_API_KEY_PHOTO
         }
       });
 
