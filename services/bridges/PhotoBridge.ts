@@ -2,7 +2,8 @@
 // Storage: photu - BunnyCDN Storage API
 // Dedicated service for Photo upload and management
 
-import { BUNNY_CONFIG } from '../../constants/Config';
+// LEVEL 2: Main Config Import (from envConfig.ts)
+import { ENV_CONFIG } from '../../../config/envConfig';
 
 export interface PhotoUploadResult {
   success: boolean;
@@ -33,8 +34,9 @@ const DEFAULT_USER_ID = 'guest_user';
  * Uses BunnyCDN Storage API with Storage Zone: photu
  */
 export class PhotoBridge {
-  private readonly config = BUNNY_CONFIG.photos;
-  private readonly storageZoneName = this.config.storageZoneName; // Use from config
+  // LEVEL 3: Bridge Configuration (from Main Config)
+  private readonly config = ENV_CONFIG.bunny.libraries.photos;
+  private readonly storageZoneName = this.config.storageZoneName || 'photu'; // Use from config
 
   /**
    * Upload photo to BunnyCDN Storage
@@ -88,7 +90,7 @@ export class PhotoBridge {
       console.log('📸 PhotoBridge: Photo uploaded successfully:', fileName);
 
       // Generate thumbnail URL using Pull Zone from config (not hardcoded)
-      const pullZoneHost = BUNNY_CONFIG.photos.host || process.env.EXPO_PUBLIC_BUNNY_PHOTO_PULL_ZONE || 'kronop-photos.b-cdn.net';
+      const pullZoneHost = this.config.hostname || process.env.EXPO_PUBLIC_BUNNY_PHOTO_PULL_ZONE || 'kronop-photos.b-cdn.net';
       const thumbnailUrl = `https://${pullZoneHost}/thumb_${fileName}`;
 
       return {

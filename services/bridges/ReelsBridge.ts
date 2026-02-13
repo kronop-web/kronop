@@ -3,11 +3,13 @@
 // Dedicated service for Reels upload and management
 // NOTE: This bridge only handles BunnyCDN uploads, authentication is handled by MongoDB API
 
+// LEVEL 2: Main Config Import (from envConfig.ts)
+import { ENV_CONFIG } from '../../../config/envConfig';
+
 // DIRECT ENV ACCESS: No centralized config, use environment variables directly
 const REELS_LIBRARY_ID = process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ID_REELS || '593793';
 const REELS_API_KEY = process.env.EXPO_PUBLIC_BUNNY_API_KEY_REELS || 'cfa113db-233a-453d-ac580bde7245-1219-4537';
 const REELS_HOST = process.env.EXPO_PUBLIC_BUNNY_HOST_REELS || 'vz-718b59c2-05f.b-cdn.net';
-const REELS_STREAM_KEY = process.env.EXPO_PUBLIC_BUNNY_STREAM_KEY_REELS || REELS_API_KEY;
 
 export interface ReelUploadResult {
   success: boolean;
@@ -35,11 +37,12 @@ const DEFAULT_USER_ID = 'guest_user';
  * Uses BunnyCDN Stream API with Library ID: 593793
  */
 export class ReelsBridge {
-  // DIRECT ENV ACCESS: Use environment variables directly
-  private readonly libraryId = REELS_LIBRARY_ID;
-  private readonly apiKey = REELS_API_KEY;
-  private readonly host = REELS_HOST;
-  private readonly streamKey = REELS_STREAM_KEY;
+  // LEVEL 3: Bridge Configuration (from Main Config)
+  private readonly config = ENV_CONFIG.bunny.libraries.reels;
+  private readonly libraryId = this.config.libraryId;
+  private readonly apiKey = this.config.apiKey;
+  private readonly host = this.config.hostname;
+  private readonly streamKey = this.config.streamKey;
 
   /**
    * Upload a reel to BunnyCDN Stream
@@ -153,7 +156,6 @@ export class ReelsBridge {
 
     const uploadUrl = `https://video.bunnycdn.com/library/${this.libraryId}/videos/${videoGuid}`;
     
-    // Use actual API key from environment
     // Use proper Stream API key from environment
     const apiKey = this.streamKey || this.apiKey;
     
