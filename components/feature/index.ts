@@ -1,14 +1,22 @@
-export { VideoCard } from './VideoCard';
+export { VideoCard } from './VideoScreen/VideoCard';
 export { CommentItem } from './CommentItem';
 export { StoryItem } from './StoryItem';
 export { PhotoCategoryCard } from './PhotoCategoryCard';
 export { default as SettingsSection } from './SettingsSection';
 export { StoryViewer } from './StoryViewer';
 
+// Components used by tabs - Updated
+export { CommentSheet } from './CommentSheet';
+export { default as RightButtons } from './RightButtons';
+export { default as RunningTitle } from './RunningTitle';
+export { default as SupportSection } from './SupportSection';
+export { default as ChannelInfo } from './ChannelInfo';
+export { StorySection } from './StorySection';
+export { default as Shayari } from './Shayari';
+
 // New Modular Components for Zero Lag Performance
 export { LikeButton } from './LikeButton';
 export { SupporterButton } from './SupporterButton';
 export { ShareButton } from './ShareButton';
 export { CommentButton } from './CommentButton';
-export { CommentSheet } from './CommentSheet';
 export { InteractionBar } from './InteractionBar';

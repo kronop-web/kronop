@@ -306,7 +306,7 @@ class AutoSyncService {
           
           console.log(`📚 Processing ${type} - Library ID: ${libraryId}`);
           
-          const items = await bunnyContentService.fetchVideosFromBunny(libraryId, specificApiKey); // FIXED: Use correct service
+          const items = await bunnyContentService.fetchVideosFromBunny(libraryId, specificApiKey); // FIXED: Use static method
           
           console.log(`📥 Fetched ${items.length} items from ${type} (Library: ${libraryId})`);
           
@@ -339,6 +339,60 @@ class AutoSyncService {
       // Still update last sync time to prevent immediate retry
       this.lastSyncTimes[type] = new Date();
       return 0;
+    }
+  }
+
+  // Save content to database with duplicate checking
+  async saveContentToDatabase(item, type) {
+    try {
+      const bunnyId = item.guid || item.Guid || item.id;
+      
+      // Check if content already exists (Duplicate Check)
+      const existing = await Content.findOne({ 
+        bunny_id: bunnyId, 
+        type: type.charAt(0).toUpperCase() + type.slice(1).toLowerCase()
+      });
+      
+      if (existing) {
+        // Skip if URL already exists (Efficiency - only process new entries)
+        return { isNew: false, existing: true };
+      }
+
+      // Process new content (BunnyCDN Integration)
+      const typeMap = {
+        'reels': 'Reel',
+        'video': 'Video', 
+        'live': 'Live',
+        'story': 'Story'
+      };
+      const contentType = typeMap[type] || 'Video';
+      
+      const newContent = new Content({
+        title: item.title || `${contentType} - ${new Date().toLocaleString()}`,
+        description: item.description || '',
+        type: contentType,
+        bunny_id: bunnyId,
+        url: `https://${BUNNY_CONFIG[type].host}/${bunnyId}/playlist.m3u8`,
+        thumbnail: `https://${BUNNY_CONFIG[type].host}/${bunnyId}/thumbnail.jpg`,
+        duration: item.length || 0,
+        tags: item.tags || [],
+        category: item.category || 'general',
+        views: 0,
+        likes: 0,
+        is_active: true,
+        user_id: null,
+        created_at: item.dateUploaded ? new Date(item.dateUploaded * 1000) : new Date()
+      });
+
+      await newContent.save();
+      
+      // Terminal Logging
+      console.log(`✅ New Video Synced: [${bunnyId}] - ${item.title || 'Untitled'}`);
+      
+      return { isNew: true, content: newContent };
+    } catch (error) {
+      console.error(`❌ Error saving ${type} to DB:`, error.message);
+      return { isNew: false, error: error.message };
     }
   }
 

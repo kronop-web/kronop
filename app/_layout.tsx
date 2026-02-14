@@ -25,7 +25,7 @@ export default function RootLayout() {
                 <Stack.Screen 
                   name="video/[id]" 
                   options={{ 
-                    headerShown: true,
+                    headerShown: false, // FIXED: Remove header completely
                     presentation: 'modal',
                   }} 
                 />

@@ -1,6 +1,6 @@
 import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { theme } from '../../constants/theme';
+import { theme } from '../../../constants/theme';
 
 interface VideoActionButtonsProps {
   isStarred: boolean;

@@ -2,8 +2,8 @@ import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Video } from '../../types/video';
-import { theme } from '../../constants/theme';
+import { Video } from '../../../types/video';
+import { theme } from '../../../constants/theme';
 
 interface VideoCardProps {
   video: Video;

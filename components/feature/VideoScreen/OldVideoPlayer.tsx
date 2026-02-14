@@ -8,8 +8,7 @@ import {
   ActivityIndicator, 
   Dimensions, 
   Animated, 
-  Modal,
-  SafeAreaView
+  Modal
 } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
@@ -255,7 +254,6 @@ export default function VideoPlayer({
   const videoDimensions = getVideoDimensions();
 
   return (
-    <SafeAreaView style={styles.safeArea}>
       <View style={[styles.container, { height: videoDimensions.height }]}>
         <Video
           ref={videoRef}
@@ -347,25 +345,28 @@ export default function VideoPlayer({
         {/* Bottom Controls - REMOVED */}
       </Animated.View>
     </View>
-    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#000',
-  },
   container: {
-    backgroundColor: '#000',
+    backgroundColor: '#000000',
     position: 'relative',
     width: '100%',
     height: '100%', // FULL SCREEN CONTAINER
+    margin: 0,
+    padding: 0,
+    borderTopWidth: 0,
+    borderBottomWidth: 0,
   },
   video: {
     width: '100%',
     height: '100%', // FULL SCREEN HEIGHT
-    backgroundColor: '#000',
+    backgroundColor: '#000000',
+    margin: 0,
+    padding: 0,
+    borderTopWidth: 0,
+    borderBottomWidth: 0,
   },
   poster: {
     resizeMode: 'cover',
@@ -441,9 +442,13 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: 'rgba(0, 0, 0, 0)', // COMPLETELY TRANSPARENT
     justifyContent: 'space-between',
     zIndex: 2,
+    margin: 0,
+    padding: 0,
+    borderTopWidth: 0,
+    borderBottomWidth: 0,
   },
   topControls: {
     flexDirection: 'row',

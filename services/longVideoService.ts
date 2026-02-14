@@ -13,6 +13,7 @@ export interface LongVideo {
   likes: number;
   isLiked: boolean;
   type: 'long';
+  category?: string;
   user: {
     name: string;
     avatar: string;
@@ -93,6 +94,7 @@ function transformVideoData(item: any): LongVideo {
     likes: item.likes || item.likes_count || 0,
     isLiked: false,
     type: 'long',
+    category: item.category || '',
     user: {
       name: userName,
       avatar: userAvatar,
@@ -147,6 +149,7 @@ export const sampleLongVideos: LongVideo[] = [
     likes: 45000,
     isLiked: false,
     type: 'long',
+    category: 'Travel',
     user: {
       name: 'Nature Explorer',
       avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop',
@@ -166,6 +169,7 @@ export const sampleLongVideos: LongVideo[] = [
     likes: 32000,
     isLiked: false,
     type: 'long',
+    category: 'Health',
     user: {
       name: 'Ocean Vibes',
       avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
@@ -178,11 +182,24 @@ export const sampleLongVideos: LongVideo[] = [
 ];
 
 // Get long videos - fetches from MongoDB via Bridge API
-export async function getLongVideos(): Promise<LongVideo[]> {
+export async function getLongVideos(category?: string): Promise<LongVideo[]> {
   try {
-    return await fetchVideosFromBridgeAPI();
+    const allVideos = await fetchVideosFromBridgeAPI();
+    
+    // If category is specified and not 'All', filter videos
+    if (category && category !== 'All') {
+      return allVideos.filter(video => video.category === category);
+    }
+    
+    return allVideos;
   } catch (error) {
     console.error('Error in getLongVideos:', error);
+    
+    // Filter sample videos if category is specified
+    if (category && category !== 'All') {
+      return sampleLongVideos.filter(video => video.category === category);
+    }
+    
     return sampleLongVideos;
   }
 }

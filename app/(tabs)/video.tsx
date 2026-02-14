@@ -1,18 +1,38 @@
-import { View, Text, StyleSheet, FlatList, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TextInput, ActivityIndicator, TouchableOpacity, ScrollView, StatusBar, Platform } from 'react-native';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { theme } from '../../constants/theme';
 import { useLongVideos } from '../../hooks/useLongVideos';
-import StatusBarOverlay from '../../components/common/StatusBarOverlay';
-import VideoItem from '../../components/feature/VideoItem';
+import VideoItem from '../../components/feature/VideoScreen/VideoItem';
 
 export default function LongVideosScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { videos, loading, error } = useLongVideos();
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const { videos, loading, error } = useLongVideos(selectedCategory === 'All' ? undefined : selectedCategory);
+
+  // The 15 Categories as specified
+  const categories = [
+    'All',
+    'Entertainment',
+    'Music',
+    'Gaming',
+    'Education',
+    'Technology',
+    'News',
+    'Sports',
+    'Business',
+    'Health',
+    'Travel',
+    'Comedy',
+    'Lifestyle',
+    'Food',
+    'Science',
+    'Documentary'
+  ];
 
   const filteredVideos = videos.filter(video =>
     video.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -24,7 +44,12 @@ export default function LongVideosScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBarOverlay style="light" backgroundColor="transparent" />
+      {/* Translucent Status Bar */}
+      <StatusBar 
+        barStyle="light-content" 
+        translucent={true}
+        backgroundColor="transparent"
+      />
       
       {/* Search Bar */}
       <View style={[styles.searchContainer, { paddingTop: insets.top + theme.spacing.md }]}>
@@ -47,6 +72,33 @@ export default function LongVideosScreen() {
             />
           )}
         </View>
+      </View>
+
+      {/* Horizontal Category List - Chocolate Box Design */}
+      <View style={styles.categoryContainer}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryScrollContent}
+        >
+          {categories.map((category) => (
+            <TouchableOpacity
+              key={category}
+              style={[
+                styles.categoryBox,
+                selectedCategory === category && styles.categoryBoxSelected
+              ]}
+              onPress={() => setSelectedCategory(category)}
+            >
+              <Text style={[
+                styles.categoryText,
+                selectedCategory === category && styles.categoryTextSelected
+              ]}>
+                {category}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
 
       {/* Loading State */}
@@ -123,6 +175,42 @@ const styles = StyleSheet.create({
   clearIcon: {
     marginLeft: theme.spacing.sm,
     padding: 4,
+  },
+  categoryContainer: {
+    backgroundColor: theme.colors.background.primary,
+    paddingHorizontal: theme.spacing.md,
+    paddingBottom: theme.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border.primary,
+  },
+  categoryScrollContent: {
+    paddingRight: theme.spacing.md,
+  },
+  categoryBox: {
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    marginRight: theme.spacing.sm,
+    borderRadius: theme.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border.primary,
+    backgroundColor: 'transparent',
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 80,
+  },
+  categoryBoxSelected: {
+    backgroundColor: theme.colors.primary.main,
+    borderColor: theme.colors.primary.main,
+  },
+  categoryText: {
+    fontSize: theme.typography.fontSize.sm,
+    fontWeight: theme.typography.fontWeight.medium,
+    color: theme.colors.text.secondary,
+    textAlign: 'center',
+  },
+  categoryTextSelected: {
+    color: theme.colors.text.primary,
+    fontWeight: theme.typography.fontWeight.semibold,
   },
   list: {
     paddingBottom: theme.spacing.xxl,

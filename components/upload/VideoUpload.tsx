@@ -38,8 +38,9 @@ export default function VideoUpload({ onClose }: VideoUploadProps) {
   const [tagInput, setTagInput] = useState('');
 
   const categories = [
-    'Entertainment', 'Education', 'Gaming', 'Music', 'Sports', 
-    'News', 'Technology', 'Travel', 'Food', 'Fashion', 'Other'
+    'Entertainment', 'Music', 'Gaming', 'Education', 'Technology', 
+    'News', 'Sports', 'Business', 'Health', 'Travel', 'Comedy', 
+    'Lifestyle', 'Food', 'Science', 'Documentary'
   ];
 
   const pickFile = async () => {

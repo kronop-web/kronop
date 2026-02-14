@@ -1,6 +1,6 @@
 import React from 'react';
-import { LongVideo } from '../../services/longVideoService';
-import { VideoCard } from '../../components/ui/VideoCard';
+import { LongVideo } from '../../../services/longVideoService';
+import { VideoCard } from '../../../components/ui/VideoCard';
 
 interface VideoItemProps {
   video: LongVideo;
