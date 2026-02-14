@@ -144,9 +144,9 @@ export default function ReelsUpload({ onClose }: ReelsUploadProps) {
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <MaterialIcons name="arrow-back" size={24} color="#FF4444" />
+          <MaterialIcons name="arrow-back" size={24} color="#8B00FF" />
         </TouchableOpacity>
-        <MaterialIcons name="movie" size={32} color="#FF4444" />
+        <MaterialIcons name="movie" size={32} color="#8B00FF" />
         <Text style={styles.title}>Upload Reel</Text>
         <Text style={styles.subtitle}>Share your short videos with the world</Text>
       </View>
@@ -160,7 +160,7 @@ export default function ReelsUpload({ onClose }: ReelsUploadProps) {
           <MaterialIcons 
             name="video-library" 
             size={48} 
-            color={selectedFile ? "#FF4444" : "#666"} 
+            color={selectedFile ? "#8B00FF" : "#666"} 
           />
           <Text style={[styles.uploadText, selectedFile && styles.uploadTextSelected]}>
             {selectedFile ? selectedFile.name : 'Choose Video File'}
@@ -229,7 +229,7 @@ export default function ReelsUpload({ onClose }: ReelsUploadProps) {
               returnKeyType="done"
             />
             <TouchableOpacity style={styles.addTagButton} onPress={addTag}>
-              <MaterialIcons name="add" size={20} color="#FF4444" />
+              <MaterialIcons name="add" size={20} color="#8B00FF" />
             </TouchableOpacity>
           </View>
           
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   uploadButtonSelected: {
-    borderColor: '#FF4444',
+    borderColor: '#8B00FF',
     backgroundColor: '#fff5f5',
   },
   uploadText: {
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   uploadTextSelected: {
-    color: '#FF4444',
+    color: '#8B00FF',
   },
   uploadSubtext: {
     fontSize: 12,

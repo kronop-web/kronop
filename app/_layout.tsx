@@ -16,20 +16,55 @@ export default function RootLayout() {
       <AlertProvider>
         <AuthProvider>
             <RealtimeSyncManager showDebugInfo={__DEV__}>
-              <Stack screenOptions={{ headerShown: false }}>
+              <Stack 
+                screenOptions={{ 
+                  headerShown: false,
+                  animation: 'fade',
+                  animationTypeForReplace: 'push',
+                  contentStyle: { backgroundColor: '#000' }
+                }}
+              >
                 <Stack.Screen name="(tabs)" />
                 <Stack.Screen name="login" />
                 <Stack.Screen name="settings" />
                 <Stack.Screen name="help-center" />
-                <Stack.Screen name="chat" />
+                <Stack.Screen 
+                  name="chat" 
+                  options={{ 
+                    headerShown: false,
+                    animation: 'fade',
+                    presentation: 'modal',
+                    contentStyle: { backgroundColor: '#000' }
+                  }} 
+                />
+                <Stack.Screen 
+                  name="notifications" 
+                  options={{ 
+                    headerShown: false,
+                    animation: 'fade',
+                    presentation: 'modal',
+                    contentStyle: { backgroundColor: '#000' }
+                  }} 
+                />
+                <Stack.Screen 
+                  name="songs" 
+                  options={{ 
+                    headerShown: false,
+                    animation: 'fade',
+                    presentation: 'modal',
+                    contentStyle: { backgroundColor: '#000' }
+                  }} 
+                />
                 <Stack.Screen 
                   name="video/[id]" 
                   options={{ 
-                    headerShown: false, // FIXED: Remove header completely
+                    headerShown: false,
+                    animation: 'fade',
                     presentation: 'modal',
+                    contentStyle: { backgroundColor: '#000' }
                   }} 
                 />
-              </Stack>
+                </Stack>
             </RealtimeSyncManager>
         </AuthProvider>
       </AlertProvider>

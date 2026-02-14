@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, memo } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, ListRenderItem, Platform } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -14,7 +14,7 @@ interface NotificationItem {
   send_after: number;
 }
 
-export default function NotificationsScreen() {
+export default memo(function NotificationsScreen() {
   const router = useRouter();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -154,7 +154,7 @@ export default function NotificationsScreen() {
       </View>
     </SafeScreen>
   );
-}
+});
 
 const styles = StyleSheet.create({
   header: {

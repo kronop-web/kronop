@@ -3,9 +3,9 @@ import { Platform } from 'react-native';
 export const theme = {
   colors: {
     primary: {
-      main: '#FF0000', // Pure Red
-      light: '#FF3333',
-      dark: '#CC0000',
+      main: '#8B00FF', // Purple/Violet
+      light: '#A833FF',
+      dark: '#6B00CC',
     },
     background: {
       primary: '#000000', // Deep Black
@@ -24,8 +24,8 @@ export const theme = {
       secondary: '#444444',
       light: '#2A2A2A',
     },
-    success: '#FF0000', // Pure Red
-    error: '#FF0040',
+    success: '#8B00FF', // Purple/Violet
+    error: '#A833FF',
     warning: '#FFAA00',
     overlay: 'rgba(0, 0, 0, 0.8)',
   },

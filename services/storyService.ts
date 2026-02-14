@@ -56,6 +56,74 @@ class StoryService {
             }
           ],
           latestTimestamp: new Date().toISOString()
+        },
+        {
+          userId: 'user3',
+          userName: 'Mike Johnson',
+          userAvatar: 'https://via.placeholder.com/100',
+          stories: [
+            {
+              id: 's3',
+              userId: 'user3',
+              userName: 'Mike Johnson',
+              userAvatar: 'https://via.placeholder.com/100',
+              imageUrl: 'https://picsum.photos/1080x1920?random=3',
+              timestamp: new Date().toISOString(),
+              viewed: false
+            }
+          ],
+          latestTimestamp: new Date().toISOString()
+        },
+        {
+          userId: 'user4',
+          userName: 'Sarah Williams',
+          userAvatar: 'https://via.placeholder.com/100',
+          stories: [
+            {
+              id: 's4',
+              userId: 'user4',
+              userName: 'Sarah Williams',
+              userAvatar: 'https://via.placeholder.com/100',
+              imageUrl: 'https://picsum.photos/1080x1920?random=4',
+              timestamp: new Date().toISOString(),
+              viewed: true
+            }
+          ],
+          latestTimestamp: new Date().toISOString()
+        },
+        {
+          userId: 'user5',
+          userName: 'David Brown',
+          userAvatar: 'https://via.placeholder.com/100',
+          stories: [
+            {
+              id: 's5',
+              userId: 'user5',
+              userName: 'David Brown',
+              userAvatar: 'https://via.placeholder.com/100',
+              imageUrl: 'https://picsum.photos/1080x1920?random=5',
+              timestamp: new Date().toISOString(),
+              viewed: false
+            }
+          ],
+          latestTimestamp: new Date().toISOString()
+        },
+        {
+          userId: 'user6',
+          userName: 'Emily Davis',
+          userAvatar: 'https://via.placeholder.com/100',
+          stories: [
+            {
+              id: 's6',
+              userId: 'user6',
+              userName: 'Emily Davis',
+              userAvatar: 'https://via.placeholder.com/100',
+              imageUrl: 'https://picsum.photos/1080x1920?random=6',
+              timestamp: new Date().toISOString(),
+              viewed: true
+            }
+          ],
+          latestTimestamp: new Date().toISOString()
         }
       ];
 

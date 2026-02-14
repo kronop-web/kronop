@@ -77,7 +77,7 @@ export const LikeButton: React.FC<LikeButtonProps> = ({
         <MaterialIcons
           name={isLiked ? 'star' : 'star-border'}
           size={iconSize}
-          color={isLiked ? '#FF3B30' : theme.colors.text.primary}
+          color={isLiked ? '#8B00FF' : theme.colors.text.primary}
         />
       </TouchableOpacity>
       

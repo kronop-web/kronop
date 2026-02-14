@@ -39,28 +39,7 @@ export function StorySection({
   onStoryPress
 }: StorySectionProps) {
   
-  
-  // Add story item at the beginning and limit to 6 total stories
-  const storiesWithAdd = [
-    {
-      userId: 'add-story',
-      userName: 'Add Story',
-      userAvatar: '',
-      stories: [{
-        id: 'add-story',
-        userId: 'add-story',
-        userName: 'Add Story',
-        userAvatar: '',
-        imageUrl: '',
-        timestamp: new Date().toISOString(),
-        viewed: false
-      }],
-      latestTimestamp: new Date().toISOString()
-    },
-    ...stories.slice(0, 5) // Limit to 5 regular stories + 1 add story = 6 total
-  ];
-  
-  // Smart sorting: unseen stories first, then viewed stories (excluding add story)
+  // Smart sorting: unseen stories first, then viewed stories
   const sortedStories = [...stories].sort((a, b) => {
     const aHasUnviewed = a.stories.some(story => !story.viewed);
     const bHasUnviewed = b.stories.some(story => !story.viewed);
@@ -86,15 +65,8 @@ export function StorySection({
   const renderStoryItem = ({ item, index }: { item: GroupedStory; index: number }) => {
     const hasUnviewedStories = item.stories.some(story => !story.viewed);
     const latestStory = item.stories[item.stories.length - 1];
-    const isAddStory = item.userId === 'add-story';
 
     const handleStoryPress = async () => {
-      if (isAddStory) {
-        // Handle add story press
-        onStoryPress(item);
-        return;
-      }
-      
       // Mark all stories in this group as viewed
       for (const story of item.stories) {
         if (!story.viewed) {
@@ -103,20 +75,6 @@ export function StorySection({
       }
       onStoryPress(item);
     };
-
-    if (isAddStory) {
-      return (
-        <TouchableOpacity
-          style={styles.addStoryBox}
-          onPress={handleStoryPress}
-          activeOpacity={0.8}
-        >
-          <View style={styles.addStoryIcon}>
-            <MaterialIcons name="add" size={24} color="#fff" />
-          </View>
-        </TouchableOpacity>
-      );
-    }
 
     return (
       <TouchableOpacity
@@ -169,7 +127,7 @@ export function StorySection({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.storiesContainer}
       >
-        {storiesWithAdd.map((item, index) => (
+        {sortedStories.map((item, index) => (
           <View key={item.userId} style={styles.storyWrapper}>
             {renderStoryItem({ item, index })}
           </View>
@@ -198,35 +156,18 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#e9ecef',
     borderWidth: 1,
-    borderColor: '#dee2e6',
+    borderColor: '#8B00FF',
     position: 'relative',
-  },
-  addStoryBox: {
-    width: STORY_BOX_WIDTH,
-    height: STORY_BOX_HEIGHT,
-    borderRadius: 12,
-    backgroundColor: '#f0f0f0',
-    borderWidth: 2,
-    borderColor: '#ddd',
-    borderStyle: 'dashed',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  addStoryIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: theme.colors.primary.main,
-    justifyContent: 'center',
-    alignItems: 'center',
+    padding: 1,
   },
   unviewedBox: {
-    borderWidth: 2,
-    borderColor: theme.colors.primary.main,
+    borderWidth: 1.5,
+    borderColor: '#8B00FF',
   },
   storyImage: {
     width: '100%',
     height: '100%',
+    borderRadius: 10,
   },
   unviewedIndicator: {
     position: 'absolute',

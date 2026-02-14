@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, FlatList, TextInput, Share, Alert, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, FlatList, TextInput, Share, Alert, Animated, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -161,11 +161,24 @@ export default function LiveScreen() {
   const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [activeTab, setActiveTab] = useState<'supporters' | 'supporting'>('supporters');
+  const [activeTab, setActiveTab] = useState<'all' | 'supporter' | 'supporting' | 'international'>('all');
   const [message, setMessage] = useState('');
   const [streams, setStreams] = useState<LiveStream[]>(mockLiveStreams);
   const [activeAnimations, setActiveAnimations] = useState<Record<string, boolean>>({});
-  const [isGoingLive, setIsGoingLive] = useState(false);
+
+  // Filter streams based on active tab
+  const getFilteredStreams = () => {
+    switch (activeTab) {
+      case 'supporter':
+        return streams.filter(stream => stream.isSupported);
+      case 'supporting':
+        return streams.filter(stream => stream.isStarred);
+      case 'international':
+        return streams.filter(stream => stream.category === 'Gaming' || stream.category === 'Music' || stream.category === 'Technology');
+      default:
+        return streams;
+    }
+  };
 
   const handleScroll = (event: any) => {
     const offsetY = event.nativeEvent.contentOffset.y;
@@ -233,54 +246,6 @@ export default function LiveScreen() {
     }
   };
 
-  const handleGoLive = async () => {
-    setIsGoingLive(true);
-    
-    try {
-      const perm = await requestPermission();
-      const status = perm?.granted ? 'granted' : 'denied';
-      
-      if (status !== 'granted') {
-        Alert.alert(
-          "Camera Access Required",
-          "Please allow camera access to go live.",
-          [{ text: "OK", onPress: () => setIsGoingLive(false) }]
-        );
-        return;
-      }
-
-      // Camera options omitted for compile-time stability
-
-      // Here you would normally start the live stream
-      
-      // Simulate camera opening and starting live stream
-      // In real app, you would navigate to live stream screen
-      setTimeout(() => {
-        Alert.alert(
-          "Live Stream Started",
-          "You are now live!",
-          [
-            {
-              text: "Continue",
-              onPress: () => {
-                // User would continue with live stream
-                setIsGoingLive(false);
-              }
-            }
-          ]
-        );
-      }, 1000);
-
-    } catch (error) {
-      console.error("Go live error:", error);
-      Alert.alert(
-        "Error",
-        "Failed to start live stream. Please try again.",
-        [{ text: "OK", onPress: () => setIsGoingLive(false) }]
-      );
-    }
-  };
-
   const renderLiveItem = ({ item: stream }: { item: LiveStream }) => (
     <View style={[styles.liveContainer, { height: SCREEN_HEIGHT * 0.85 }]}>
       {/* Dot Animation Only - NO STAR VISIBLE */}
@@ -334,7 +299,7 @@ export default function LiveScreen() {
               onChangeText={setMessage}
             />
             <TouchableOpacity style={styles.sendButton}>
-              <Ionicons name="send" size={16} color="#FF3B30" />
+              <Ionicons name="send" size={16} color="#6A5ACD" />
             </TouchableOpacity>
           </View>
         </View>
@@ -347,7 +312,7 @@ export default function LiveScreen() {
               <Ionicons 
                 name={stream.isStarred ? "star" : "star-outline"} 
                 size={24} 
-                color={stream.isStarred ? "#FF3B30" : "white"}
+                color={stream.isStarred ? "#6A5ACD" : "white"}
               />
             </View>
             <Text style={styles.actionText}>{formatNumber(stream.starsCount)}</Text>
@@ -366,15 +331,32 @@ export default function LiveScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header with Tabs */}
+      {/* Header with 4 Filter Tabs */}
       <View style={styles.header}>
-        <View style={styles.tabs}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabsContainer}
+        >
           <TouchableOpacity
-            style={[styles.tab, activeTab === 'supporters' && styles.tabActive]}
-            onPress={() => setActiveTab('supporters')}
+            style={[styles.tab, activeTab === 'all' && styles.tabActive]}
+            onPress={() => setActiveTab('all')}
           >
-            <Text style={[styles.tabText, activeTab === 'supporters' && styles.tabTextActive]}>
-              Supporters
+            <Text 
+              style={[styles.tabText, activeTab === 'all' && styles.tabTextActive]}
+            >
+              All
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'supporter' && styles.tabActive]}
+            onPress={() => setActiveTab('supporter')}
+          >
+            <Text 
+              style={[styles.tabText, activeTab === 'supporter' && styles.tabTextActive]}
+            >
+              Supporter
             </Text>
           </TouchableOpacity>
 
@@ -382,28 +364,29 @@ export default function LiveScreen() {
             style={[styles.tab, activeTab === 'supporting' && styles.tabActive]}
             onPress={() => setActiveTab('supporting')}
           >
-            <Text style={[styles.tabText, activeTab === 'supporting' && styles.tabTextActive]}>
+            <Text 
+              style={[styles.tabText, activeTab === 'supporting' && styles.tabTextActive]}
+            >
               Supporting
             </Text>
           </TouchableOpacity>
-        </View>
 
-        {/* Direct Go Live Button */}
-        <TouchableOpacity 
-          style={[styles.goLiveButton, isGoingLive && styles.goLiveButtonActive]}
-          onPress={handleGoLive}
-          disabled={isGoingLive}
-        >
-          <Ionicons name="videocam" size={16} color="white" />
-          <Text style={styles.goLiveText}>
-            {isGoingLive ? 'Starting...' : 'Go Live'}
-          </Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'international' && styles.tabActive]}
+            onPress={() => setActiveTab('international')}
+          >
+            <Text 
+              style={[styles.tabText, activeTab === 'international' && styles.tabTextActive]}
+            >
+              International
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
       </View>
 
       {/* Live Streams Section */}
       <FlatList
-        data={streams}
+        data={getFilteredStreams()}
         renderItem={renderLiveItem}
         keyExtractor={(item) => item.id}
         pagingEnabled
@@ -425,7 +408,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: '#000000',
@@ -433,45 +416,35 @@ const styles = StyleSheet.create({
     borderBottomColor: '#1A1A1A',
     zIndex: 100,
   },
-  tabs: {
+  tabsContainer: {
     flexDirection: 'row',
-    gap: 24,
+    alignItems: 'center',
+    justifyContent: 'flex-start', // Left align buttons
+    paddingLeft: 8, // Start closer to left edge
+    paddingRight: 16,
+    gap: 8, // Tight spacing between buttons
   },
   tab: {
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 8, // Reduced padding
+    alignItems: 'center',
+    // Remove minWidth to allow natural width
   },
   tabActive: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#FF3B30',
+    borderBottomWidth: 1,
+    borderBottomColor: '#6A5ACD',
   },
   tabText: {
     color: '#666666',
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 15, // Uniform font size for all buttons
+    fontWeight: '400',
+    textAlign: 'center',
   },
   tabTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  goLiveButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#FF3B30',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 24,
-    minWidth: 100,
-    justifyContent: 'center',
-  },
-  goLiveButtonActive: {
-    backgroundColor: '#FF9500',
-  },
-  goLiveText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
+    color: '#6A5ACD',
+    fontWeight: '500',
+    textAlign: 'center',
+    fontSize: 15, // Same size for active state
   },
   streamsList: {
     flex: 1,
@@ -492,7 +465,7 @@ const styles = StyleSheet.create({
   },
   tinyRedDot: {
     position: 'absolute',
-    backgroundColor: '#FF3B30',
+    backgroundColor: '#6A5ACD',
     top: '50%',
     left: '50%',
     zIndex: 1000,
@@ -529,7 +502,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: '#FF3B30',
+    borderColor: '#6A5ACD',
   },
   avatarPlaceholder: {
     width: 32,
@@ -555,14 +528,14 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#FF3B30',
+    borderColor: '#6A5ACD',
   },
   supportButtonActive: {
-    backgroundColor: '#FF3B30',
-    borderColor: '#FF3B30',
+    backgroundColor: '#6A5ACD',
+    borderColor: '#6A5ACD',
   },
   supportedButton: {
-    backgroundColor: 'rgba(255, 59, 48, 0.15)',
+    backgroundColor: 'rgba(106, 90, 205, 0.15)',
   },
   supportButtonText: {
     fontSize: 11,
@@ -572,7 +545,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   supportedButtonText: {
-    color: '#FF3B30',
+    color: '#6A5ACD',
   },
   commentBar: {
     position: 'absolute',

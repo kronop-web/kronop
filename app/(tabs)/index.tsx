@@ -112,6 +112,74 @@ export default function HomeScreen() {
               }
             ],
             latestTimestamp: new Date().toISOString()
+          },
+          {
+            userId: 'user3',
+            userName: 'Mike Johnson',
+            userAvatar: 'https://via.placeholder.com/100',
+            stories: [
+              {
+                id: 's3',
+                userId: 'user3',
+                userName: 'Mike Johnson',
+                userAvatar: 'https://via.placeholder.com/100',
+                imageUrl: 'https://picsum.photos/1080x1920?random=3',
+                timestamp: new Date().toISOString(),
+                viewed: false
+              }
+            ],
+            latestTimestamp: new Date().toISOString()
+          },
+          {
+            userId: 'user4',
+            userName: 'Sarah Williams',
+            userAvatar: 'https://via.placeholder.com/100',
+            stories: [
+              {
+                id: 's4',
+                userId: 'user4',
+                userName: 'Sarah Williams',
+                userAvatar: 'https://via.placeholder.com/100',
+                imageUrl: 'https://picsum.photos/1080x1920?random=4',
+                timestamp: new Date().toISOString(),
+                viewed: true
+              }
+            ],
+            latestTimestamp: new Date().toISOString()
+          },
+          {
+            userId: 'user5',
+            userName: 'David Brown',
+            userAvatar: 'https://via.placeholder.com/100',
+            stories: [
+              {
+                id: 's5',
+                userId: 'user5',
+                userName: 'David Brown',
+                userAvatar: 'https://via.placeholder.com/100',
+                imageUrl: 'https://picsum.photos/1080x1920?random=5',
+                timestamp: new Date().toISOString(),
+                viewed: false
+              }
+            ],
+            latestTimestamp: new Date().toISOString()
+          },
+          {
+            userId: 'user6',
+            userName: 'Emily Davis',
+            userAvatar: 'https://via.placeholder.com/100',
+            stories: [
+              {
+                id: 's6',
+                userId: 'user6',
+                userName: 'Emily Davis',
+                userAvatar: 'https://via.placeholder.com/100',
+                imageUrl: 'https://picsum.photos/1080x1920?random=6',
+                timestamp: new Date().toISOString(),
+                viewed: true
+              }
+            ],
+            latestTimestamp: new Date().toISOString()
           }
         ];
         setGroupedStories(mockStories);
@@ -257,28 +325,36 @@ export default function HomeScreen() {
           <Text style={styles.appTitle}>Kronop</Text>
           <View style={styles.headerActions}>
             <TouchableOpacity 
-              onPress={() => router.push('/chat')}
-              hitSlop={theme.hitSlop.md}
-              activeOpacity={0.7}
-              style={styles.chatButton}
-            >
-              <MaterialIcons name="chat-bubble" size={theme.iconSize.lg} color={theme.colors.primary.main} />
-            </TouchableOpacity>
-            <TouchableOpacity 
               onPress={() => router.push('/notifications')}
               hitSlop={theme.hitSlop.md}
               activeOpacity={0.7}
-              style={styles.notificationButton}
+              style={styles.headerButton}
             >
-              <MaterialIcons name="notifications" size={theme.iconSize.lg} color={theme.colors.text.primary} />
+              <MaterialIcons name="notifications" size={theme.iconSize.lg} color="#fff" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              onPress={() => router.push('/chat')}
+              hitSlop={theme.hitSlop.md}
+              activeOpacity={0.7}
+              style={styles.headerButton}
+            >
+              <MaterialIcons name="chat-bubble" size={theme.iconSize.lg} color="#fff" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              onPress={() => router.push('/songs')}
+              hitSlop={theme.hitSlop.md}
+              activeOpacity={0.7}
+              style={styles.headerButton}
+            >
+              <MaterialIcons name="music-note" size={theme.iconSize.lg} color="#fff" />
             </TouchableOpacity>
             <TouchableOpacity 
               onPress={() => router.push('/upload')} 
               hitSlop={theme.hitSlop.md}
               activeOpacity={0.7}
-              style={styles.uploadButton}
+              style={styles.headerButton}
             >
-              <MaterialIcons name="add-circle" size={theme.iconSize.xl} color={theme.colors.primary.main} />
+              <MaterialIcons name="add-circle" size={theme.iconSize.xl} color="#fff" />
             </TouchableOpacity>
           </View>
         </View>
@@ -405,15 +481,6 @@ const styles = StyleSheet.create({
   headerButton: {
     padding: theme.spacing.xs,
   },
-  chatButton: {
-    padding: theme.spacing.xs,
-  },
-  notificationButton: {
-    padding: theme.spacing.xs,
-  },
-  uploadButton: {
-    padding: theme.spacing.xs,
-  },
   // Photo Categories - HORIZONTAL SCROLL, TEXT ONLY
   photoCategoriesContainer: {
     paddingVertical: theme.spacing.sm,
@@ -445,7 +512,7 @@ const styles = StyleSheet.create({
     fontWeight: theme.typography.fontWeight.medium,
   },
   categoryButtonTextActive: {
-    color: '#FF4444', // Red color for selected category
+    color: '#8B00FF', // Purple color for selected category
     fontWeight: theme.typography.fontWeight.bold,
   },
 

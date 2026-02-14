@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import {
   View,
   Text,
@@ -127,7 +127,7 @@ const SUPPORTING: ChatUser[] = [
   },
 ];
 
-export default function ChatScreen() {
+export default memo(function ChatScreen() {
   const [activeTab, setActiveTab] = useState<ChatTab>('support');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
@@ -365,7 +365,7 @@ export default function ChatScreen() {
       )}
     </SafeScreen>
   );
-}
+});
 
 const styles = StyleSheet.create({
   searchContainer: {
