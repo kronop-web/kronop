@@ -11,7 +11,7 @@ interface VideoCardProps {
   onPrefetchNext?: () => void;
 }
 
-export function VideoCard({ video, onPress, onPrefetchNext }: VideoCardProps) {
+export default function VideoCard({ video, onPress, onPrefetchNext }: VideoCardProps) {
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;

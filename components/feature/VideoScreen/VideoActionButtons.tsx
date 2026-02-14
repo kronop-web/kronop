@@ -15,7 +15,7 @@ interface VideoActionButtonsProps {
   onDownloadPress: () => void;
 }
 
-export function VideoActionButtons({
+export default function VideoActionButtons({
   isStarred,
   commentsCount,
   sharesCount,

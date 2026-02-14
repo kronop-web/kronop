@@ -1,27 +1,32 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
+import { TouchableOpacity, StyleSheet, Text } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { theme } from '../../../constants/theme';
 
 interface HorizontalProps {
   isFullscreen: boolean;
-  onPress: () => void;
+  onPress: (isFullscreen: boolean) => void;
 }
 
 export default function Horizontal({ isFullscreen, onPress }: HorizontalProps) {
+  const handlePress = () => {
+    // Simple toggle - no orientation change
+    onPress(!isFullscreen);
+  };
+
   return (
     <TouchableOpacity 
       style={styles.bottomButton}
-      onPress={onPress}
+      onPress={handlePress}
       activeOpacity={0.7}
     >
       <MaterialIcons 
         name={isFullscreen ? "fullscreen-exit" : "fullscreen"} 
-        size={20} 
+        size={18} 
         color="#FFFFFF" 
       />
       <Text style={styles.bottomButtonText}>
-        {isFullscreen ? "Exit" : "Full Screen"}
+        {isFullscreen ? 'Exit Full' : 'Full Screen'}
       </Text>
     </TouchableOpacity>
   );

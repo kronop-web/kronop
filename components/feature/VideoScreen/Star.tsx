@@ -1,25 +1,36 @@
-import React from 'react';
-import { TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { TouchableOpacity, StyleSheet, Text } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { theme } from '../../../constants/theme';
 
 interface StarProps {
   isStarred: boolean;
   onPress: () => void;
+  likesCount?: number;
 }
 
-export default function Star({ isStarred, onPress }: StarProps) {
+export default function Star({ isStarred, onPress, likesCount = 0 }: StarProps) {
+  const [localStarred, setLocalStarred] = useState(isStarred);
+  const [localLikes, setLocalLikes] = useState(likesCount);
+
+  const handlePress = () => {
+    setLocalStarred(!localStarred);
+    setLocalLikes(localStarred ? localLikes - 1 : localLikes + 1);
+    onPress();
+  };
+
   return (
     <TouchableOpacity 
       style={styles.actionButton}
-      onPress={onPress}
+      onPress={handlePress}
       activeOpacity={0.7}
     >
       <MaterialIcons 
-        name={isStarred ? "star" : "star-border"} 
-        size={18} 
-        color="#FFFFFF" 
+        name={localStarred ? "star" : "star-border"} 
+        size={24} 
+        color={localStarred ? "#FFD700" : "#FFFFFF"} 
       />
+      <Text style={styles.likesCount}>{localLikes}</Text>
     </TouchableOpacity>
   );
 }
@@ -27,13 +38,14 @@ export default function Star({ isStarred, onPress }: StarProps) {
 const styles = StyleSheet.create({
   actionButton: {
     flex: 1,
-    height: 44,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    height: 50,
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: 4,
-    borderRadius: theme.borderRadius.sm,
-    borderWidth: 0.5,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  likesCount: {
+    fontSize: 10,
+    color: '#FFFFFF',
+    marginTop: 2,
   },
 });

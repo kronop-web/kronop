@@ -68,9 +68,9 @@ export default function MainScreen() {
   const handleReport = () => console.log('Report pressed');
   const handleSupport = () => setIsSupported(!isSupported);
   const handleSettings = () => console.log('Settings pressed');
-  const handleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
-    console.log('Fullscreen toggled');
+  const handleFullscreen = (fullscreenState: boolean) => {
+    setIsFullscreen(fullscreenState);
+    console.log('Fullscreen:', fullscreenState ? 'ON' : 'OFF');
   };
 
   const handleTitlePress = () => {
@@ -119,64 +119,109 @@ export default function MainScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isFullscreen && styles.fullscreenContainer]}>
       <StatusBar 
         barStyle="light-content" 
         translucent={true}
         backgroundColor="transparent"
-        hidden={false}
+        hidden={isFullscreen}
       />
       
-      {/* Video Title - Professional Box with Border */}
-      <Title 
-        title={showFullTitle ? video.title : video.title}
-        onPress={handleTitlePress}
-      />
-      
-      <ScrollView 
-        style={styles.scrollView} 
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Video Player - Clean with No Controls */}
-        <VideoPlayer 
-          videoUrl={video.videoUrl}
-          onProgress={handleVideoProgress}
-        />
-
-        {/* Bottom Buttons - Full Width (Setting + Horizontal) */}
-        <View style={styles.bottomButtonsContainer}>
-          <Setting onPress={handleSettings} />
-          <Horizontal isFullscreen={isFullscreen} onPress={handleFullscreen} />
-        </View>
-
-        {/* Action Buttons - Star, Comment, Share, Save, Report */}
-        <View style={styles.actionButtonsContainer}>
-          <Star isStarred={isStarred} onPress={handleStar} />
-          <Comment onPress={handleComment} />
-          <Share onPress={handleShare} />
-          <Save isSaved={isSaved} onPress={handleSave} />
-          <Report onPress={handleReport} />
-        </View>
-
-        {/* Channel Section */}
-        <View style={styles.channelContainer}>
-          <View style={styles.channelInfo}>
-            <Image 
-              source={{ uri: video.user.avatar }} 
-              style={styles.avatar}
-              contentFit="cover"
+      {/* Only show UI elements when NOT in fullscreen */}
+      {!isFullscreen && (
+        <>
+          {/* Video Title - Professional Box with Border */}
+          <Title 
+            title={showFullTitle ? video.title : video.title}
+            onPress={handleTitlePress}
+          />
+          
+          <ScrollView 
+            style={styles.scrollView} 
+            contentContainerStyle={styles.content}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Video Player - Clean with No Controls */}
+            <VideoPlayer 
+              videoUrl={video?.videoUrl || ''}
+              onProgress={handleVideoProgress}
             />
-            <Text style={styles.channelName}>{video.user.name}</Text>
-          </View>
-          <Support isSupported={isSupported} onPress={handleSupport} />
-        </View>
 
-        {/* Description */}
-        <View style={styles.descriptionContainer}>
-          <Text style={styles.description}>{video.description}</Text>
+            {/* Bottom Buttons - Full Width (Setting + Horizontal) */}
+            <View style={styles.bottomButtonsContainer}>
+              <Setting onPress={handleSettings} />
+              <Horizontal isFullscreen={isFullscreen} onPress={handleFullscreen} />
+            </View>
+
+            {/* Action Buttons - Star, Comment, Share, Save, Report */}
+            <View style={styles.actionButtonsContainer}>
+              <Star 
+                isStarred={isStarred} 
+                onPress={handleStar} 
+                likesCount={video?.likes || 0}
+              />
+              <Comment 
+                onPress={handleComment} 
+                count={video?.comments || 0}
+                videoId={video?.id}
+              />
+              <Share 
+                onPress={handleShare}
+                videoUrl={video?.videoUrl || ''}
+                videoTitle={video?.title}
+              />
+              <Save 
+                isSaved={isSaved} 
+                onPress={handleSave}
+                videoId={video?.id}
+                videoTitle={video?.title}
+              />
+              <Report 
+                onPress={handleReport}
+                videoId={video?.id}
+                videoTitle={video?.title}
+              />
+            </View>
+
+            {/* Channel Section */}
+            <View style={styles.channelContainer}>
+              <View style={styles.channelInfo}>
+                <Image 
+                  source={{ uri: video.user.avatar }} 
+                  style={styles.avatar}
+                  contentFit="cover"
+                />
+                <Text style={styles.channelName}>{video.user.name}</Text>
+              </View>
+              <Support isSupported={isSupported} onPress={handleSupport} />
+            </View>
+
+            {/* Description */}
+            <View style={styles.descriptionContainer}>
+              <Text style={styles.description}>{video.description}</Text>
+            </View>
+          </ScrollView>
+        </>
+      )}
+
+      {/* Fullscreen Video Player - VideoPlayer handles rotation internally */}
+      {isFullscreen && (
+        <View style={styles.fullscreenVideoContainer}>
+          <VideoPlayer 
+            videoUrl={video?.videoUrl || ''}
+            onProgress={handleVideoProgress}
+            isFullscreen={true}
+          />
+          
+          {/* Hidden fullscreen button - tap to exit */}
+          <TouchableOpacity 
+            style={styles.fullscreenExitButton}
+            onPress={() => handleFullscreen(false)}
+          >
+            <MaterialIcons name="fullscreen-exit" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
         </View>
-      </ScrollView>
+      )}
     </View>
   );
 }
@@ -277,5 +322,24 @@ const styles = StyleSheet.create({
   backButtonText: {
     color: '#FFFFFF',
     fontWeight: 'bold',
+  },
+  // Fullscreen styles
+  fullscreenContainer: {
+    backgroundColor: '#000000',
+  },
+  fullscreenVideoContainer: {
+    flex: 1,
+    backgroundColor: '#000000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullscreenExitButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 20,
+    padding: 8,
+    zIndex: 9999,
   },
 });
