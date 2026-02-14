@@ -13,7 +13,8 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import { bridgeManager } from '../../services/bridges';
+import { useRouter } from 'expo-router';
+import { uploadQueue } from '../../services/uploadQueue';
 
 interface StoryData {
   title: string;
@@ -27,6 +28,7 @@ interface StoryUploadProps {
 }
 
 export default function StoryUpload({ onClose }: StoryUploadProps) {
+  const router = useRouter();
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -144,42 +146,34 @@ export default function StoryUpload({ onClose }: StoryUploadProps) {
       return;
     }
 
-    try {
-      setUploading(true);
-      setUploadProgress(0);
-
-      const result = await bridgeManager.upload('STORY', selectedFile, {
+    uploadQueue.enqueue({
+      type: 'STORY',
+      file: selectedFile,
+      metadata: {
         title: storyData.title.trim(),
         type: storyData.type,
         duration: storyData.duration,
         isPrivate: storyData.isPrivate
-      });
-
-      if (result.success) {
-        console.log('[STORY_UPLOAD_SUCCESS]: Story uploaded successfully');
-        // Reset form silently
-        setSelectedFile(null);
-        setStoryData({ title: '', type: 'photo', duration: 15, isPrivate: false });
-        setUploadProgress(0);
-      } else {
-        throw new Error('Upload failed');
       }
-    } catch (error: any) {
-      console.error('[STORY_UPLOAD_FAIL]:', error.message || 'Failed to upload story');
-    } finally {
-      setUploading(false);
-    }
+    });
+
+    setSelectedFile(null);
+    setStoryData({ title: '', type: 'photo', duration: 15, isPrivate: false });
+    setUploadProgress(0);
+    setUploading(false);
+
+    onClose();
+    router.replace('/');
   };
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <MaterialIcons name="arrow-back" size={24} color="#9C27B0" />
+          <MaterialIcons name="close" size={24} color="#fff" />
         </TouchableOpacity>
-        <MaterialIcons name="auto-stories" size={32} color="#9C27B0" />
-        <Text style={styles.title}>Upload Story</Text>
-        <Text style={styles.subtitle}>Share moments that disappear in 24 hours</Text>
+        <Text style={styles.headerTitle}>Upload Story</Text>
+        <View style={styles.placeholder} />
       </View>
 
       <View style={styles.uploadArea}>
@@ -191,7 +185,7 @@ export default function StoryUpload({ onClose }: StoryUploadProps) {
           <MaterialIcons 
             name={storyData.type === 'video' ? "videocam" : "photo-camera"} 
             size={48} 
-            color={selectedFile ? "#9C27B0" : "#666"} 
+            color={selectedFile ? "#6A5ACD" : "#666"} 
           />
           <Text style={[styles.uploadText, selectedFile && styles.uploadTextSelected]}>
             {selectedFile ? selectedFile.name : 'Choose Photo or Video'}
@@ -303,7 +297,7 @@ export default function StoryUpload({ onClose }: StoryUploadProps) {
         </View>
 
         <View style={styles.infoBox}>
-          <MaterialIcons name="timer" size={20} color="#9C27B0" />
+          <MaterialIcons name="timer" size={20} color="#6A5ACD" />
           <Text style={styles.infoText}>
             Stories automatically disappear after 24 hours. They&apos;re perfect for sharing casual moments and behind-the-scenes content.
           </Text>
@@ -345,21 +339,27 @@ export default function StoryUpload({ onClose }: StoryUploadProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#000000',
   },
   header: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 24,
-    backgroundColor: '#fff',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
-    position: 'relative',
+    borderBottomColor: '#333333',
   },
   closeButton: {
-    position: 'absolute',
-    left: 16,
-    top: 24,
-    padding: 4,
+    padding: 5,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  placeholder: {
+    width: 34,
   },
   title: {
     fontSize: 24,
@@ -377,34 +377,34 @@ const styles = StyleSheet.create({
   },
   uploadButton: {
     borderWidth: 2,
-    borderColor: '#dee2e6',
+    borderColor: '#333333',
     borderStyle: 'dashed',
     borderRadius: 12,
     padding: 32,
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#1a1a1a',
   },
   uploadButtonSelected: {
-    borderColor: '#9C27B0',
-    backgroundColor: '#f3e5f5',
+    borderColor: '#6A5ACD',
+    backgroundColor: '#1a1a1a',
   },
   uploadText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#666',
+    color: '#CCCCCC',
     marginTop: 12,
   },
   uploadTextSelected: {
-    color: '#9C27B0',
+    color: '#6A5ACD',
   },
   uploadSubtext: {
     fontSize: 12,
-    color: '#6c757d',
+    color: '#666666',
     marginTop: 4,
   },
   fileInfo: {
     marginTop: 12,
-    backgroundColor: '#fff',
+    backgroundColor: '#1a1a1a',
     borderRadius: 8,
     padding: 12,
   },

@@ -448,14 +448,6 @@ app.use('/users', userRouteNew);
 app.use('/notifications', notificationRoutes);
 app.use('/autosync', autosyncRoutes);
 
-apiRouter.get('/notifications/list', async (_req, res) => {
-  res.json({ success: true, data: [] });
-});
-
-app.get('/notifications/list', async (_req, res) => {
-  res.json({ success: true, data: [] });
-});
-
 // Register New Routes at root to resolve 404 for /users/profile and /content/photo/user
 app.use('/users', userRouteNew);
 app.use('/content', contentRouteNew);
@@ -1012,6 +1004,11 @@ app.post('/upload/reel', async (req, res) => {
     });
 
     await newReel.save();
+    try {
+      await sendBroadcastUploadNotification('reel', newReel);
+    } catch (notifyError) {
+      console.warn('⚠️ OneSignal notification failed for reel upload:', notifyError?.message || notifyError);
+    }
     res.status(201).json({ success: true, data: newReel, message: 'Reel uploaded successfully (NO LOGIN)' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -1041,6 +1038,11 @@ app.post('/upload/video', async (req, res) => {
     });
 
     await newVideo.save();
+    try {
+      await sendBroadcastUploadNotification('video', newVideo);
+    } catch (notifyError) {
+      console.warn('⚠️ OneSignal notification failed for video upload:', notifyError?.message || notifyError);
+    }
     res.status(201).json({ success: true, data: newVideo, message: 'Video uploaded successfully (NO LOGIN)' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -1071,6 +1073,11 @@ app.post('/upload/live', async (req, res) => {
     });
 
     await newLive.save();
+    try {
+      await sendBroadcastUploadNotification('live', newLive);
+    } catch (notifyError) {
+      console.warn('⚠️ OneSignal notification failed for live upload:', notifyError?.message || notifyError);
+    }
     res.status(201).json({ success: true, data: newLive, message: 'Live content uploaded successfully (NO LOGIN)' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -1101,6 +1108,11 @@ app.post('/upload/story', async (req, res) => {
     });
 
     await newStory.save();
+    try {
+      await sendBroadcastUploadNotification('story', newStory);
+    } catch (notifyError) {
+      console.warn('⚠️ OneSignal notification failed for story upload:', notifyError?.message || notifyError);
+    }
     res.status(201).json({ success: true, data: newStory, message: 'Story uploaded successfully (NO LOGIN)' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -1132,6 +1144,11 @@ app.post('/upload/shayari', async (req, res) => {
     });
 
     await newShayari.save();
+    try {
+      await sendBroadcastUploadNotification('shayari', newShayari);
+    } catch (notifyError) {
+      console.warn('⚠️ OneSignal notification failed for shayari upload:', notifyError?.message || notifyError);
+    }
     res.status(201).json({ success: true, data: newShayari, message: 'Shayari uploaded successfully (NO LOGIN)' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -1162,6 +1179,11 @@ app.post('/upload/photo', async (req, res) => {
     });
 
     await newPhoto.save();
+    try {
+      await sendBroadcastUploadNotification('photo', newPhoto);
+    } catch (notifyError) {
+      console.warn('⚠️ OneSignal notification failed for photo upload:', notifyError?.message || notifyError);
+    }
     res.status(201).json({ success: true, data: newPhoto, message: 'Photo uploaded successfully (NO LOGIN)' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -1172,6 +1194,73 @@ app.post('/upload/photo', async (req, res) => {
 
 // Override OneSignal client to add proper Authorization header
 const originalOneSignalClient = require('./services/oneSignalClient');
+
+const getUploadNotificationCopy = (uploadType) => {
+  switch ((uploadType || '').toLowerCase()) {
+    case 'song':
+      return {
+        title: 'नया गाना आया है!',
+        body: 'अरे वाह! किसी ने एक नया गाना शेयर किया है, अभी सुनें! 🎵'
+      };
+    case 'shayari':
+      return {
+        title: 'नई शायरी पोस्ट हुई है!',
+        body: 'एक नई शायरी पोस्ट हुई है, दिल जीत लेगी! ✍️'
+      };
+    case 'live':
+      return {
+        title: 'Live शुरू हो गया!',
+        body: 'जल्दी आओ! कोई लाइव आया है! 🔴'
+      };
+    case 'story':
+      return {
+        title: 'नई स्टोरी!',
+        body: 'किसी ने अभी नई स्टोरी डाली है, देखो अभी! 📸'
+      };
+    case 'photo':
+      return {
+        title: 'नई फोटो!',
+        body: 'नई फोटो अपलोड हुई है—देखो अभी! 🖼️'
+      };
+    case 'reel':
+      return {
+        title: 'नई रील!',
+        body: 'नई रील आई है—मज़ा आएगा, अभी देखें! 🎬'
+      };
+    case 'video':
+      return {
+        title: 'नई वीडियो!',
+        body: 'नई वीडियो अपलोड हुई है—अभी प्ले करें! ▶️'
+      };
+    default:
+      return {
+        title: 'नया अपलोड!',
+        body: 'किसी ने नया कंटेंट अपलोड किया है—देखो अभी!'
+      };
+  }
+};
+
+const sendBroadcastUploadNotification = async (uploadType, contentDoc) => {
+  const { title, body } = getUploadNotificationCopy(uploadType);
+  const appId = (process.env.EXPO_PUBLIC_ONESIGNAL_APP_ID || '').trim();
+  if (!appId) {
+    throw new Error('OneSignal App ID missing (EXPO_PUBLIC_ONESIGNAL_APP_ID)');
+  }
+
+  const notification = {
+    app_id: appId,
+    included_segments: ['All'],
+    headings: { en: title },
+    contents: { en: body },
+    data: {
+      type: (uploadType || '').toLowerCase(),
+      contentId: contentDoc?._id?.toString?.() || contentDoc?._id || undefined,
+      bunny_id: contentDoc?.bunny_id || undefined
+    }
+  };
+
+  return await originalOneSignalClient.createNotification(notification);
+};
 
 originalOneSignalClient.createNotification = async (notification) => {
   const url = process.env.EXPO_PUBLIC_ONESIGNAL_API_URL || process.env.ONESIGNAL_API_URL || 'https://onesignal.com/api/v1/notifications';

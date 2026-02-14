@@ -9,9 +9,11 @@ import OneSignal from 'react-native-onesignal';
 
 interface NotificationItem {
   id: string;
-  headings?: { en: string };
-  contents?: { en: string };
-  send_after: number;
+  title?: string;
+  body?: string;
+  createdAt?: string;
+  route?: string;
+  data?: any;
 }
 
 export default memo(function NotificationsScreen() {
@@ -20,15 +22,39 @@ export default memo(function NotificationsScreen() {
   const [loading, setLoading] = useState(true);
   const [oneSignalInitialized, setOneSignalInitialized] = useState(false);
 
+  const userId = 'guest_user';
+
   // Initialize OneSignal
   useEffect(() => {
     const initializeOneSignal = async () => {
       try {
         if (Platform.OS === 'ios' || Platform.OS === 'android') {
-          // OneSignal initialization - using basic setup
-          
-          // Basic OneSignal setup for notifications
-          // The package will be configured properly when app runs on device
+          const appId = process.env.EXPO_PUBLIC_ONESIGNAL_APP_ID || process.env.ONESIGNAL_APP_ID || '';
+          if (appId) {
+            (OneSignal as any).setAppId(appId);
+          }
+
+          (OneSignal as any).setNotificationOpenedHandler((openedEvent: any) => {
+            const route = openedEvent?.notification?.additionalData?.route;
+            if (typeof route === 'string' && route.length > 0) {
+              router.push(route as any);
+            }
+          });
+
+          try {
+            const deviceState = await (OneSignal as any).getDeviceState?.();
+            const playerId = deviceState?.userId;
+            if (typeof playerId === 'string' && playerId.length > 0) {
+              await fetch(`${API_BASE_URL}/notifications/register-onesignal`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, playerId })
+              });
+            }
+          } catch {
+            // no-op
+          }
+
           setOneSignalInitialized(true);
         }
       } catch (error) {
@@ -45,7 +71,7 @@ export default memo(function NotificationsScreen() {
 
   const fetchNotifications = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/notifications/list`);
+      const response = await fetch(`${API_BASE_URL}/notifications/list?userId=${encodeURIComponent(userId)}`);
       const contentType = response.headers.get('content-type') || '';
       if (!response.ok) {
         const fallbackText = await response.text().catch(() => '');
@@ -76,23 +102,6 @@ export default memo(function NotificationsScreen() {
       if (!oneSignalInitialized) {
         return;
       }
-
-      // Send a test notification via OneSignal API
-      const response = await fetch(`${process.env.EXPO_PUBLIC_ONESIGNAL_API_URL || process.env.ONESIGNAL_API_URL || 'https://onesignal.com/api/v1/notifications'}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Basic ${process.env.EXPO_PUBLIC_ONESIGNAL_REST_API_KEY || process.env.ONESIGNAL_REST_API_KEY || ''}`,
-        },
-        body: JSON.stringify({
-          app_id: process.env.EXPO_PUBLIC_ONESIGNAL_APP_ID || process.env.ONESIGNAL_APP_ID || '',
-          included_segments: ['All'],
-          headings: { en: 'Test Notification' },
-          contents: { en: 'This is a test notification from your app!' },
-        }),
-      });
-
-      const result = await response.json();
     } catch (error) {
       console.error('Error sending test notification:', error);
     }
@@ -104,9 +113,9 @@ export default memo(function NotificationsScreen() {
         <MaterialIcons name="notifications" size={24} color={theme.colors.primary.main} />
       </View>
       <View style={styles.contentContainer}>
-        <Text style={styles.title}>{item.headings?.en || 'Notification'}</Text>
-        <Text style={styles.message}>{item.contents?.en || ''}</Text>
-        <Text style={styles.time}>{new Date(item.send_after * 1000).toLocaleString()}</Text>
+        <Text style={styles.title}>{item.title || 'Notification'}</Text>
+        <Text style={styles.message}>{item.body || ''}</Text>
+        <Text style={styles.time}>{item.createdAt ? new Date(item.createdAt).toLocaleString() : ''}</Text>
       </View>
     </View>
   );

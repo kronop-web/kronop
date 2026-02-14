@@ -96,6 +96,6 @@ const styles = StyleSheet.create({
   verticalContainer: {
     alignItems: 'center',
     flexDirection: 'column', // VERTICAL LAYOUT
-    gap: 15, // Space between buttons
+    gap: 8, // Reduced space between buttons from 15 to 8
   },
 });

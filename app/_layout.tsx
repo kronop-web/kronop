@@ -1,12 +1,17 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AlertProvider } from '../template/ui';
 import { AuthProvider } from '../template';
 import StatusBarOverlay from '../components/common/StatusBarOverlay';
 import RealtimeSyncManager from '../components/common/AutoSyncManager';
+import { uploadQueue } from '../services/uploadQueue';
 
 export default function RootLayout() {
+
+  useEffect(() => {
+    void uploadQueue.init();
+  }, []);
 
   return (
     <>

@@ -43,6 +43,184 @@ export class VideoBridge {
     streamKey: this.streamKey
   };
 
+  getVideoPlaylistUrl(videoGuid: string) {
+    const videoUrl = `https://${this.host}/${videoGuid}/playlist.m3u8`;
+    const securityToken = this.streamKey ? `?token=${this.streamKey}` : '';
+    return videoUrl + securityToken;
+  }
+
+  async createVideoEntry(file: any, metadata?: VideoMetadata): Promise<{ videoGuid: string }>
+  {
+    const fileName = file?.name || file?.fileName || `video_${Date.now()}.mp4`;
+    const enhancedMetadata = {
+      ...metadata,
+      userId: metadata?.userId || DEFAULT_USER_ID
+    };
+
+    const createVideoUrl = `https://video.bunnycdn.com/library/${this.libraryId}/videos`;
+    const createResponse = await fetch(createVideoUrl, {
+      method: 'POST',
+      headers: {
+        'AccessKey': this.streamKey || this.apiKey,
+        'Content-Type': 'application/json',
+        'accept': 'application/json'
+      },
+      body: JSON.stringify({
+        title: enhancedMetadata?.title || fileName.split('.')[0]
+      })
+    });
+
+    if (!createResponse.ok) {
+      const errorText = await createResponse.text();
+      throw new Error(`Video: Failed to create video entry: ${createResponse.status} - ${errorText}`);
+    }
+
+    const videoResult = await createResponse.json();
+    return { videoGuid: videoResult.guid };
+  }
+
+  async simpleUploadFromUri(file: { uri: string }, videoGuid: string): Promise<void> {
+    await this.simpleUpload(file, videoGuid);
+  }
+
+  async uploadVideoChunksFromUri({
+    file,
+    videoGuid,
+    metadata,
+    uploadSessionId,
+    startChunkIndex
+  }: {
+    file: any;
+    videoGuid: string;
+    metadata?: VideoMetadata;
+    uploadSessionId?: string;
+    startChunkIndex: number;
+  }): Promise<{ done: boolean; uploadSessionId: string; nextChunkIndex: number; totalChunks: number }>
+  {
+    const CHUNK_SIZE = 2 * 1024 * 1024;
+    const totalSize = file?.size || file?.fileSize || 0;
+    const totalChunks = Math.ceil(totalSize / CHUNK_SIZE);
+
+    if (!totalSize || !totalChunks) {
+      throw new Error('Video: Missing file size for chunk upload');
+    }
+
+    let sessionId = uploadSessionId;
+    if (!sessionId) {
+      const initResponse = await fetch(`https://video.bunnycdn.com/library/${this.libraryId}/videos/${videoGuid}/uploads`, {
+        method: 'POST',
+        headers: {
+          'AccessKey': this.streamKey || this.apiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          uploadType: 'chunked'
+        })
+      });
+
+      if (!initResponse.ok) {
+        throw new Error(`Video: Failed to initialize chunk upload: ${initResponse.status}`);
+      }
+
+      const initJson = await initResponse.json();
+      sessionId = initJson.uploadSessionId;
+    }
+
+    let fileBlob: Blob;
+    try {
+      const response = await fetch(file.uri);
+      fileBlob = await response.blob();
+    } catch (e) {
+      throw new Error('Video: Failed to open local file for chunk upload');
+    }
+
+    let chunkIndex = Math.max(0, startChunkIndex || 0);
+    for (; chunkIndex < totalChunks; chunkIndex++) {
+      const start = chunkIndex * CHUNK_SIZE;
+      const end = Math.min(start + CHUNK_SIZE, totalSize);
+      const chunk = fileBlob.slice(start, end);
+
+      let retryCount = 0;
+      const maxRetries = 3;
+
+      while (retryCount < maxRetries) {
+        try {
+          const formData = new FormData();
+          formData.append('chunk', chunk as any);
+          formData.append('index', chunkIndex.toString());
+          formData.append('totalChunks', totalChunks.toString());
+
+          const chunkResponse = await fetch(
+            `https://video.bunnycdn.com/library/${this.libraryId}/videos/${videoGuid}/uploads/${sessionId}`,
+            {
+              method: 'POST',
+              headers: {
+                'AccessKey': this.streamKey || this.apiKey,
+              },
+              body: formData
+            }
+          );
+
+          if (chunkResponse.ok) {
+            break;
+          }
+
+          retryCount++;
+          if (retryCount >= maxRetries) {
+            const errText = await chunkResponse.text().catch(() => '');
+            throw new Error(`Video: Chunk ${chunkIndex} upload failed: ${chunkResponse.status} ${errText}`);
+          }
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+        } catch (err) {
+          retryCount++;
+          if (retryCount >= maxRetries) {
+            const msg = err instanceof Error ? err.message : 'Chunk upload failed';
+            if (/network|timeout|fetch/i.test(msg)) {
+              return {
+                done: false,
+                uploadSessionId: String(sessionId),
+                nextChunkIndex: chunkIndex,
+                totalChunks
+              };
+            }
+            throw err;
+          }
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+        }
+      }
+    }
+
+    const finalizeResponse = await fetch(`https://video.bunnycdn.com/library/${this.libraryId}/videos/${videoGuid}/uploads/${sessionId}/complete`, {
+      method: 'POST',
+      headers: {
+        'AccessKey': this.streamKey || this.apiKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        totalChunks
+      })
+    });
+
+    if (!finalizeResponse.ok) {
+      throw new Error(`Video: Failed to finalize chunk upload: ${finalizeResponse.status}`);
+    }
+
+    if (metadata && (metadata.description || metadata.tags || metadata.category)) {
+      const enhancedMetadata = {
+        ...metadata,
+        userId: metadata?.userId || DEFAULT_USER_ID
+      };
+      await this.updateVideoMetadata(videoGuid, enhancedMetadata);
+    }
+
+    return {
+      done: true,
+      uploadSessionId: String(sessionId),
+      nextChunkIndex: totalChunks,
+      totalChunks
+    };
+  }
+
   /**
    * Upload a video to BunnyCDN Stream
    * @param file - Video file to upload

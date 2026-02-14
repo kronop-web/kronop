@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,505 +9,519 @@ import {
   ScrollView,
   ActivityIndicator,
   Platform,
+  Dimensions,
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
-import * as DocumentPicker from 'expo-document-picker';
-import { bridgeManager } from '../../services/bridges';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import type { CameraType, FlashMode } from 'expo-camera';
+import { Audio } from 'expo-av';
+import { SafeScreen } from '../layout';
+import { liveStreamingService } from '../../services/liveStreamingService';
 
 interface LiveData {
   title: string;
   description: string;
-  scheduledTime: string;
-  isPrivate: boolean;
 }
 
 interface LiveUploadProps {
   onClose: () => void;
 }
 
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 export default function LiveUpload({ onClose }: LiveUploadProps) {
-  const [selectedFile, setSelectedFile] = useState<any>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [permission, requestPermission] = useCameraPermissions();
+  const [audioPermission, setAudioPermission] = useState<boolean | null>(null);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamId, setStreamId] = useState<string | null>(null);
+  const [viewerCount, setViewerCount] = useState(0);
   const [liveData, setLiveData] = useState<LiveData>({
     title: '',
-    description: '',
-    scheduledTime: '',
-    isPrivate: false
+    description: ''
   });
+  const [showPreview, setShowPreview] = useState(true);
+  
+  const cameraRef = useRef<React.ElementRef<typeof CameraView> | null>(null);
 
-  const pickFile = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['video/*'], // Allow all video types
-        copyToCacheDirectory: true,
-      });
+  useEffect(() => {
+    requestAudioPermission();
+  }, []);
 
-      if (!result.canceled && result.assets[0]) {
-        const file = result.assets[0];
-        
-        // More lenient validation - just check if it is a video file
-        const fileName = file.name || '';
-        const extension = fileName.split('.').pop()?.toLowerCase();
-        const allowedExtensions = ['mp4', 'mov', 'avi', 'webm', '3gp', 'mkv'];
-        
-        if (!extension || !allowedExtensions.includes(extension)) {
-          Alert.alert('Invalid File', `Please select a valid video file. Allowed: ${allowedExtensions.join(', ')}`);
-          return;
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | undefined;
+    
+    if (isStreaming && streamId) {
+      // Update viewer count every 5 seconds
+      interval = setInterval(async () => {
+        try {
+          const count = await liveStreamingService.getViewerCount(streamId);
+          setViewerCount(count);
+        } catch (error) {
+          console.error('Failed to get viewer count:', error);
         }
-
-        // File size validation (basic check)
-        const MAX_SIZE = 2 * 1024 * 1024 * 1024; // 2GB
-        if (file.size && file.size > MAX_SIZE) {
-          Alert.alert('File Too Large', 'Live stream files must be less than 2GB');
-          return;
-        }
-
-        setSelectedFile(file);
-        setLiveData(prev => ({
-          ...prev,
-          title: prev.title || `Live Stream - ${new Date().toLocaleDateString()}`
-        }));
-      }
-    } catch (error) {
-      console.error('Error picking file:', error);
-      Alert.alert('Error', 'Failed to pick file');
+      }, 5000);
     }
+    
+    return () => {
+      if (interval !== undefined) {
+        clearInterval(interval);
+      }
+    };
+  }, [isStreaming, streamId]);
+
+  const requestAudioPermission = async () => {
+    const { status } = await Audio.requestPermissionsAsync();
+    setAudioPermission(status === 'granted');
   };
 
-  const handleUpload = async () => {
-    if (!selectedFile) {
-      Alert.alert('No File Selected', 'Please select a video file first');
-      return;
-    }
+  if (!permission) {
+    return <View />;
+  }
 
+  if (!permission.granted) {
+    return (
+      <SafeScreen>
+        <View style={styles.permissionContainer}>
+          <Ionicons name="camera" size={64} color="#6A5ACD" />
+          <Text style={styles.permissionTitle}>Camera Permission Required</Text>
+          <Text style={styles.permissionText}>
+            Please grant camera permission to go live
+          </Text>
+          <TouchableOpacity 
+            style={styles.permissionButton}
+            onPress={requestPermission}
+          >
+            <Text style={styles.permissionButtonText}>Grant Permission</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.cancelButton}
+            onPress={onClose}
+          >
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeScreen>
+    );
+  }
+
+  if (audioPermission === false) {
+    return (
+      <SafeScreen>
+        <View style={styles.permissionContainer}>
+          <Ionicons name="mic" size={64} color="#6A5ACD" />
+          <Text style={styles.permissionTitle}>Microphone Permission Required</Text>
+          <Text style={styles.permissionText}>
+            Please grant microphone permission to include audio in your live stream
+          </Text>
+          <TouchableOpacity 
+            style={styles.permissionButton}
+            onPress={requestAudioPermission}
+          >
+            <Text style={styles.permissionButtonText}>Grant Permission</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.cancelButton}
+            onPress={onClose}
+          >
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeScreen>
+    );
+  }
+
+  const startLiveStream = async () => {
     if (!liveData.title.trim()) {
       Alert.alert('Missing Title', 'Please enter a title for your live stream');
       return;
     }
 
     try {
-      setUploading(true);
-      setUploadProgress(0);
-
-      const result = await bridgeManager.upload('LIVE', selectedFile, {
+      setIsStreaming(true);
+      setShowPreview(false);
+      
+      // Set camera reference for streaming service
+      if (cameraRef.current) {
+        liveStreamingService.setCameraRef(cameraRef.current);
+      }
+      
+      // Start live stream using service
+      const result = await liveStreamingService.startLiveStream({
         title: liveData.title.trim(),
         description: liveData.description.trim(),
-        scheduledTime: liveData.scheduledTime,
-        isPrivate: liveData.isPrivate
+        userId: 'guest_user' // Using dummy user ID as per bypass system
       });
-
-      if (result.success) {
+      
+      if (result.success && result.streamId) {
+        setStreamId(result.streamId);
         Alert.alert(
-          'Live Stream Scheduled!',
-          'Your live stream has been scheduled successfully.',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                // Reset form
-                setSelectedFile(null);
-                setLiveData({ title: '', description: '', scheduledTime: '', isPrivate: false });
-                setUploadProgress(0);
-              }
-            }
-          ]
+          'Live Stream Started!',
+          'Your live stream has started successfully.',
+          [{ text: 'OK' }]
         );
       } else {
-        throw new Error('Upload failed');
+        throw new Error(result.error || 'Failed to start stream');
       }
-    } catch (error: any) {
-      console.error('Upload error:', error);
-      Alert.alert('Upload Failed', error.message || 'Failed to schedule live stream');
-    } finally {
-      setUploading(false);
+    } catch (error) {
+      console.error('Failed to start live stream:', error);
+      Alert.alert('Error', 'Failed to start live stream');
+      setIsStreaming(false);
+      setShowPreview(true);
+      setStreamId(null);
     }
   };
 
-  return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <MaterialIcons name="arrow-back" size={24} color="#FF5722" />
-        </TouchableOpacity>
-        <MaterialIcons name="live-tv" size={32} color="#FF5722" />
-        <Text style={styles.title}>Go Live</Text>
-        <Text style={styles.subtitle}>Schedule your live stream</Text>
-      </View>
+  const stopLiveStream = async () => {
+    try {
+      // Stop live stream using service
+      if (streamId) {
+        const result = await liveStreamingService.stopLiveStream(streamId);
+        if (!result.success) {
+          console.error('Failed to stop stream via service:', result.error);
+        }
+      }
+      
+      setIsStreaming(false);
+      setShowPreview(true);
+      setStreamId(null);
+      
+      Alert.alert(
+        'Live Stream Ended',
+        'Your live stream has ended successfully.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              setLiveData({ title: '', description: '' });
+              onClose();
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('Failed to stop live stream:', error);
+      Alert.alert('Error', 'Failed to stop live stream');
+    }
+  };
 
-      <View style={styles.uploadArea}>
-        <TouchableOpacity 
-          style={[styles.uploadButton, selectedFile && styles.uploadButtonSelected]}
-          onPress={pickFile}
-          disabled={uploading}
-        >
-          <MaterialIcons 
-            name="radio" 
-            size={48} 
-            color={selectedFile ? "#FF5722" : "#666"} 
+  if (showPreview) {
+    return (
+      <SafeScreen>
+        <View style={styles.container}>
+          {/* Camera Preview */}
+          <CameraView
+            ref={cameraRef}
+            style={styles.camera}
+            facing={'front' satisfies CameraType}
+            flash={'off' satisfies FlashMode}
           />
-          <Text style={[styles.uploadText, selectedFile && styles.uploadTextSelected]}>
-            {selectedFile ? selectedFile.name : 'Choose Stream Setup File'}
-          </Text>
-          <Text style={styles.uploadSubtext}>
-            MP4, MOV, AVI (Max 100MB)
-          </Text>
-        </TouchableOpacity>
 
-        {selectedFile && (
-          <View style={styles.fileInfo}>
-            <View style={styles.fileInfoItem}>
-              <Text style={styles.fileInfoLabel}>Size:</Text>
-              <Text style={styles.fileInfoValue}>
-                {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
-              </Text>
-            </View>
-            <View style={styles.fileInfoItem}>
-              <Text style={styles.fileInfoLabel}>Type:</Text>
-              <Text style={styles.fileInfoValue}>{selectedFile.mimeType}</Text>
+          {/* Live Indicator */}
+          <View style={styles.liveIndicator}>
+            <View style={styles.liveDot} />
+            <Text style={styles.liveText}>LIVE</Text>
+          </View>
+
+          {/* Form Overlay */}
+          <View style={styles.formOverlay}>
+            <View style={styles.formContainer}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Stream Title *</Text>
+                <TextInput
+                  style={styles.input}
+                  value={liveData.title}
+                  onChangeText={(text) => setLiveData(prev => ({ ...prev, title: text }))}
+                  placeholder="Enter live stream title..."
+                  placeholderTextColor="rgba(255,255,255,0.6)"
+                  maxLength={100}
+                  autoFocus
+                />
+                <Text style={styles.charCount}>{liveData.title.length}/100</Text>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Description</Text>
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  value={liveData.description}
+                  onChangeText={(text) => setLiveData(prev => ({ ...prev, description: text }))}
+                  placeholder="Describe your live stream..."
+                  placeholderTextColor="rgba(255,255,255,0.6)"
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                  maxLength={500}
+                />
+                <Text style={styles.charCount}>{liveData.description.length}/500</Text>
+              </View>
             </View>
           </View>
-        )}
-      </View>
 
-      <View style={styles.formSection}>
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Stream Title *</Text>
-          <TextInput
-            style={styles.input}
-            value={liveData.title}
-            onChangeText={(text) => setLiveData(prev => ({ ...prev, title: text }))}
-            placeholder="Enter live stream title..."
-            placeholderTextColor="#666"
-            maxLength={100}
-          />
-          <Text style={styles.charCount}>{liveData.title.length}/100</Text>
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Description</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            value={liveData.description}
-            onChangeText={(text) => setLiveData(prev => ({ ...prev, description: text }))}
-            placeholder="Describe your live stream..."
-            placeholderTextColor="#666"
-            multiline
-            numberOfLines={4}
-            textAlignVertical="top"
-            maxLength={500}
-          />
-          <Text style={styles.charCount}>{liveData.description.length}/500</Text>
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Scheduled Time</Text>
-          <TextInput
-            style={styles.input}
-            value={liveData.scheduledTime}
-            onChangeText={(text) => setLiveData(prev => ({ ...prev, scheduledTime: text }))}
-            placeholder="YYYY-MM-DD HH:MM"
-            placeholderTextColor="#666"
-          />
-          <Text style={styles.helpText}>
-            Schedule your stream for later (optional)
-          </Text>
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Stream Settings</Text>
-          <View style={styles.settingsContainer}>
-            <TouchableOpacity
-              style={styles.settingItem}
-              onPress={() => setLiveData(prev => ({ ...prev, isPrivate: !prev.isPrivate }))}
+          {/* Go Live Button */}
+          <View style={styles.bottomControls}>
+            <TouchableOpacity 
+              style={styles.goLiveButton}
+              onPress={startLiveStream}
+              disabled={!liveData.title.trim()}
             >
-              <View style={styles.settingLeft}>
-                <MaterialIcons 
-                  name={liveData.isPrivate ? "lock" : "public"} 
-                  size={20} 
-                  color={liveData.isPrivate ? "#FF5722" : "#4CAF50"} 
-                />
-                <View style={styles.settingText}>
-                  <Text style={styles.settingTitle}>Privacy</Text>
-                  <Text style={styles.settingDescription}>
-                    {liveData.isPrivate ? 'Private stream' : 'Public stream'}
-                  </Text>
-                </View>
-              </View>
-              <View style={[
-                styles.toggle, 
-                liveData.isPrivate && styles.toggleActive
-              ]}>
-                <View style={[
-                  styles.toggleDot,
-                  liveData.isPrivate && styles.toggleDotActive
-                ]} />
-              </View>
+              <MaterialIcons name="live-tv" size={24} color="#6A5ACD" />
+              <Text style={styles.goLiveButtonText}>Go Live</Text>
             </TouchableOpacity>
           </View>
         </View>
+      </SafeScreen>
+    );
+  }
 
-        <View style={styles.infoBox}>
-          <MaterialIcons name="info" size={20} color="#FF5722" />
-          <Text style={styles.infoText}>
-            Live streams will be available to your followers and can be discovered by other users based on your privacy settings.
-          </Text>
+  // Streaming View
+  return (
+    <SafeScreen>
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <MaterialIcons name="close" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Live Stream</Text>
+          <View style={styles.placeholder} />
         </View>
-      </View>
 
-      <TouchableOpacity 
-        style={[styles.uploadButtonMain, uploading && styles.uploadButtonDisabled]}
-        onPress={handleUpload}
-        disabled={uploading || !selectedFile}
-      >
-        {uploading ? (
-          <>
-            <ActivityIndicator size="small" color="#fff" />
-            <Text style={styles.uploadButtonText}>Scheduling...</Text>
-          </>
-        ) : (
-          <>
-            <MaterialIcons name="live-tv" size={20} color="#fff" />
-            <Text style={styles.uploadButtonText}>Schedule Live Stream</Text>
-          </>
-        )}
-      </TouchableOpacity>
+        {/* Camera View while streaming */}
+        <CameraView
+          ref={cameraRef}
+          style={styles.camera}
+          facing={'front' satisfies CameraType}
+          flash={'off' satisfies FlashMode}
+        />
 
-      {uploading && (
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBar}>
-            <View 
-              style={[styles.progressFill, { width: `${uploadProgress}%` }]} 
-            />
+        {/* Streaming Header */}
+        <View style={styles.streamingHeader}>
+          <View style={styles.streamingInfo}>
+            <View style={styles.liveIndicator}>
+              <View style={styles.liveDot} />
+              <Text style={styles.liveText}>LIVE</Text>
+            </View>
+            <Text style={styles.streamTitle}>{liveData.title}</Text>
           </View>
-          <Text style={styles.progressText}>{uploadProgress}%</Text>
+          <TouchableOpacity 
+            style={styles.stopButton}
+            onPress={stopLiveStream}
+          >
+            <Text style={styles.stopButtonText}>END</Text>
+          </TouchableOpacity>
         </View>
-      )}
-    </ScrollView>
+
+        {/* Viewers Count */}
+        <View style={styles.viewersContainer}>
+          <Ionicons name="eye" size={16} color="#fff" />
+          <Text style={styles.viewersText}>{viewerCount} viewers</Text>
+        </View>
+      </ScrollView>
+    </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#000000',
   },
   header: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 24,
-    backgroundColor: '#fff',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
-    position: 'relative',
+    borderBottomColor: '#333333',
   },
   closeButton: {
+    padding: 5,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  placeholder: {
+    width: 34,
+  },
+  camera: {
+    flex: 1,
+  },
+  liveIndicator: {
     position: 'absolute',
-    left: 16,
-    top: 24,
-    padding: 4,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#212529',
-    marginTop: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#6c757d',
-    marginTop: 4,
-  },
-  uploadArea: {
-    padding: 16,
-  },
-  uploadButton: {
-    borderWidth: 2,
-    borderColor: '#dee2e6',
-    borderStyle: 'dashed',
-    borderRadius: 12,
-    padding: 32,
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  uploadButtonSelected: {
-    borderColor: '#FF5722',
-    backgroundColor: '#fff3f0',
-  },
-  uploadText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#666',
-    marginTop: 12,
-  },
-  uploadTextSelected: {
-    color: '#FF5722',
-  },
-  uploadSubtext: {
-    fontSize: 12,
-    color: '#6c757d',
-    marginTop: 4,
-  },
-  fileInfo: {
-    marginTop: 12,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 12,
-  },
-  fileInfoItem: {
+    top: 100,
+    left: 20,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 0, 0, 0.8)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    zIndex: 100,
   },
-  fileInfoLabel: {
-    fontSize: 12,
-    color: '#6c757d',
-    fontWeight: '500',
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FFFFFF',
+    marginRight: 6,
   },
-  fileInfoValue: {
+  liveText: {
+    color: '#FFFFFF',
     fontSize: 12,
-    color: '#212529',
     fontWeight: '600',
   },
-  formSection: {
-    padding: 16,
+  formOverlay: {
+    position: 'absolute',
+    bottom: 120,
+    left: 20,
+    right: 20,
+    zIndex: 100,
+  },
+  formContainer: {
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 12,
+    padding: 20,
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#212529',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderWidth: 1,
-    borderColor: '#dee2e6',
+    borderColor: 'rgba(255, 255, 255, 0.2)',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 14,
-    color: '#212529',
+    color: '#FFFFFF',
   },
   textArea: {
-    height: 100,
+    height: 80,
     paddingTop: 12,
   },
   charCount: {
     fontSize: 12,
-    color: '#6c757d',
+    color: 'rgba(255, 255, 255, 0.6)',
     textAlign: 'right',
     marginTop: 4,
   },
-  helpText: {
-    fontSize: 12,
-    color: '#6c757d',
-    marginTop: 4,
-    fontStyle: 'italic',
+  bottomControls: {
+    position: 'absolute',
+    bottom: 40,
+    left: 20,
+    right: 20,
+    zIndex: 100,
   },
-  settingsContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#dee2e6',
+  goLiveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#6A5ACD',
+    paddingVertical: 16,
+    borderRadius: 12,
+    gap: 8,
   },
-  settingItem: {
+  goLiveButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  streamingHeader: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    right: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    zIndex: 100,
   },
-  settingLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 12,
-  },
-  settingText: {
+  streamingInfo: {
     flex: 1,
   },
-  settingTitle: {
+  streamTitle: {
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
-    color: '#212529',
-    marginBottom: 2,
-  },
-  settingDescription: {
-    fontSize: 14,
-    color: '#6c757d',
-  },
-  toggle: {
-    width: 48,
-    height: 28,
-    backgroundColor: '#ccc',
-    borderRadius: 14,
-    justifyContent: 'center',
-    paddingHorizontal: 2,
-  },
-  toggleActive: {
-    backgroundColor: '#FF5722',
-  },
-  toggleDot: {
-    width: 24,
-    height: 24,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-  },
-  toggleDotActive: {
-    alignSelf: 'flex-end',
-  },
-  infoBox: {
-    flexDirection: 'row',
-    backgroundColor: '#fff3f0',
-    borderRadius: 8,
-    padding: 12,
-    gap: 12,
     marginTop: 8,
   },
-  infoText: {
-    flex: 1,
-    fontSize: 12,
-    color: '#666',
-    lineHeight: 18,
+  stopButton: {
+    backgroundColor: 'rgba(255, 0, 0, 0.8)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
-  uploadButtonMain: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FF5722',
-    marginHorizontal: 16,
-    marginBottom: 20,
-    paddingVertical: 16,
-    borderRadius: 8,
-    gap: 8,
-  },
-  uploadButtonDisabled: {
-    backgroundColor: '#ccc',
-  },
-  uploadButtonText: {
-    color: '#fff',
-    fontSize: 16,
+  stopButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
     fontWeight: '600',
   },
-  progressContainer: {
-    marginHorizontal: 16,
-    marginBottom: 20,
+  viewersContainer: {
+    position: 'absolute',
+    bottom: 40,
+    right: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 6,
+    zIndex: 100,
   },
-  progressBar: {
-    height: 4,
-    backgroundColor: '#e9ecef',
-    borderRadius: 2,
-    overflow: 'hidden',
+  viewersText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '500',
   },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#FF5722',
+  permissionContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
-  progressText: {
-    fontSize: 12,
+  permissionTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#212529',
+    marginTop: 20,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  permissionText: {
+    fontSize: 16,
     color: '#6c757d',
     textAlign: 'center',
-    marginTop: 8,
+    marginBottom: 30,
+    lineHeight: 24,
+  },
+  permissionButton: {
+    backgroundColor: '#6A5ACD',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  permissionButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  cancelButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
+  cancelButtonText: {
+    color: '#6c757d',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

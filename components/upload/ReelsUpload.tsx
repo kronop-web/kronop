@@ -12,7 +12,8 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
-import { bridgeManager } from '../../services/bridges';
+import { useRouter } from 'expo-router';
+import { uploadQueue } from '../../services/uploadQueue';
 
 interface ReelData {
   title: string;
@@ -25,6 +26,7 @@ interface ReelsUploadProps {
 }
 
 export default function ReelsUpload({ onClose }: ReelsUploadProps) {
+  const router = useRouter();
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -102,53 +104,34 @@ export default function ReelsUpload({ onClose }: ReelsUploadProps) {
       return;
     }
 
-    try {
-      setUploading(true);
-      setUploadProgress(0);
-
-      const result = await bridgeManager.upload('REELS', selectedFile, {
+    uploadQueue.enqueue({
+      type: 'REELS',
+      file: selectedFile,
+      metadata: {
         title: reelData.title.trim(),
         description: reelData.description.trim(),
         tags: reelData.tags
-      });
-
-      if (result.success) {
-        Alert.alert(
-          'Upload Successful!',
-          'Your reel has been uploaded successfully.',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                // Reset form
-                setSelectedFile(null);
-                setReelData({ title: '', description: '', tags: [] });
-                setTagInput('');
-                setUploadProgress(0);
-              }
-            }
-          ]
-        );
-      } else {
-        throw new Error('Upload failed');
       }
-    } catch (error: any) {
-      console.error('Upload error:', error);
-      Alert.alert('Upload Failed', error.message || 'Failed to upload reel');
-    } finally {
-      setUploading(false);
-    }
+    });
+
+    setSelectedFile(null);
+    setReelData({ title: '', description: '', tags: [] });
+    setTagInput('');
+    setUploadProgress(0);
+    setUploading(false);
+
+    onClose();
+    router.replace('/');
   };
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <MaterialIcons name="arrow-back" size={24} color="#8B00FF" />
+          <MaterialIcons name="close" size={24} color="#fff" />
         </TouchableOpacity>
-        <MaterialIcons name="movie" size={32} color="#8B00FF" />
-        <Text style={styles.title}>Upload Reel</Text>
-        <Text style={styles.subtitle}>Share your short videos with the world</Text>
+        <Text style={styles.headerTitle}>Upload Reel</Text>
+        <View style={styles.placeholder} />
       </View>
 
       <View style={styles.uploadArea}>
@@ -160,7 +143,7 @@ export default function ReelsUpload({ onClose }: ReelsUploadProps) {
           <MaterialIcons 
             name="video-library" 
             size={48} 
-            color={selectedFile ? "#8B00FF" : "#666"} 
+            color={selectedFile ? "#6A5ACD" : "#666"} 
           />
           <Text style={[styles.uploadText, selectedFile && styles.uploadTextSelected]}>
             {selectedFile ? selectedFile.name : 'Choose Video File'}
@@ -283,66 +266,61 @@ export default function ReelsUpload({ onClose }: ReelsUploadProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#000000',
   },
   header: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 24,
-    backgroundColor: '#fff',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
-    position: 'relative',
+    borderBottomColor: '#333333',
   },
   closeButton: {
-    position: 'absolute',
-    left: 16,
-    top: 24,
-    padding: 4,
+    padding: 5,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#212529',
-    marginTop: 8,
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
-  subtitle: {
-    fontSize: 14,
-    color: '#6c757d',
-    marginTop: 4,
+  placeholder: {
+    width: 34,
   },
   uploadArea: {
     padding: 16,
   },
   uploadButton: {
     borderWidth: 2,
-    borderColor: '#dee2e6',
+    borderColor: '#333333',
     borderStyle: 'dashed',
     borderRadius: 12,
     padding: 32,
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#1a1a1a',
   },
   uploadButtonSelected: {
-    borderColor: '#8B00FF',
-    backgroundColor: '#fff5f5',
+    borderColor: '#6A5ACD',
+    backgroundColor: '#1a1a1a',
   },
   uploadText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#666',
+    color: '#CCCCCC',
     marginTop: 12,
   },
   uploadTextSelected: {
-    color: '#8B00FF',
+    color: '#6A5ACD',
   },
   uploadSubtext: {
     fontSize: 12,
-    color: '#6c757d',
+    color: '#666666',
     marginTop: 4,
   },
   fileInfo: {
     marginTop: 12,
-    backgroundColor: '#fff',
+    backgroundColor: '#1a1a1a',
     borderRadius: 8,
     padding: 12,
   },

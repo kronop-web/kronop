@@ -15,7 +15,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { bridgeManager } from '../../services/bridges';
+import { uploadQueue } from '../../services/uploadQueue';
 
 interface PhotoData {
   title: string;
@@ -192,32 +192,26 @@ export default function PhotoUpload({ onClose, isShayari = false }: PhotoUploadP
       return;
     }
 
-    router.push('/');
-
-    (async () => {
-      try {
-        const uploadPromises = selectedFiles.map(async (file) => {
-          // Use appropriate bridge based on type
-          const bridgeType = isShayari ? 'SHAYARI' : 'PHOTO';
-          return await bridgeManager.upload(bridgeType, file, {
-            title: photoData.title.trim(),
-            description: photoData.description.trim(),
-            tags: [...photoData.tags, ...(isShayari ? ['shayari', 'poetry'] : [])],
-            category: photoData.category
-          });
-        });
-
-        const results = await Promise.all(uploadPromises);
-        const successCount = results.filter(r => r.success).length;
-
-        if (successCount > 0) {
-          Alert.alert('Success', `${isShayari ? 'Shayari' : 'Photo'} Upload Complete`);
+    for (const file of selectedFiles) {
+      const bridgeType = isShayari ? 'SHAYARI' : 'PHOTO';
+      uploadQueue.enqueue({
+        type: bridgeType,
+        file,
+        metadata: {
+          title: photoData.title.trim(),
+          description: photoData.description.trim(),
+          tags: [...photoData.tags, ...(isShayari ? ['shayari', 'poetry'] : [])],
+          category: photoData.category
         }
-      } catch (error: any) {
-        console.error('Upload error:', error);
-        Alert.alert('Upload Failed', error.message || `Failed to upload ${isShayari ? 'shayari' : 'photos'}`);
-      }
-    })();
+      });
+    }
+
+    setSelectedFiles([]);
+    setUploadProgress(0);
+    setUploading(false);
+
+    onClose();
+    router.replace('/');
   };
 
   const renderSelectedFile = ({ item, index }: { item: any; index: number }) => (
@@ -244,11 +238,10 @@ export default function PhotoUpload({ onClose, isShayari = false }: PhotoUploadP
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <MaterialIcons name="arrow-back" size={24} color="#4CAF50" />
+          <MaterialIcons name="close" size={24} color="#fff" />
         </TouchableOpacity>
-        <MaterialIcons name={isShayari ? 'format-quote' : 'photo-library'} size={32} color="#4CAF50" />
-        <Text style={styles.title}>{isShayari ? 'Create Shayari' : 'Upload Photos'}</Text>
-        <Text style={styles.subtitle}>{isShayari ? 'Share your poetry with a beautiful photo' : 'Share your best moments with the community'}</Text>
+        <Text style={styles.headerTitle}>{isShayari ? 'Create Shayari' : 'Upload Photos'}</Text>
+        <View style={styles.placeholder} />
       </View>
 
       <View style={styles.uploadArea}>
@@ -258,7 +251,7 @@ export default function PhotoUpload({ onClose, isShayari = false }: PhotoUploadP
             onPress={pickPhotos}
             disabled={uploading}
           >
-            <MaterialIcons name="photo-library" size={24} color="#4CAF50" />
+            <MaterialIcons name="photo-library" size={24} color="#6A5ACD" />
             <Text style={styles.uploadButtonText}>Gallery</Text>
             <Text style={styles.uploadButtonSubtext}>Choose multiple</Text>
           </TouchableOpacity>
@@ -268,7 +261,7 @@ export default function PhotoUpload({ onClose, isShayari = false }: PhotoUploadP
             onPress={takePhoto}
             disabled={uploading}
           >
-            <MaterialIcons name="photo-camera" size={24} color="#4CAF50" />
+            <MaterialIcons name="photo-camera" size={24} color="#6A5ACD" />
             <Text style={styles.uploadButtonText}>Camera</Text>
             <Text style={styles.uploadButtonSubtext}>Take photo</Text>
           </TouchableOpacity>
@@ -345,7 +338,7 @@ export default function PhotoUpload({ onClose, isShayari = false }: PhotoUploadP
               returnKeyType="done"
             />
             <TouchableOpacity style={styles.addTagButton} onPress={addTag}>
-              <MaterialIcons name="add" size={20} color="#4CAF50" />
+              <MaterialIcons name="add" size={20} color="#6A5ACD" />
             </TouchableOpacity>
           </View>
           
@@ -403,21 +396,27 @@ export default function PhotoUpload({ onClose, isShayari = false }: PhotoUploadP
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#000000',
   },
   header: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 24,
-    backgroundColor: '#fff',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
-    position: 'relative',
+    borderBottomColor: '#333333',
   },
   closeButton: {
-    position: 'absolute',
-    left: 16,
-    top: 24,
-    padding: 4,
+    padding: 5,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  placeholder: {
+    width: 34,
   },
   title: {
     fontSize: 24,
@@ -439,23 +438,23 @@ const styles = StyleSheet.create({
   },
   uploadButton: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#1a1a1a',
     borderWidth: 2,
-    borderColor: '#dee2e6',
+    borderColor: '#333333',
     borderRadius: 12,
     padding: 20,
     alignItems: 'center',
   },
   galleryButton: {
-    borderColor: '#4CAF50',
+    borderColor: '#6A5ACD',
   },
   cameraButton: {
-    borderColor: '#4CAF50',
+    borderColor: '#6A5ACD',
   },
   uploadButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#212529',
+    color: '#FFFFFF',
     marginTop: 8,
   },
   uploadButtonSubtext: {
@@ -469,7 +468,7 @@ const styles = StyleSheet.create({
   selectedFilesTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#212529',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   selectedFilesList: {
@@ -484,13 +483,13 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 8,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#1a1a1a',
   },
   removeFileButton: {
     position: 'absolute',
     top: -4,
     right: -4,
-    backgroundColor: '#dc3545',
+    backgroundColor: '#6A5ACD',
     borderRadius: 10,
     width: 20,
     height: 20,
@@ -499,7 +498,7 @@ const styles = StyleSheet.create({
   },
   selectedFileName: {
     fontSize: 10,
-    color: '#6c757d',
+    color: '#CCCCCC',
     marginTop: 4,
     textAlign: 'center',
   },
@@ -512,18 +511,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#212529',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: '#1a1a1a',
     borderWidth: 1,
-    borderColor: '#dee2e6',
+    borderColor: '#333333',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 14,
-    color: '#212529',
+    color: '#FFFFFF',
   },
   textArea: {
     height: 100,
@@ -531,7 +530,7 @@ const styles = StyleSheet.create({
   },
   charCount: {
     fontSize: 12,
-    color: '#6c757d',
+    color: '#666666',
     textAlign: 'right',
     marginTop: 4,
   },
@@ -539,18 +538,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   categoryChip: {
-    backgroundColor: '#e9ecef',
+    backgroundColor: '#1a1a1a',
+    borderWidth: 1,
+    borderColor: '#333333',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
     marginRight: 8,
   },
   categoryChipSelected: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#6A5ACD',
+    borderColor: '#6A5ACD',
   },
   categoryChipText: {
     fontSize: 14,
-    color: '#495057',
+    color: '#FFFFFF',
     fontWeight: '500',
   },
   categoryChipTextSelected: {
@@ -559,9 +561,9 @@ const styles = StyleSheet.create({
   tagInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#1a1a1a',
     borderWidth: 1,
-    borderColor: '#dee2e6',
+    borderColor: '#333333',
     borderRadius: 8,
     paddingHorizontal: 12,
   },
@@ -569,9 +571,11 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     fontSize: 14,
-    color: '#212529',
+    color: '#FFFFFF',
   },
   addTagButton: {
+    backgroundColor: '#6A5ACD',
+    borderRadius: 8,
     padding: 8,
   },
   tagsContainer: {
@@ -583,22 +587,23 @@ const styles = StyleSheet.create({
   tag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#e9ecef',
-    borderRadius: 16,
+    backgroundColor: '#6A5ACD',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    gap: 6,
+    borderRadius: 16,
+    marginRight: 8,
+    marginBottom: 8,
   },
   tagText: {
     fontSize: 12,
-    color: '#495057',
+    color: '#FFFFFF',
     fontWeight: '500',
   },
   uploadButtonMain: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#6A5ACD',
     marginHorizontal: 16,
     marginBottom: 20,
     paddingVertical: 16,
@@ -606,7 +611,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   uploadButtonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: '#444444',
   },
   progressContainer: {
     marginHorizontal: 16,
@@ -614,17 +619,17 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: 4,
-    backgroundColor: '#e9ecef',
+    backgroundColor: '#333333',
     borderRadius: 2,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#6A5ACD',
   },
   progressText: {
     fontSize: 12,
-    color: '#6c757d',
+    color: '#CCCCCC',
     textAlign: 'center',
     marginTop: 8,
   },

@@ -13,7 +13,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { bridgeManager } from '../../services/bridges';
+import { uploadQueue } from '../../services/uploadQueue';
 
 interface ShayariPhotoData {
   shayari_text: string;
@@ -166,43 +166,33 @@ export default function ShayariPhotoUpload({ onClose }: ShayariPhotoUploadProps)
       return;
     }
 
-    router.push('/');
-
-    (async () => {
-      try {
-        setUploading(true);
-        
-        const result = await bridgeManager.upload('SHAYARI', selectedFile, {
-          title: shayariData.shayari_text.trim().substring(0, 50),
-          content: shayariData.shayari_text.trim(),
-          author: shayariData.shayari_author.trim(),
-          tags: shayariData.tags,
-          category: shayariData.category
-        });
-
-        if (result.success) {
-          Alert.alert('Success', 'Shayari Photo uploaded successfully!');
-        } else {
-          Alert.alert('Upload Failed', 'Failed to upload shayari photo');
-        }
-      } catch (error: any) {
-        console.error('Upload error:', error);
-        Alert.alert('Upload Failed', error.message || 'Failed to upload shayari photo');
-      } finally {
-        setUploading(false);
+    uploadQueue.enqueue({
+      type: 'SHAYARI',
+      file: selectedFile,
+      metadata: {
+        title: shayariData.shayari_text.trim().substring(0, 50),
+        content: shayariData.shayari_text.trim(),
+        author: shayariData.shayari_author.trim(),
+        tags: shayariData.tags,
+        category: shayariData.category
       }
-    })();
+    });
+
+    setSelectedFile(null);
+    setUploadProgress(0);
+    setUploading(false);
+    onClose();
+    router.replace('/');
   };
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <MaterialIcons name="arrow-back" size={24} color="#4CAF50" />
+          <MaterialIcons name="close" size={24} color="#fff" />
         </TouchableOpacity>
-        <MaterialIcons name="format-quote" size={32} color="#4CAF50" />
-        <Text style={styles.title}>Upload Shayari Photo</Text>
-        <Text style={styles.subtitle}>Share your shayari with beautiful photos</Text>
+        <Text style={styles.headerTitle}>Upload Shayari</Text>
+        <View style={styles.placeholder} />
       </View>
 
       <View style={styles.uploadArea}>
@@ -212,7 +202,7 @@ export default function ShayariPhotoUpload({ onClose }: ShayariPhotoUploadProps)
             onPress={pickPhoto}
             disabled={uploading}
           >
-            <MaterialIcons name="photo-library" size={24} color="#4CAF50" />
+            <MaterialIcons name="photo-library" size={24} color="#6A5ACD" />
             <Text style={styles.uploadButtonText}>Gallery</Text>
             <Text style={styles.uploadButtonSubtext}>Choose photo</Text>
           </TouchableOpacity>
@@ -222,7 +212,7 @@ export default function ShayariPhotoUpload({ onClose }: ShayariPhotoUploadProps)
             onPress={takePhoto}
             disabled={uploading}
           >
-            <MaterialIcons name="photo-camera" size={24} color="#4CAF50" />
+            <MaterialIcons name="photo-camera" size={24} color="#6A5ACD" />
             <Text style={styles.uploadButtonText}>Camera</Text>
             <Text style={styles.uploadButtonSubtext}>Take photo</Text>
           </TouchableOpacity>
@@ -312,7 +302,7 @@ export default function ShayariPhotoUpload({ onClose }: ShayariPhotoUploadProps)
               returnKeyType="done"
             />
             <TouchableOpacity style={styles.addTagButton} onPress={addTag}>
-              <MaterialIcons name="add" size={20} color="#4CAF50" />
+              <MaterialIcons name="add" size={20} color="#6A5ACD" />
             </TouchableOpacity>
           </View>
           
@@ -372,21 +362,27 @@ export default function ShayariPhotoUpload({ onClose }: ShayariPhotoUploadProps)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#000000',
   },
   header: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 24,
-    backgroundColor: '#fff',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
-    position: 'relative',
+    borderBottomColor: '#333333',
   },
   closeButton: {
-    position: 'absolute',
-    left: 16,
-    top: 24,
-    padding: 4,
+    padding: 5,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  placeholder: {
+    width: 34,
   },
   title: {
     fontSize: 24,
@@ -408,23 +404,23 @@ const styles = StyleSheet.create({
   },
   uploadButton: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#1a1a1a',
     borderWidth: 2,
-    borderColor: '#dee2e6',
+    borderColor: '#333333',
     borderRadius: 12,
     padding: 20,
     alignItems: 'center',
   },
   galleryButton: {
-    borderColor: '#4CAF50',
+    borderColor: '#6A5ACD',
   },
   cameraButton: {
-    borderColor: '#4CAF50',
+    borderColor: '#6A5ACD',
   },
   uploadButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#212529',
+    color: '#FFFFFF',
     marginTop: 8,
   },
   uploadButtonSubtext: {
@@ -439,20 +435,20 @@ const styles = StyleSheet.create({
   selectedFileTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#212529',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   selectedFileImage: {
     width: 200,
     height: 150,
     borderRadius: 8,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#1a1a1a',
   },
   removeFileButton: {
     position: 'absolute',
     top: -4,
     right: 80,
-    backgroundColor: '#dc3545',
+    backgroundColor: '#6A5ACD',
     borderRadius: 10,
     width: 20,
     height: 20,
@@ -468,18 +464,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#212529',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: '#1a1a1a',
     borderWidth: 1,
-    borderColor: '#dee2e6',
+    borderColor: '#333333',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 14,
-    color: '#212529',
+    color: '#FFFFFF',
   },
   shayariInput: {
     height: 120,
@@ -488,7 +484,7 @@ const styles = StyleSheet.create({
   },
   charCount: {
     fontSize: 12,
-    color: '#6c757d',
+    color: '#666666',
     textAlign: 'right',
     marginTop: 4,
   },
@@ -496,18 +492,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   categoryChip: {
-    backgroundColor: '#e9ecef',
+    backgroundColor: '#1a1a1a',
+    borderWidth: 1,
+    borderColor: '#333333',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
     marginRight: 8,
   },
   categoryChipSelected: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#6A5ACD',
+    borderColor: '#6A5ACD',
   },
   categoryChipText: {
     fontSize: 14,
-    color: '#495057',
+    color: '#FFFFFF',
     fontWeight: '500',
   },
   categoryChipTextSelected: {
@@ -516,9 +515,9 @@ const styles = StyleSheet.create({
   tagInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#1a1a1a',
     borderWidth: 1,
-    borderColor: '#dee2e6',
+    borderColor: '#333333',
     borderRadius: 8,
     paddingHorizontal: 12,
   },
@@ -526,9 +525,11 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     fontSize: 14,
-    color: '#212529',
+    color: '#FFFFFF',
   },
   addTagButton: {
+    backgroundColor: '#6A5ACD',
+    borderRadius: 8,
     padding: 8,
   },
   tagsContainer: {
@@ -540,22 +541,22 @@ const styles = StyleSheet.create({
   tag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#e9ecef',
-    borderRadius: 16,
+    backgroundColor: '#6A5ACD',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    gap: 6,
+    borderRadius: 16,
+    marginRight: 8,
+    marginBottom: 8,
   },
   tagText: {
-    fontSize: 12,
-    color: '#495057',
+    color: '#FFFFFF',
     fontWeight: '500',
   },
   uploadButtonMain: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#6A5ACD',
     marginHorizontal: 16,
     marginBottom: 20,
     paddingVertical: 16,
@@ -563,7 +564,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   uploadButtonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: '#444444',
   },
   progressContainer: {
     marginHorizontal: 16,
@@ -571,17 +572,17 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: 4,
-    backgroundColor: '#e9ecef',
+    backgroundColor: '#333333',
     borderRadius: 2,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#6A5ACD',
   },
   progressText: {
     fontSize: 12,
-    color: '#6c757d',
+    color: '#CCCCCC',
     textAlign: 'center',
     marginTop: 8,
   },

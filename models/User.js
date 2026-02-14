@@ -61,6 +61,9 @@ const userSchema = new mongoose.Schema({
   pushToken: {
     type: String
   },
+  oneSignalPlayerId: {
+    type: String
+  },
   savedContent: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Content',

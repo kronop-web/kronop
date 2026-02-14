@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   reportWrap: {
-    marginTop: 8,
+    marginTop: 4, // Reduced from 8 to 4 to bring report button closer to interaction buttons
     alignItems: 'center',
   },
   reportButton: {

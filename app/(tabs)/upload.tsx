@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeScreen } from '../../components/layout';
 import { theme } from '../../constants/theme';
 
@@ -11,18 +12,31 @@ import ReelsUpload from '../../components/upload/ReelsUpload';
 import PhotoUpload from '../../components/upload/PhotoUpload';
 import StoryUpload from '../../components/upload/StoryUpload';
 import LiveUpload from '../../components/upload/LiveUpload';
+import SongUpload from '../../components/upload/SongUpload';
 
 const { width } = Dimensions.get('window');
 
 // ==================== MAIN UPLOAD SCREEN ====================
 export default function UploadScreen() {
-  const [activeComponent, setActiveComponent] = useState<'reel' | 'video' | 'photo' | 'story' | 'live' | 'shayari' | null>(null);
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const [activeComponent, setActiveComponent] = useState<'reel' | 'video' | 'photo' | 'story' | 'live' | 'shayari' | 'song' | null>(null);
 
-  const handleUploadPress = (type: 'reel' | 'video' | 'photo' | 'story' | 'live' | 'shayari') => {
+  // Handle query parameter to auto-select upload type
+  useEffect(() => {
+    if (params.tab) {
+      const tab = params.tab as string;
+      if (['reel', 'video', 'photo', 'story', 'live', 'shayari', 'song'].includes(tab)) {
+        setActiveComponent(tab as any);
+      }
+    }
+  }, [params.tab]);
+
+  const handleUploadPress = (type: 'reel' | 'video' | 'photo' | 'story' | 'live' | 'shayari' | 'song') => {
     setActiveComponent(type);
   };
 
-  // 6 buttons array - EK KE NICHE EK
+  // 7 buttons array - EK KE NICHE EK
   const uploadButtons = [
     {
       id: 'story',
@@ -63,8 +77,15 @@ export default function UploadScreen() {
       id: 'shayari',
       title: 'Shayari',
       icon: 'format-quote',
-      description: 'Photo with poetry',
+      description: 'Poetry & quotes',
       type: 'shayari' as const,
+    },
+    {
+      id: 'song',
+      title: 'Song',
+      icon: 'music-note',
+      description: 'Music files',
+      type: 'song' as const,
     },
   ];
 
@@ -113,22 +134,25 @@ export default function UploadScreen() {
         {activeComponent && (
           <View style={styles.componentContainer}>
             {activeComponent === 'reel' && (
-              <ReelsUpload onClose={() => setActiveComponent(null)} />
+              <ReelsUpload onClose={() => router.replace('/')} />
             )}
             {activeComponent === 'video' && (
-              <VideoUpload onClose={() => setActiveComponent(null)} />
+              <VideoUpload onClose={() => router.replace('/')} />
             )}
             {activeComponent === 'photo' && (
-              <PhotoUpload onClose={() => setActiveComponent(null)} />
+              <PhotoUpload onClose={() => router.replace('/')} />
             )}
             {activeComponent === 'story' && (
-              <StoryUpload onClose={() => setActiveComponent(null)} />
+              <StoryUpload onClose={() => router.replace('/')} />
             )}
             {activeComponent === 'live' && (
-              <LiveUpload onClose={() => setActiveComponent(null)} />
+              <LiveUpload onClose={() => router.replace('/')} />
             )}
             {activeComponent === 'shayari' && (
-              <PhotoUpload onClose={() => setActiveComponent(null)} isShayari={true} />
+              <PhotoUpload onClose={() => router.replace('/')} isShayari={true} />
+            )}
+            {activeComponent === 'song' && (
+              <SongUpload onClose={() => router.replace('/')} />
             )}
           </View>
         )}

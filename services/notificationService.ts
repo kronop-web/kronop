@@ -1,5 +1,6 @@
 import { API_BASE_URL } from '../constants/network';
 import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 
 const API_URL = API_BASE_URL;
 
@@ -15,6 +16,10 @@ class NotificationService {
   // Initialize notifications and register push token
   async initializeNotifications(userId: string) {
     try {
+      if (Constants.appOwnership === 'expo') {
+        return;
+      }
+
       // Request permissions
       const { status } = await Notifications.requestPermissionsAsync();
       if (status !== 'granted') {
@@ -67,16 +72,24 @@ class NotificationService {
 
   // Setup notification handler
   private setupNotificationHandler() {
-    // Set notification handler for when app is foreground
-    Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: true,
-        shouldShowBanner: true,
-        shouldShowList: true,
-      }),
-    });
+    try {
+      if (Constants.appOwnership === 'expo') {
+        return;
+      }
+
+      // Set notification handler for when app is foreground
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldPlaySound: true,
+          shouldSetBadge: true,
+          shouldShowBanner: true,
+          shouldShowList: true,
+        }),
+      });
+    } catch {
+      // no-op
+    }
   }
 
   // Send notification to specific user (via backend)

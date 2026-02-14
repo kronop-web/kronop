@@ -60,6 +60,59 @@ export class VideosService {
     // return await authService.createAuthHeaders(contentType);
   }
 
+  async saveVideoMetadataOnly(videoData: {
+    title?: string;
+    description?: string;
+    tags?: string[];
+    category?: string;
+    bunny_id: string;
+    url: string;
+    userId?: string;
+  }): Promise<VideoUploadResult> {
+    try {
+      const payload: any = {
+        title: videoData.title || 'Untitled',
+        description: videoData.description || '',
+        bunny_id: videoData.bunny_id,
+        url: videoData.url,
+        tags: videoData.tags,
+        userId: videoData.userId || 'guest_user'
+      };
+
+      if (videoData.category) {
+        payload.category = videoData.category;
+      }
+
+      // Best-effort thumbnail
+      if (videoData.bunny_id) {
+        payload.thumbnail = `https://${BUNNY_CONFIG.video.host}/${videoData.bunny_id}/thumbnail.jpg`;
+      }
+
+      const headers = await this.createHeaders();
+      const response = await fetch(`${this.API_BASE}/upload/video`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to save video metadata: ${response.status} - ${errorText}`);
+      }
+
+      const savedVideo = await response.json();
+      return {
+        success: true,
+        video: savedVideo.data || savedVideo
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: `Save video metadata failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
+  }
+
   /**
    * Upload a new video - Complete flow
    */

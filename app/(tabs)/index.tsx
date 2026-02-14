@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, FlatList, StyleSheet, TouchableOpacity, Text, ActivityIndicator, Platform, SafeAreaView } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, FlatList, StyleSheet, TouchableOpacity, Text, ActivityIndicator, Platform, Modal, Dimensions, TextInput } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { StoryViewer } from '../../components/feature';
 import { StorySection } from '../../components/feature/StorySection';
 import { theme } from '../../constants/theme';
@@ -14,6 +14,115 @@ import * as FileSystem from 'expo-file-system';
 import { photosApi, storiesApi } from '../../services/api';
 import StatusBarOverlay from '../../components/common/StatusBarOverlay';
 import AppLogo from '../../components/common/AppLogo';
+
+// Mock songs data for music player - Hindi New Songs (15 Songs)
+const mockSongs = [
+  {
+    id: '1',
+    title: 'Kesariya',
+    artist: 'Arijit Singh',
+    channelPhoto: 'https://picsum.photos/60/60?random=1',
+    isPlaying: false
+  },
+  {
+    id: '2',
+    title: 'Tum Kya Mile',
+    artist: 'Arijit Singh, Shashwat Singh',
+    channelPhoto: 'https://picsum.photos/60/60?random=2',
+    isPlaying: true
+  },
+  {
+    id: '3',
+    title: 'Jhoome Jo Pathaan',
+    artist: 'Arijit Singh, Sukriti Kakar',
+    channelPhoto: 'https://picsum.photos/60/60?random=3',
+    isPlaying: false
+  },
+  {
+    id: '4',
+    title: 'O Bedardeya',
+    artist: 'Arijit Singh',
+    channelPhoto: 'https://picsum.photos/60/60?random=4',
+    isPlaying: false
+  },
+  {
+    id: '5',
+    title: 'Phir Aur Kya Chahiye',
+    artist: 'Arijit Singh',
+    channelPhoto: 'https://picsum.photos/60/60?random=5',
+    isPlaying: false
+  },
+  {
+    id: '6',
+    title: 'Apna Bana Le',
+    artist: 'Arijit Singh, Sachin-Jigar',
+    channelPhoto: 'https://picsum.photos/60/60?random=6',
+    isPlaying: false
+  },
+  {
+    id: '7',
+    title: 'Raataan Lambiyan',
+    artist: 'Jubin Nautiyal, Asees Kaur',
+    channelPhoto: 'https://picsum.photos/60/60?random=7',
+    isPlaying: false
+  },
+  {
+    id: '8',
+    title: 'Srivaalli',
+    artist: 'Sid Sriram',
+    channelPhoto: 'https://picsum.photos/60/60?random=8',
+    isPlaying: false
+  },
+  {
+    id: '9',
+    title: 'Mere Yaaraa',
+    artist: 'Arijit Singh, Neeti Mohan',
+    channelPhoto: 'https://picsum.photos/60/60?random=9',
+    isPlaying: false
+  },
+  {
+    id: '10',
+    title: 'Tere Pyaar Mein',
+    artist: 'Arijit Singh, Nikhita Gandhi',
+    channelPhoto: 'https://picsum.photos/60/60?random=10',
+    isPlaying: false
+  },
+  {
+    id: '11',
+    title: 'Deva Deva',
+    artist: 'Arijit Singh, Shashaa Tirupati',
+    channelPhoto: 'https://picsum.photos/60/60?random=11',
+    isPlaying: false
+  },
+  {
+    id: '12',
+    title: 'Rasiya',
+    artist: 'Pritam, Shreya Ghoshal',
+    channelPhoto: 'https://picsum.photos/60/60?random=12',
+    isPlaying: false
+  },
+  {
+    id: '13',
+    title: 'Show Me The Thumka',
+    artist: 'Sunidhi Chauhan, Shashwat Singh',
+    channelPhoto: 'https://picsum.photos/60/60?random=13',
+    isPlaying: false
+  },
+  {
+    id: '14',
+    title: 'What Jhumka?',
+    artist: 'Arijit Singh, Jonita Gandhi',
+    channelPhoto: 'https://picsum.photos/60/60?random=14',
+    isPlaying: false
+  },
+  {
+    id: '15',
+    title: 'Dhokha',
+    artist: 'Arijit Singh',
+    channelPhoto: 'https://picsum.photos/60/60?random=15',
+    isPlaying: false
+  }
+];
 
 // Photo categories - TEXT ONLY, HORIZONTAL SCROLL WITH PROPER FILTERING
 const PHOTO_CATEGORIES = [
@@ -48,6 +157,17 @@ export default function HomeScreen() {
   const router = useRouter();
   const { showAlert } = useAlert();
   const insets = useSafeAreaInsets(); // Get safe area insets
+  
+  // Bottom sheet modal state
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  
+  // Music player states
+  const [currentSongId, setCurrentSongId] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [showMusicModal, setShowMusicModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredSongs, setFilteredSongs] = useState(mockSongs);
+
   // Stories state - Grouped by user
   const [groupedStories, setGroupedStories] = useState<GroupedStory[]>([]);
   const [storiesLoading, setStoriesLoading] = useState(true);
@@ -59,8 +179,9 @@ export default function HomeScreen() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [categoryPhotos, setCategoryPhotos] = useState<any[]>([]);
   const [photosLoading, setPhotosLoading] = useState(false);
+  const [photosLoadingMore, setPhotosLoadingMore] = useState(false);
   const [photosPage, setPhotosPage] = useState(1);
-  const [hasMorePhotos, setHasMorePhotos] = useState(true);
+  const [hasMorePhotos, setHasMorePhotos] = useState(false);
   
   // Story upload loading state
   const [uploadingStory, setUploadingStory] = useState(false);
@@ -195,7 +316,27 @@ export default function HomeScreen() {
 
   useEffect(() => {
     loadStories();
+    // Load initial photos for "All" category
+    loadInitialPhotos();
   }, []);
+
+  // Load initial photos
+  const loadInitialPhotos = async () => {
+    setPhotosLoading(true);
+    try {
+      const result = await photosApi.getPhotos();
+      if (result && result.length > 0) {
+        setCategoryPhotos(result);
+        setHasMorePhotos(result.length > 20);
+        setSelectedCategory('all'); // Default to "All" category
+      }
+    } catch (error) {
+      console.error('Failed to load initial photos:', error);
+      setCategoryPhotos([]);
+    } finally {
+      setPhotosLoading(false);
+    }
+  };
 
   const handleStoryPress = async (storyGroup: GroupedStory, storyIndex: number = 0) => {
     if (storyGroup.stories[0]?.id === 'add-story') {
@@ -206,6 +347,48 @@ export default function HomeScreen() {
       setSelectedStoryGroup(storyGroup.stories);
       setSelectedStoryIndex(storyIndex);
       setStoryViewerVisible(true);
+    }
+  };
+
+  // Upload modal handlers
+  const handleUploadPress = () => {
+    setShowUploadModal(true);
+  };
+
+  const handleUploadOptionPress = (option: string) => {
+    setShowUploadModal(false);
+    
+    switch (option) {
+      case 'Story':
+        // Direct to upload screen with story type
+        router.replace('/upload?tab=story');
+        break;
+      case 'Photo':
+        // Direct to upload screen with photo type
+        router.replace('/upload?tab=photo');
+        break;
+      case 'Reels':
+        // Direct to upload screen with reels type
+        router.replace('/upload?tab=reel');
+        break;
+      case 'Video':
+        // Direct to upload screen with video type
+        router.replace('/upload?tab=video');
+        break;
+      case 'Live':
+        // Direct to upload screen with live type
+        router.replace('/upload?tab=live');
+        break;
+      case 'Shayari':
+        // Direct to upload screen with shayari type
+        router.replace('/upload?tab=shayari');
+        break;
+      case 'Song':
+        // Create new song upload screen (for now, go to upload)
+        router.replace('/upload?tab=song');
+        break;
+      default:
+        break;
     }
   };
 
@@ -297,6 +480,32 @@ export default function HomeScreen() {
     setPhotosPage(prev => prev + 1);
   };
 
+  // Music player handlers
+  const handlePlayPause = (songId: string) => {
+    if (currentSongId === songId) {
+      setIsPlaying(!isPlaying);
+    } else {
+      setCurrentSongId(songId);
+      setIsPlaying(true);
+    }
+  };
+
+  const handlePrevious = () => {
+    const currentIndex = mockSongs.findIndex(song => song.id === currentSongId);
+    if (currentIndex > 0) {
+      setCurrentSongId(mockSongs[currentIndex - 1].id);
+      setIsPlaying(true);
+    }
+  };
+
+  const handleNext = () => {
+    const currentIndex = mockSongs.findIndex(song => song.id === currentSongId);
+    if (currentIndex < mockSongs.length - 1) {
+      setCurrentSongId(mockSongs[currentIndex + 1].id);
+      setIsPlaying(true);
+    }
+  };
+
   const renderPhotoItem = ({ item }: { item: any }) => (
     <TouchableOpacity style={styles.photoItem} activeOpacity={0.8}>
       <Image 
@@ -317,47 +526,109 @@ export default function HomeScreen() {
     </TouchableOpacity>
   );
 
+  // Search functionality for songs
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    if (query.trim() === '') {
+      setFilteredSongs(mockSongs);
+    } else {
+      const filtered = mockSongs.filter(song => 
+        song.title.toLowerCase().includes(query.toLowerCase()) ||
+        song.artist.toLowerCase().includes(query.toLowerCase())
+      );
+      setFilteredSongs(filtered);
+    }
+  };
+
+  // Song item renderer for music player
+  const renderSongItem = ({ item }: { item: any }) => (
+    <View style={styles.songCard}>
+      {/* Channel Photo - Left Side */}
+      <Image 
+        source={{ uri: item.channelPhoto }} 
+        style={styles.channelPhoto}
+        contentFit="cover"
+      />
+      
+      {/* Song Info - Middle */}
+      <View style={styles.songInfo}>
+        <Text style={styles.songTitle}>{item.title}</Text>
+        <Text style={styles.artistName}>{item.artist}</Text>
+      </View>
+      
+      {/* Music Controls - Right Side */}
+      <View style={styles.musicControls}>
+        <TouchableOpacity 
+          style={styles.controlButton}
+          onPress={handlePrevious}
+          activeOpacity={0.7}
+        >
+          <MaterialIcons name="skip-previous" size={24} color="#fff" />
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.playButton, currentSongId === item.id && isPlaying && styles.playButtonActive]}
+          onPress={() => handlePlayPause(item.id)}
+          activeOpacity={0.7}
+        >
+          <MaterialIcons 
+            name={currentSongId === item.id && isPlaying ? "pause" : "play-arrow"} 
+            size={28} 
+            color={currentSongId === item.id && isPlaying ? "#fff" : "#000"} 
+          />
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.controlButton}
+          onPress={handleNext}
+          activeOpacity={0.7}
+        >
+          <MaterialIcons name="skip-next" size={24} color="#fff" />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
   return (
-    <SafeAreaView style={styles.safeContainer}>
+    <View style={styles.container}>
       <StatusBarOverlay style="light" backgroundColor="#000000" />
-      <View style={styles.container}>
-        <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-          <Text style={styles.appTitle}>Kronop</Text>
-          <View style={styles.headerActions}>
-            <TouchableOpacity 
-              onPress={() => router.push('/notifications')}
-              hitSlop={theme.hitSlop.md}
-              activeOpacity={0.7}
-              style={styles.headerButton}
-            >
-              <MaterialIcons name="notifications" size={theme.iconSize.lg} color="#fff" />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              onPress={() => router.push('/chat')}
-              hitSlop={theme.hitSlop.md}
-              activeOpacity={0.7}
-              style={styles.headerButton}
-            >
-              <MaterialIcons name="chat-bubble" size={theme.iconSize.lg} color="#fff" />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              onPress={() => router.push('/songs')}
-              hitSlop={theme.hitSlop.md}
-              activeOpacity={0.7}
-              style={styles.headerButton}
-            >
-              <MaterialIcons name="music-note" size={theme.iconSize.lg} color="#fff" />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              onPress={() => router.push('/upload')} 
-              hitSlop={theme.hitSlop.md}
-              activeOpacity={0.7}
-              style={styles.headerButton}
-            >
-              <MaterialIcons name="add-circle" size={theme.iconSize.xl} color="#fff" />
-            </TouchableOpacity>
-          </View>
+      <View style={[styles.header, { paddingTop: 40 }]}>
+        <Text style={styles.appTitle}>Kronop</Text>
+        <View style={styles.headerActions}>
+          <TouchableOpacity 
+            onPress={() => router.push('/notifications')}
+            hitSlop={theme.hitSlop.md}
+            activeOpacity={0.7}
+            style={styles.headerButton}
+          >
+            <MaterialIcons name="notifications" size={24} color="#fff" />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            onPress={() => router.push('/chat')}
+            hitSlop={theme.hitSlop.md}
+            activeOpacity={0.7}
+            style={styles.headerButton}
+          >
+            <MaterialIcons name="chat-bubble" size={24} color="#fff" />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            onPress={() => setShowMusicModal(true)}
+            hitSlop={theme.hitSlop.md}
+            activeOpacity={0.7}
+            style={styles.headerButton}
+          >
+            <MaterialIcons name="music-note" size={24} color="#fff" />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            onPress={handleUploadPress} 
+            hitSlop={theme.hitSlop.md}
+            activeOpacity={0.7}
+            style={styles.headerButton}
+          >
+            <MaterialIcons name="add-circle" size={24} color="#fff" />
+          </TouchableOpacity>
         </View>
+      </View>
 
       <FlatList
         data={[]}
@@ -374,9 +645,6 @@ export default function HomeScreen() {
 
             {/* Photo Categories Section - HORIZONTAL SCROLL, TEXT ONLY */}
             <View style={styles.photoCategoriesContainer}>
-              <Text style={styles.sectionTitle}>Photo Categories</Text>
-              
-              {/* Horizontal Scrollable Text-Only Buttons */}
               <FlatList
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -401,40 +669,29 @@ export default function HomeScreen() {
                 )}
                 contentContainerStyle={styles.categoriesScrollContainer}
               />
+            </View>
 
-              {/* Inline Photos Display - Infinite Scroll */}
-              {selectedCategory && (
-                <View style={styles.inlinePhotosContainer}>
-                  {photosLoading && categoryPhotos.length === 0 ? (
-                    <View style={styles.photosLoadingContainer}>
-                      <ActivityIndicator size="large" color={theme.colors.primary.main} />
-                      <Text style={styles.loadingText}>Loading photos...</Text>
-                    </View>
-                  ) : categoryPhotos.length === 0 ? (
+            {/* Photos Section - Only Photos */}
+            <View style={styles.photosSectionContainer}>
+              <FlatList
+                data={categoryPhotos}
+                keyExtractor={(item, index) => `photo-${item.id || index}`}
+                renderItem={renderPhotoItem}
+                numColumns={3}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.photosGridContainer}
+                onEndReached={loadMorePhotos}
+                onEndReachedThreshold={0.5}
+                ListFooterComponent={photosLoadingMore ? <ActivityIndicator color="#fff" style={{ marginTop: 20 }} /> : null}
+                ListEmptyComponent={
+                  !photosLoading ? (
                     <View style={styles.emptyPhotosContainer}>
-                      <MaterialIcons name="photo-library" size={60} color={theme.colors.text.tertiary} />
-                      <Text style={styles.emptyPhotosText}>No photos in this category yet</Text>
+                      <MaterialIcons name="photo-library" size={48} color="#666" />
+                      <Text style={styles.emptyPhotosText}>No photos found</Text>
                     </View>
-                  ) : (
-                    <FlatList
-                      data={categoryPhotos}
-                      keyExtractor={(item) => item.id}
-                      renderItem={renderPhotoItem}
-                      numColumns={2}
-                      scrollEnabled={false}
-                      columnWrapperStyle={styles.photoRow}
-                      contentContainerStyle={styles.photosGrid}
-                      onEndReached={loadMorePhotos}
-                      onEndReachedThreshold={0.5}
-                      ListFooterComponent={
-                        photosLoading ? (
-                          <ActivityIndicator size="small" color={theme.colors.primary.main} style={{ marginVertical: 20 }} />
-                        ) : null
-                      }
-                    />
-                  )}
-                </View>
-              )}
+                  ) : null
+                }
+              />
             </View>
           </>
         }
@@ -450,16 +707,135 @@ export default function HomeScreen() {
         onClose={() => setStoryViewerVisible(false)}
         onRefresh={loadStories}
       />
-      </View>
-    </SafeAreaView>
+
+      {/* Upload Bottom Sheet Modal */}
+      <Modal
+        visible={showUploadModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowUploadModal(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowUploadModal(false)}
+        >
+          <View style={[styles.bottomSheet, { paddingBottom: insets.bottom + 20 }]}>
+            <View style={styles.bottomSheetHandle} />
+            <Text style={styles.bottomSheetTitle}>Create</Text>
+            
+            <View style={styles.uploadOptions}>
+              <TouchableOpacity 
+                style={styles.uploadOption}
+                onPress={() => handleUploadOptionPress('Story')}
+              >
+                <Ionicons name="book" size={24} color="#6A5ACD" />
+                <Text style={styles.uploadOptionText}>Story</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.uploadOption}
+                onPress={() => handleUploadOptionPress('Photo')}
+              >
+                <Ionicons name="image" size={24} color="#6A5ACD" />
+                <Text style={styles.uploadOptionText}>Photo</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.uploadOption}
+                onPress={() => handleUploadOptionPress('Reels')}
+              >
+                <Ionicons name="film" size={24} color="#6A5ACD" />
+                <Text style={styles.uploadOptionText}>Reels</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.uploadOption}
+                onPress={() => handleUploadOptionPress('Video')}
+              >
+                <Ionicons name="videocam" size={24} color="#6A5ACD" />
+                <Text style={styles.uploadOptionText}>Video</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.uploadOption}
+                onPress={() => handleUploadOptionPress('Live')}
+              >
+                <Ionicons name="radio" size={24} color="#6A5ACD" />
+                <Text style={styles.uploadOptionText}>Live</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.uploadOption}
+                onPress={() => handleUploadOptionPress('Shayari')}
+              >
+                <Ionicons name="create" size={24} color="#6A5ACD" />
+                <Text style={styles.uploadOptionText}>Shayari</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.uploadOption}
+                onPress={() => handleUploadOptionPress('Song')}
+              >
+                <Ionicons name="musical-notes" size={24} color="#6A5ACD" />
+                <Text style={styles.uploadOptionText}>Song</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Music Player Modal - Full Screen */}
+      <Modal
+        visible={showMusicModal}
+        animationType="fade"
+        onRequestClose={() => setShowMusicModal(false)}
+      >
+        <View style={styles.fullScreenMusicContainer}>
+          {/* Header with Search and Close Button */}
+          <View style={styles.musicModalHeader}>
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={() => setShowMusicModal(false)}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="close" size={28} color="#fff" />
+            </TouchableOpacity>
+            
+            {/* Search Bar */}
+            <View style={styles.searchContainer}>
+              <MaterialIcons name="search" size={20} color="#888" style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search songs..."
+                placeholderTextColor="#888"
+                value={searchQuery}
+                onChangeText={handleSearch}
+                clearButtonMode="never" // Removes X button on iOS
+                contextMenuHidden={true} // Disables context menu on Android/iOS
+                selectTextOnFocus={false} // Prevents text selection on focus
+              />
+            </View>
+            
+            <View style={styles.placeholder} />
+          </View>
+          
+          {/* Music Player Cards */}
+          <FlatList
+            data={filteredSongs}
+            keyExtractor={(item) => item.id}
+            renderItem={renderSongItem}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.musicListContainer}
+            style={{ flex: 1 }}
+          />
+        </View>
+      </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeContainer: {
-    flex: 1,
-    backgroundColor: '#000',
-  },
   container: {
     flex: 1,
     backgroundColor: '#000',
@@ -476,14 +852,18 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.md,
+    gap: theme.spacing.xs,
   },
   headerButton: {
     padding: theme.spacing.xs,
+    minWidth: 40,
+    minHeight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   // Photo Categories - HORIZONTAL SCROLL, TEXT ONLY
   photoCategoriesContainer: {
-    paddingVertical: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border.primary,
   },
@@ -492,22 +872,22 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.fontSize.md,
     fontWeight: theme.typography.fontWeight.semibold,
     paddingHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.sm,
+    marginBottom: theme.spacing.xs,
   },
   categoriesScrollContainer: {
     paddingHorizontal: theme.spacing.md,
     gap: theme.spacing.sm,
   },
   categoryButton: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
     marginRight: theme.spacing.sm,
   },
   categoryButtonActive: {
     // No background, only text color will change
   },
   categoryButtonText: {
-    fontSize: theme.typography.fontSize.md,
+    fontSize: theme.typography.fontSize.md, // Increased from sm to md
     color: theme.colors.text.secondary,
     fontWeight: theme.typography.fontWeight.medium,
   },
@@ -517,7 +897,7 @@ const styles = StyleSheet.create({
   },
 
   inlinePhotosContainer: {
-    marginTop: theme.spacing.md,
+    marginTop: theme.spacing.sm,
     paddingHorizontal: theme.spacing.md,
   },
   photosLoadingContainer: {
@@ -544,13 +924,185 @@ const styles = StyleSheet.create({
   photoRow: {
     gap: theme.spacing.sm,
   },
+  appTitle: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: theme.colors.text.primary,
+  },
+  listContent: {
+    paddingBottom: theme.spacing.lg,
+  },
+  // Bottom Sheet Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  bottomSheet: {
+    backgroundColor: '#000000',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 20,
+    paddingHorizontal: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  bottomSheetHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#666666',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  bottomSheetTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: 30,
+  },
+  uploadOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 15,
+  },
+  uploadOption: {
+    width: '30%',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  uploadOptionText: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  // Music Section Styles - Professional Music Player
+  musicSectionContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  musicListContainer: {
+    paddingVertical: theme.spacing.sm,
+  },
+  songCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    marginHorizontal: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
+    borderRadius: theme.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  channelPhoto: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  songInfo: {
+    flex: 1,
+    marginLeft: theme.spacing.md,
+  },
+  songTitle: {
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.text.primary,
+    marginBottom: 2,
+  },
+  artistName: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.secondary,
+  },
+  musicControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  controlButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  playButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(139, 0, 255, 0.3)',
+  },
+  playButtonActive: {
+    backgroundColor: '#8B00FF',
+    borderColor: '#8B00FF',
+  },
+  // Full Screen Music Modal Styles
+  fullScreenMusicContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  musicModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: 0,
+    paddingTop: 20, // Minimum space - just for status bar
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
+  },
+  closeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  musicModalTitle: {
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.text.primary,
+  },
+  placeholder: {
+    width: 40,
+  },
+  // Photos Section Styles
+  photosSectionContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+    minHeight: 400, // Increased height
+  },
+  photosGridContainer: {
+    paddingVertical: theme.spacing.md, // Increased padding
+    paddingHorizontal: theme.spacing.sm,
+  },
   photoItem: {
     flex: 1,
-    aspectRatio: 1,
+    margin: theme.spacing.xs,
     borderRadius: theme.borderRadius.md,
     overflow: 'hidden',
-    marginBottom: theme.spacing.sm,
-    backgroundColor: theme.colors.background.secondary,
+    aspectRatio: 1,
+    position: 'relative',
+    minHeight: 120, // Increased minimum height
   },
   photoImage: {
     width: '100%',
@@ -561,39 +1113,53 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    padding: theme.spacing.sm,
+    padding: theme.spacing.xs,
+    backgroundColor: 'transparent',
   },
   photoTitle: {
     color: '#fff',
     fontSize: theme.typography.fontSize.xs,
     fontWeight: theme.typography.fontWeight.semibold,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   photoMeta: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
   photoStat: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
   },
   photoStatText: {
     color: '#fff',
     fontSize: theme.typography.fontSize.xs,
+    marginLeft: 4,
   },
   photoUser: {
     color: 'rgba(255,255,255,0.8)',
     fontSize: theme.typography.fontSize.xs,
   },
-  appTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: theme.colors.text.primary,
+  // Search Bar Styles
+  searchContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 25,
+    paddingHorizontal: theme.spacing.lg,
+    marginHorizontal: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+    height: 45,
   },
-  listContent: {
-    paddingBottom: theme.spacing.lg,
+  searchIcon: {
+    marginRight: theme.spacing.md,
+  },
+  searchInput: {
+    flex: 1,
+    color: '#fff',
+    fontSize: theme.typography.fontSize.md,
+    paddingVertical: 0,
   },
 });
