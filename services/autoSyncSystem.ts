@@ -145,7 +145,7 @@ class AutoSyncSystem {
           currentHash = this.generateContentHash(reels);
           // Pre-load reel thumbnails
           for (const reel of reels.slice(0, 15)) {
-            const thumbnailUrl = reel.thumbnail_url || reel.url || '';
+            const thumbnailUrl = reel.thumbnail_url || reel.video_url || '';
             if (thumbnailUrl) {
               this.preloadContent(thumbnailUrl, thumbnailUrl);
             }
@@ -217,7 +217,7 @@ class AutoSyncSystem {
           const reels = await reelsApi.getReels();
           // Pre-load reel thumbnails
           for (const reel of reels.slice(0, 15)) {
-            const thumbnailUrl = reel.thumbnail_url || reel.url || '';
+            const thumbnailUrl = reel.thumbnail_url || reel.video_url || '';
             if (thumbnailUrl) {
               this.preloadContent(thumbnailUrl, thumbnailUrl);
             }
@@ -226,8 +226,33 @@ class AutoSyncSystem {
       }
 
       console.log(`✅ Auto-fetch completed for ${contentType}`);
+      
+      // INSTANT SYNC CONFIRMATION: Trigger UI update for new content
+      this.notifyNewContent(contentType);
+      
     } catch (error) {
       console.error(`❌ Auto-fetch failed for ${contentType}:`, error);
+    }
+  }
+
+  // Notify UI about new content for instant display
+  private notifyNewContent(contentType: string) {
+    try {
+      // Store latest content timestamp for UI priority
+      const timestamp = Date.now();
+      AsyncStorage.setItem(`latest_${contentType}_timestamp`, timestamp.toString());
+      
+      // Emit event for UI components to listen
+      if (typeof window !== 'undefined' && window.dispatchEvent) {
+        const event = new CustomEvent('newContentAvailable', {
+          detail: { contentType, timestamp }
+        });
+        window.dispatchEvent(event);
+      }
+      
+      console.log(`🔔 New ${contentType} content ready for instant display`);
+    } catch (error) {
+      console.error('❌ Failed to notify new content:', error);
     }
   }
 

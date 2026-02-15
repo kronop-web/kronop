@@ -130,6 +130,13 @@ function transformVideoData(item: any): LongVideo {
       }
     }
     
+    // SPECIAL FALLBACK: Construct thumbnail from GUID for BunnyCDN
+    if (isThumbnail && videoData.guid) {
+      const fallbackThumbnail = `https://vz-87b9d270-8ab.b-cdn.net/${videoData.guid}/thumbnail.jpg`;
+      console.log(`🖼️ Using BunnyCDN GUID thumbnail: ${fallbackThumbnail}`);
+      return fallbackThumbnail;
+    }
+    
     console.warn(`⚠️ No valid ${isThumbnail ? 'thumbnail' : 'video'} URL found for video:`, videoData.id || 'unknown');
     return '';
   };
