@@ -315,6 +315,38 @@ class DatabaseService {
       throw new Error(`Failed to remove saved content: ${error.message}`);
     }
   }
+
+  // NEW: getAllContent function for sync system comparison
+  static async getAllContent() {
+    await this.connect();
+    try {
+      console.log('📊 DatabaseService.getAllContent called - fetching all content...');
+      
+      // Fetch all content from MongoDB for sync comparison
+      const allContent = await Content.find({})
+        .sort({ created_at: -1 })
+        .populate('user_id', 'username avatar')
+        .lean();
+      
+      console.log(`✅ DatabaseService.getAllContent completed: ${allContent.length} items fetched`);
+      
+      // Transform to consistent format for comparison
+      return allContent.map(item => ({
+        id: item._id.toString(),
+        guid: item.bunny_id || item.id,
+        title: item.title,
+        type: item.type,
+        thumbnail: item.thumbnail,
+        video_url: item.url,
+        created_at: item.created_at,
+        user: item.user_id
+      }));
+      
+    } catch (error) {
+      console.error('❌ DatabaseService.getAllContent failed:', error);
+      throw new Error(`Failed to get all content: ${error.message}`);
+    }
+  }
 }
 
 module.exports = DatabaseService;

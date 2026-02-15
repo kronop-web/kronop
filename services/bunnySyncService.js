@@ -49,8 +49,8 @@ class BunnySyncService {
     try {
       console.log(`🔍 Starting cleanup for ${type} videos...`);
       
-      // Get all videos from MongoDB
-      const mongoVideos = await DatabaseService.getAllContent(type);
+      // Get all videos from MongoDB - FIXED: Use new getAllContent function
+      const mongoVideos = await DatabaseService.getAllContent();
       let deletedCount = 0;
       let verifiedCount = 0;
 
