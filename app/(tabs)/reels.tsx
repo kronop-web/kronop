@@ -1025,6 +1025,62 @@ export default function ReelsScreen() {
     return () => unsubscribe();
   }, []);
 
+  // AGGRESSIVE CLEANUP: Listen for force refresh and cleanup events
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Handle force content refresh
+    const handleForceRefresh = (event: any) => {
+      console.log('🔄 Force refresh event received:', event.detail);
+      
+      // Re-index and filter reels
+      if (event.detail.contentType === 'reels') {
+        // Remove invalid reels from active list
+        setReels(prevReels => {
+          const validReels = prevReels.filter(reel => {
+            // Check if reel is in invalid list
+            const invalidReels = JSON.parse(window.localStorage.getItem('invalidReels') || '[]');
+            const isInvalid = invalidReels.some((invalid: any) => 
+              invalid.videoUrl === reel.video_url || invalid.thumbnailUrl === reel.thumbnail_url
+            );
+            
+            if (isInvalid) {
+              console.log('🗑️ Filtering out invalid reel:', reel.id);
+            }
+            
+            return !isInvalid; // Only keep valid reels
+          });
+          
+          console.log(`✅ Re-indexed reels: ${validReels.length} valid, ${prevReels.length - validReels.length} removed`);
+          return validReels;
+        });
+      }
+    };
+
+    // Handle cleanup invalid content
+    const handleCleanupInvalid = (event: any) => {
+      console.log('🧹 Cleanup invalid content event received:', event.detail);
+      
+      if (event.detail.contentType === 'reels') {
+        // Clear invalid reels cache and refresh
+        window.localStorage.removeItem('invalidReels');
+        
+        // Trigger data refresh
+        refresh();
+      }
+    };
+
+    // Add event listeners
+    window.addEventListener('forceContentRefresh', handleForceRefresh);
+    window.addEventListener('cleanupInvalidContent', handleCleanupInvalid);
+
+    // Cleanup function
+    return () => {
+      window.removeEventListener('forceContentRefresh', handleForceRefresh);
+      window.removeEventListener('cleanupInvalidContent', handleCleanupInvalid);
+    };
+  }, [refresh]);
+
   // MODULAR INTERACTION HANDLERS
   const handleLikeChange = useCallback((itemId: string, isLiked: boolean, count: number) => {
     setStarred(prev => ({ ...prev, [itemId]: isLiked }));

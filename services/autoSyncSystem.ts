@@ -242,15 +242,31 @@ class AutoSyncSystem {
       const timestamp = Date.now();
       AsyncStorage.setItem(`latest_${contentType}_timestamp`, timestamp.toString());
       
-      // Emit event for UI components to listen
+      // FORCE REFRESH WINDOW: Send signal to filter and re-index
       if (typeof window !== 'undefined' && window.dispatchEvent) {
-        const event = new CustomEvent('newContentAvailable', {
-          detail: { contentType, timestamp }
+        // Event for immediate content refresh
+        const refreshEvent = new CustomEvent('forceContentRefresh', {
+          detail: { 
+            contentType, 
+            timestamp,
+            action: 'reindex_and_filter'
+          }
         });
-        window.dispatchEvent(event);
+        window.dispatchEvent(refreshEvent);
+
+        // Event for invalid content cleanup
+        const cleanupEvent = new CustomEvent('cleanupInvalidContent', {
+          detail: { 
+            contentType, 
+            timestamp,
+            action: 'remove_deleted_entries'
+          }
+        });
+        window.dispatchEvent(cleanupEvent);
       }
       
-      console.log(`🔔 New ${contentType} content ready for instant display`);
+      console.log(`🔔 Force refresh signal sent for ${contentType} - reindex and filter active`);
+      
     } catch (error) {
       console.error('❌ Failed to notify new content:', error);
     }
@@ -259,6 +275,40 @@ class AutoSyncSystem {
   // Preload content (video + thumbnail) for instant display
   private async preloadContent(videoUrl: string, thumbnailUrl: string) {
     try {
+      // AGGRESSIVE CLEANUP: Check URL validity before preloading
+      if (!videoUrl || !thumbnailUrl) {
+        console.warn('⚠️ Invalid URLs for preload, skipping');
+        return;
+      }
+
+      // Check if URLs are accessible (HEAD request)
+      const [thumbnailCheck, videoCheck] = await Promise.allSettled([
+        fetch(thumbnailUrl, { method: 'HEAD' }),
+        fetch(videoUrl, { method: 'HEAD' })
+      ]);
+
+      // CLEAR PRELOAD CACHE ON ERROR: Remove invalid content
+      if (thumbnailCheck.status === 'rejected' || videoCheck.status === 'rejected') {
+        console.warn('🗑️ Invalid content detected, clearing from cache');
+        
+        // Remove from active reels if invalid
+        if (typeof window !== 'undefined' && window.localStorage) {
+          const invalidReel = {
+            videoUrl,
+            thumbnailUrl,
+            timestamp: Date.now(),
+            reason: thumbnailCheck.status === 'rejected' ? 'thumbnail_404' : 'video_404'
+          };
+          
+          // Store invalid reel for filtering
+          const invalidReels = JSON.parse(window.localStorage.getItem('invalidReels') || '[]');
+          invalidReels.push(invalidReel);
+          window.localStorage.setItem('invalidReels', JSON.stringify(invalidReels.slice(-100))); // Keep last 100
+        }
+        
+        return; // Don't preload invalid content
+      }
+
       // Combined thumbnail + video preloading
       const promises = [
         // Preload thumbnail first (higher priority)
@@ -279,6 +329,7 @@ class AutoSyncSystem {
       }
     } catch (error) {
       // Silent fail - don't interrupt sync
+      console.warn('⚠️ Preload failed:', error);
     }
   }
 
