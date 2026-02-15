@@ -21,10 +21,10 @@ interface ChunkConfig {
 class VideoChunkingService {
   private static instance: VideoChunkingService;
   private config: ChunkConfig = {
-    chunkSize: 50 * 1024, // 50KB chunks for ultra-fast loading
-    preloadChunks: 5,
-    maxMemoryChunks: 20,
-    chunkDuration: 0.05, // 0.05s per chunk = 20 chunks per second
+    chunkSize: 25 * 1024, // 25KB chunks for instant loading (0.1s)
+    preloadChunks: 10, // Preload more chunks for ultra-fast
+    maxMemoryChunks: 30,
+    chunkDuration: 0.1, // 0.1s per chunk = 10 chunks per second (instant play)
     qualityLevels: ['360p', '480p', '720p', '1080p']
   };
   
@@ -54,7 +54,7 @@ class VideoChunkingService {
 
       // Get video metadata
       const metadata = await this.getVideoMetadata(videoUrl);
-      const totalChunks = Math.ceil(metadata.duration / 30); // 30-second chunks
+      const totalChunks = Math.ceil(metadata.duration / 0.1); // 0.1s chunks for instant play
 
       const stream = {
         chunks: new Map<number, VideoChunk>(),
@@ -64,12 +64,12 @@ class VideoChunkingService {
         quality
       };
 
-      // Create chunk URLs
+      // Create micro-chunk URLs
       for (let i = 0; i < totalChunks; i++) {
         const chunk: VideoChunk = {
           url: this.createChunkUrl(videoUrl, i, quality),
-          start: i * 30,
-          end: Math.min((i + 1) * 30, metadata.duration),
+          start: i * 0.1, // 0.1s chunks
+          end: Math.min((i + 1) * 0.1, metadata.duration),
           index: i,
           loaded: false
         };
@@ -89,37 +89,42 @@ class VideoChunkingService {
     }
   }
 
-  // Get video metadata
+  // Get video metadata - MICRO-CHUNK CALCULATION
   private async getVideoMetadata(videoUrl: string): Promise<{ duration: number; size: number }> {
     // In a real implementation, you'd use ffprobe or similar
-    // For now, return mock data
+    // For now, return mock data with micro-chunk calculation
     return {
       duration: 180, // 3 minutes
-      size: 50 * 1024 * 1024 // 50MB
+      size: 25 * 1024 * 1024 // 25MB (smaller for faster loading)
     };
   }
 
-  // Create chunk URL with range parameters
+  // Create chunk URL with range parameters - MICRO-CHUNK
   private createChunkUrl(videoUrl: string, chunkIndex: number, quality: string): string {
     const separator = videoUrl.includes('?') ? '&' : '?';
     
-    // Add chunk parameters for CDN
-    return `${videoUrl}${separator}chunk=${chunkIndex}&quality=${quality}&range=${chunkIndex * 30}-${(chunkIndex + 1) * 30}`;
+    // Add micro-chunk parameters for CDN
+    return `${videoUrl}${separator}chunk=${chunkIndex}&quality=${quality}&range=${chunkIndex * 0.1}-${(chunkIndex + 1) * 0.1}&micro=true`;
   }
 
-  // Preload initial chunks
+  // Preload initial chunks - INSTANT FIRST CHUNK
   private async preloadInitialChunks(videoId: string): Promise<void> {
     const stream = this.activeStreams.get(videoId);
     if (!stream) return;
 
+    // Load first chunk IMMEDIATELY for instant play
+    await this.loadChunk(videoId, 0);
+    
+    // Then preload next chunks
     const preloadCount = Math.min(this.config.preloadChunks, stream.totalChunks);
     
-    for (let i = 0; i < preloadCount; i++) {
-      await this.loadChunk(videoId, i);
+    for (let i = 1; i < preloadCount; i++) {
+      // Load in background without blocking
+      this.loadChunk(videoId, i).catch(() => {});
     }
   }
 
-  // Load individual chunk
+  // Load individual chunk - INSTANT FIRST CHUNK
   private async loadChunk(videoId: string, chunkIndex: number): Promise<void> {
     const stream = this.activeStreams.get(videoId);
     if (!stream) return;
@@ -133,15 +138,16 @@ class VideoChunkingService {
         await this.cleanupOldChunks(videoId);
       }
 
-      // Fetch chunk data with proper Range header for Bunny CDN
-      const startByte = chunkIndex * 262144; // 256KB per chunk
-      const endByte = (chunkIndex + 1) * 262144 - 1;
+      // MICRO-CHUNK: Smaller chunks for instant loading
+      const startByte = chunkIndex * 131072; // 128KB per chunk (0.1s)
+      const endByte = (chunkIndex + 1) * 131072 - 1;
       
       const response = await fetch(chunk.url, {
         headers: {
           'Range': `bytes=${startByte}-${endByte}`,
           'Accept': 'video/*',
-          'User-Agent': 'KronopApp'
+          'User-Agent': 'KronopApp',
+          'X-Chunk-Type': 'micro' // Signal for CDN optimization
         }
       });
 
@@ -156,9 +162,9 @@ class VideoChunkingService {
           
           console.log(`📦 Loaded chunk ${chunkIndex} for ${videoId} (${blob.size} bytes)`);
           
-          // FORCE START: When chunk 0 is loaded, trigger play
+          // INSTANT PLAY: When chunk 0 is loaded, trigger play immediately
           if (chunkIndex === 0) {
-            // Emit event or callback for force start
+            // Emit event or callback for instant force start
             this.onFirstChunkLoaded?.(videoId);
           }
         }

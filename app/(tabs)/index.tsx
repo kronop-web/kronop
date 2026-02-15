@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, memo } from 'react';
 import { View, FlatList, StyleSheet, TouchableOpacity, Text, ActivityIndicator, Platform, Modal, Dimensions, TextInput } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -480,33 +480,34 @@ export default function HomeScreen() {
     setPhotosPage(prev => prev + 1);
   };
 
-  // Music player handlers
-  const handlePlayPause = (songId: string) => {
+  // Memoized music controls
+  const handlePlayPause = useCallback((songId: string) => {
     if (currentSongId === songId) {
       setIsPlaying(!isPlaying);
     } else {
       setCurrentSongId(songId);
       setIsPlaying(true);
     }
-  };
+  }, [currentSongId, isPlaying]);
 
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     const currentIndex = mockSongs.findIndex(song => song.id === currentSongId);
     if (currentIndex > 0) {
       setCurrentSongId(mockSongs[currentIndex - 1].id);
       setIsPlaying(true);
     }
-  };
+  }, [currentSongId]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     const currentIndex = mockSongs.findIndex(song => song.id === currentSongId);
     if (currentIndex < mockSongs.length - 1) {
       setCurrentSongId(mockSongs[currentIndex + 1].id);
       setIsPlaying(true);
     }
-  };
+  }, [currentSongId]);
 
-  const renderPhotoItem = ({ item }: { item: any }) => (
+  // Memoized photo item renderer
+  const PhotoItem = memo(({ item }: { item: any }) => (
     <TouchableOpacity style={styles.photoItem} activeOpacity={0.8}>
       <Image 
         source={{ uri: item.photo_url }} 
@@ -524,10 +525,10 @@ export default function HomeScreen() {
         </View>
       </View>
     </TouchableOpacity>
-  );
+  ));
 
-  // Search functionality for songs
-  const handleSearch = (query: string) => {
+  // Memoized search functionality
+  const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
     if (query.trim() === '') {
       setFilteredSongs(mockSongs);
@@ -538,10 +539,10 @@ export default function HomeScreen() {
       );
       setFilteredSongs(filtered);
     }
-  };
+  }, []);
 
-  // Song item renderer for music player
-  const renderSongItem = ({ item }: { item: any }) => (
+  // Memoized song item renderer
+  const SongItem = memo(({ item }: { item: any }) => (
     <View style={styles.songCard}>
       {/* Channel Photo - Left Side */}
       <Image 
@@ -587,7 +588,7 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
     </View>
-  );
+  ));
 
   return (
     <View style={styles.container}>
@@ -684,7 +685,7 @@ export default function HomeScreen() {
               <FlatList
                 data={categoryPhotos}
                 keyExtractor={(item, index) => `photo-${item.id || index}`}
-                renderItem={renderPhotoItem}
+                renderItem={({ item }) => <PhotoItem item={item} />}
                 numColumns={3}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.photosGridContainer}
@@ -832,7 +833,7 @@ export default function HomeScreen() {
           <FlatList
             data={filteredSongs}
             keyExtractor={(item) => item.id}
-            renderItem={renderSongItem}
+            renderItem={({ item }) => <SongItem item={item} />}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.musicListContainer}
             style={{ flex: 1 }}

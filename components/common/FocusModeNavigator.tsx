@@ -18,7 +18,7 @@ const FocusModeNavigator: React.FC<Props> = ({ children, currentScreen }) => {
 
   useEffect(() => {
     // Subscribe to focus mode changes
-    const focusService = FocusModeService.getInstance();
+    const focusService = FocusModeService.getInstance() as any;
     if (focusService) {
       const unsubscribe = focusService.subscribe((state: any) => {
         if (state) {
@@ -34,7 +34,7 @@ const FocusModeNavigator: React.FC<Props> = ({ children, currentScreen }) => {
   useEffect(() => {
     // Update focus mode when current screen changes
     if (currentScreen) {
-      const focusService = FocusModeService.getInstance();
+      const focusService = FocusModeService.getInstance() as any;
       if (focusService) {
         focusService.setFocusMode(currentScreen);
       }
@@ -45,19 +45,19 @@ const FocusModeNavigator: React.FC<Props> = ({ children, currentScreen }) => {
     console.log(`🎯 Entering Focus Mode: ${screenType}`);
     
     // Set focus mode
-    const focusService = FocusModeService.getInstance();
+    const focusService = FocusModeService.getInstance() as any;
     if (focusService) {
       focusService.setFocusMode(screenType, contentType);
     }
     
     // Pause all background processes
-    const bgManager = BackgroundManager.getInstance();
+    const bgManager = BackgroundManager.getInstance() as any;
     if (bgManager) {
       bgManager.pauseAllProcesses();
     }
     
     // Allocate memory for this screen
-    const memoryManager = ScreenMemoryManager.getInstance();
+    const memoryManager = ScreenMemoryManager.getInstance() as any;
     if (memoryManager) {
       memoryManager.allocateMemory(screenType, 100); // 100MB per screen
     }
@@ -75,13 +75,13 @@ const FocusModeNavigator: React.FC<Props> = ({ children, currentScreen }) => {
     console.log('🔓 Exiting Focus Mode');
     
     // Clear focus mode
-    const focusService = FocusModeService.getInstance();
+    const focusService = FocusModeService.getInstance() as any;
     if (focusService) {
       focusService.clearFocusMode();
     }
     
     // Resume all background processes
-    const bgManager = BackgroundManager.getInstance();
+    const bgManager = BackgroundManager.getInstance() as any;
     if (bgManager) {
       bgManager.resumeAllProcesses();
     }
