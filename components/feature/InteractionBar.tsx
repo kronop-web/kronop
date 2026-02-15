@@ -3,7 +3,6 @@ import { View, StyleSheet } from 'react-native';
 import { LikeButton } from './LikeButton';
 import { CommentButton } from './CommentButton';
 import { ShareButton } from './ShareButton';
-import { SaveButton } from './SaveButton';
 import { theme } from '../../constants/theme';
 
 interface InteractionBarProps {
@@ -71,16 +70,6 @@ export const InteractionBar: React.FC<InteractionBarProps> = ({
         itemId={itemId}
         initialCount={shares}
         onShareChange={onShareChange}
-        size={size}
-        showCount={showCounts}
-        layout="vertical" // TIKTOK STYLE
-      />
-      
-      <SaveButton
-        itemId={itemId}
-        itemType="reel"
-        isInitiallySaved={isSaved}
-        onSaveChange={onSaveChange}
         size={size}
         showCount={showCounts}
         layout="vertical" // TIKTOK STYLE

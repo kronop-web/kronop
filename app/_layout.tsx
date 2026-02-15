@@ -6,7 +6,6 @@ import { AlertProvider } from '../template/ui';
 import { AuthProvider } from '../template';
 import StatusBarOverlay from '../components/common/StatusBarOverlay';
 import RealtimeSyncManager from '../components/common/AutoSyncManager';
-import { uploadQueue } from '../services/uploadQueue';
 import FocusModeService from '../services/focusModeService';
 import BackgroundManager from '../services/backgroundManager';
 import ScreenMemoryManager from '../services/screenMemoryManager';
@@ -17,8 +16,6 @@ import autoSyncSystem from '../services/autoSyncSystem';
 export default function RootLayout() {
 
   useEffect(() => {
-    void uploadQueue.init();
-    
     // Initialize Ultra-Focus Engine for 0.5ms performance
     console.log('🚀 Initializing Ultra-Focus Engine...');
     
