@@ -38,6 +38,9 @@ import RightButtons from '../../components/feature/RightButtons';
 import RunningTitle from '../../components/feature/RunningTitle';
 import SupportSection from '../../components/feature/SupportSection';
 import ChannelInfo from '../../components/feature/ChannelInfo';
+import FocusModeService from '../../services/focusModeService';
+import BackgroundManager from '../../services/backgroundManager';
+import ScreenMemoryManager from '../../services/screenMemoryManager';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 const REEL_HEIGHT = SCREEN_HEIGHT;
