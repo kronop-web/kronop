@@ -739,17 +739,14 @@ class BunnyContentService {
       };
     }
   }
+}
 
-// Create instance and export both instance and static methods
-const bunnyContentService = new BunnyContentService();
-
-// Export static methods directly
-module.exports = bunnyContentService;
+// Export static methods directly - NO INSTANCE NEEDED
+module.exports.getAllContent = BunnyContentService.getAllContent;
 module.exports.syncAllContent = BunnyContentService.syncAllContent;
 module.exports.syncContentType = BunnyContentService.syncContentType;
 module.exports.syncPhotos = BunnyContentService.syncPhotos;
 module.exports.getContentForFrontend = BunnyContentService.getContentForFrontend;
 module.exports.getAllContentForFrontend = BunnyContentService.getAllContentForFrontend;
-module.exports.getAllContent = BunnyContentService.getAllContent;
 module.exports.forceSyncAll = BunnyContentService.forceSyncAll;
 module.exports.getSyncStatus = BunnyContentService.getSyncStatus;
