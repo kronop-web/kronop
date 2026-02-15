@@ -14,7 +14,7 @@ const MAX_CACHE_AGE = 30000; // 30 seconds cache validity
 interface SyncResult {
   hasNewData: boolean;
   timestamp: number;
-  contentType: 'videos' | 'photos' | 'reels' | 'all';
+  contentType: 'videos' | 'photos' | 'reels' | 'longVideos' | 'all';
   itemCount: number;
 }
 
@@ -33,7 +33,7 @@ class AutoSyncSystem {
     reels: '',
     longVideos: ''
   };
-  private syncTimer: NodeJS.Timeout | null = null;
+  private syncTimer: any = null;
   private isRunning: boolean = false;
 
   constructor() {
@@ -143,6 +143,13 @@ class AutoSyncSystem {
           const reels = await reelsApi.getReels();
           itemCount = Array.isArray(reels) ? reels.length : 0;
           currentHash = this.generateContentHash(reels);
+          // Pre-load reel thumbnails
+          for (const reel of reels.slice(0, 15)) {
+            const thumbnailUrl = reel.thumbnail_url || reel.url || '';
+            if (thumbnailUrl) {
+              this.preloadContent(thumbnailUrl, thumbnailUrl);
+            }
+          }
           break;
 
         case 'longVideos':
@@ -210,8 +217,9 @@ class AutoSyncSystem {
           const reels = await reelsApi.getReels();
           // Pre-load reel thumbnails
           for (const reel of reels.slice(0, 15)) {
-            if (reel.thumbnail_url || reel.url) {
-              this.preloadContent(reel.thumbnail_url || reel.url, reel.thumbnail_url);
+            const thumbnailUrl = reel.thumbnail_url || reel.url || '';
+            if (thumbnailUrl) {
+              this.preloadContent(thumbnailUrl, thumbnailUrl);
             }
           }
           break;
@@ -240,8 +248,8 @@ class AutoSyncSystem {
       if (typeof require !== 'undefined') {
         try {
           const { Image } = require('react-native');
-          Image.prefetch(thumbnailUrl).catch(() => {});
-          Image.prefetch(videoUrl).catch(() => {});
+          if (thumbnailUrl) Image.prefetch(thumbnailUrl).catch(() => {});
+          if (videoUrl) Image.prefetch(videoUrl).catch(() => {});
         } catch {}
       }
     } catch (error) {
