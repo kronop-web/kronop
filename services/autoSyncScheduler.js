@@ -83,6 +83,13 @@ class AutoSyncScheduler {
       console.log('🔍 Checking BunnyCDN for new content...');
       const newContent = await this.checkForNewContent();
       
+      // Check if there was an error fetching content
+      if (newContent.error) {
+        console.error('❌ Failed to fetch content from BunnyCDN, skipping sync');
+        this.updateStats(false, startTime, null, new Error(newContent.error));
+        return;
+      }
+      
       if (newContent.hasNewData) {
         console.log('📦 New content found, syncing to MongoDB...');
         
@@ -119,8 +126,23 @@ class AutoSyncScheduler {
    */
   async checkForNewContent() {
     try {
-      // Get all content from BunnyCDN
+      console.log('🔍 Checking for new content...');
+      
+      // Get all content from BunnyCDN with error handling
       const bunnyContent = await BunnyContentService.getAllContent();
+      
+      if (!bunnyContent || bunnyContent.error) {
+        console.error('❌ BunnyContentService.getAllContent failed:', bunnyContent?.error || 'Unknown error');
+        return {
+          hasNewData: false,
+          data: [],
+          totalBunnyItems: 0,
+          totalMongoItems: 0,
+          error: bunnyContent?.error || 'Failed to fetch from BunnyCDN'
+        };
+      }
+      
+      console.log(`📊 BunnyCDN content: ${bunnyContent.total} items fetched`);
       
       // Get current content from MongoDB for comparison
       const currentContent = await this.getCurrentMongoContent();
@@ -128,16 +150,24 @@ class AutoSyncScheduler {
       // Find new items (items in BunnyCDN but not in MongoDB)
       const newItems = this.findNewItems(bunnyContent, currentContent);
       
+      console.log(`🆕 New items found: ${newItems.length}`);
+      
       return {
         hasNewData: newItems.length > 0,
         data: newItems,
-        totalBunnyItems: Object.values(bunnyContent).flat().length,
+        totalBunnyItems: bunnyContent.total || 0,
         totalMongoItems: currentContent.length
       };
       
     } catch (error) {
       console.error('❌ Error checking for new content:', error);
-      throw error;
+      return {
+        hasNewData: false,
+        data: [],
+        totalBunnyItems: 0,
+        totalMongoItems: 0,
+        error: error.message
+      };
     }
   }
 

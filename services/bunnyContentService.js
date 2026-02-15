@@ -689,22 +689,56 @@ class BunnyContentService {
     return await this.syncAllContent();
   }
   
-  static async getSyncStatus() {
+  static async getAllContentForFrontend(page = 1, limit = 20, fields = null) {
     try {
       const types = ['Reel', 'Video', 'Live', 'Photo', 'Story'];
-      const status = {};
+      const results = {};
       
       for (const type of types) {
-        const count = await DatabaseService.getContentCount(type);
-        status[type.toLowerCase()] = count;
+        const content = await this.getContentForFrontend(type, page, limit, fields);
+        results[type] = content;
       }
       
-      return status;
+      return results;
     } catch (error) {
-      throw new Error(`Failed to get sync status: ${error.message}`);
+      console.error('❌ Error fetching all content:', error);
+      return {};
     }
   }
-}
+
+  // NEW: getAllContent function for auto-sync scheduler
+  static async getAllContent(page = 1, limit = 50) {
+    try {
+      console.log('🔄 BunnyContentService.getAllContent called...');
+      
+      // Fetch reels and long videos together with thumbnails
+      const [reels, videos] = await Promise.allSettled([
+        this.getContentForFrontend('Reel', page, limit, ['id', 'title', 'thumbnail_url', 'video_url', 'guid', 'created_at']),
+        this.getContentForFrontend('Video', page, limit, ['id', 'title', 'thumbnail_url', 'video_url', 'guid', 'created_at'])
+      ]);
+
+      const result = {
+        reels: reels.status === 'fulfilled' ? reels.value : [],
+        videos: videos.status === 'fulfilled' ? videos.value : [],
+        timestamp: Date.now(),
+        total: ((reels.status === 'fulfilled' ? reels.value.length : 0) + 
+                (videos.status === 'fulfilled' ? videos.value.length : 0))
+      };
+
+      console.log(`✅ getAllContent completed: ${result.total} items fetched`);
+      return result;
+      
+    } catch (error) {
+      console.error('❌ BunnyContentService.getAllContent failed:', error);
+      return {
+        reels: [],
+        videos: [],
+        timestamp: Date.now(),
+        total: 0,
+        error: error.message
+      };
+    }
+  }
 
 // Create instance and export both instance and static methods
 const bunnyContentService = new BunnyContentService();
@@ -716,5 +750,6 @@ module.exports.syncContentType = BunnyContentService.syncContentType;
 module.exports.syncPhotos = BunnyContentService.syncPhotos;
 module.exports.getContentForFrontend = BunnyContentService.getContentForFrontend;
 module.exports.getAllContentForFrontend = BunnyContentService.getAllContentForFrontend;
+module.exports.getAllContent = BunnyContentService.getAllContent;
 module.exports.forceSyncAll = BunnyContentService.forceSyncAll;
 module.exports.getSyncStatus = BunnyContentService.getSyncStatus;
