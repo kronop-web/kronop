@@ -92,30 +92,6 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <User size={24} color={color} strokeWidth={2} />,
         }}
       />
-      <Tabs.Screen
-        name="upload"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="search"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="photos"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="image-search"
-        options={{
-          href: null,
-        }}
-      />
     </Tabs>
     </View>
   );

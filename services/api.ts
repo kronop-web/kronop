@@ -4,39 +4,14 @@ import { reelsService } from './reelsService';
 import { videosService } from './videosService';
 import { authService } from './authService';
 
-// Get base URL from environment
+// Get base URL from environment - SINGLE SOURCE OF TRUTH
 const getBaseUrl = () => {
   console.log('[API_CONFIG]: Getting base URL...');
   
-  // Check for environment variable first
-  if (process.env.EXPO_PUBLIC_API_URL) {
-    const url = process.env.EXPO_PUBLIC_API_URL;
-    console.log('[API_CONFIG]: Using EXPO_PUBLIC_API_URL:', url);
-    return url;
-  }
-  
-  // Check for KOYEB_URL from config
-  if (API_KEYS.KOYEB_URL) {
-    const url = API_KEYS.KOYEB_URL;
-    console.log('[API_CONFIG]: Using KOYEB_URL:', url);
-    return url;
-  }
-  
-  // Universal development URL - works on all devices in the same network
-  if (__DEV__) {
-    const url = process.env.DEV_API_URL || 'http://0.0.0.0:3000';
-    console.log('[API_CONFIG]: Using development URL:', url);
-    return url;
-  }
-  
-  // Production URL from environment
-  const prodUrl = process.env.PRODUCTION_API_URL;
-  if (prodUrl) {
-    console.log('[API_CONFIG]: Using production URL:', prodUrl);
-    return prodUrl;
-  }
-  
-  throw new Error('[API_CONFIG]: No API URL configured. Set EXPO_PUBLIC_API_URL or KOYEB_URL');
+  // Use only KRONOP_API_URL - single source of truth
+  const url = API_KEYS.KRONOP_API_URL;
+  console.log('[API_CONFIG]: Using KRONOP_API_URL:', url);
+  return url;
 };
 
 const base = getBaseUrl();
@@ -144,258 +119,8 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
   }
 };
 
-const getUploadUrl = async (contentType: string, fileName: string, fileSize: number, metadata?: any) => {
-  console.log(`[${contentType.toUpperCase()}_UPLOAD]: Getting URL...`);
-  
-  try {
-    const response = await apiCall('/upload/url', {
-      method: 'POST',
-      body: JSON.stringify({
-        contentType,
-        fileName,
-        fileSize,
-        metadata
-      })
-    });
-    
-    console.log(`[${contentType.toUpperCase()}_UPLOAD]: URL received`);
-    return response;
-  } catch (error) {
-    console.error(`[${contentType.toUpperCase()}_UPLOAD]: URL error`, error instanceof Error ? error.message : String(error));
-    throw error;
-  }
-};
-
-export const uploadReel = async (file: any, metadata: any) => {
-  console.log('[REELS_UPLOAD]: START - ROCKET SPEED');
-  
-  try {
-    // ROCKET UPLOAD: Instant connection to BunnyCDN
-    const { rocketUpload } = await import('./rocketUploadService');
-    const result = await rocketUpload.uploadReelRocket(file, metadata);
-    
-    if (!result.success) {
-      throw new Error(result.error || 'Rocket upload failed');
-    }
-    
-    console.log('[REELS_UPLOAD]: ROCKET SUCCESS', { uploadTime: result.uploadTime });
-    return result;
-    
-  } catch (error) {
-    console.error('[REELS_UPLOAD]: ROCKET ERROR', error);
-    throw error;
-  }
-};
-
-export const uploadVideo = async (file: any, metadata: any) => {
-  console.log('[VIDEO_UPLOAD]: START - ROCKET SPEED');
-  
-  try {
-    // ROCKET UPLOAD: Instant connection to BunnyCDN
-    const { rocketUpload } = await import('./rocketUploadService');
-    const result = await rocketUpload.uploadVideoRocket(file, metadata);
-    
-    if (!result.success) {
-      throw new Error(result.error || 'Rocket upload failed');
-    }
-    
-    console.log('[VIDEO_UPLOAD]: ROCKET SUCCESS', { uploadTime: result.uploadTime });
-    return result;
-    
-  } catch (error) {
-    console.error('[VIDEO_UPLOAD]: ROCKET ERROR', error);
-    throw error;
-  }
-};
-
-export const uploadPhoto = async (file: any, metadata: any) => {
-  console.log('[PHOTO_UPLOAD]: START');
-  
-  // BYPASS LOGIN: Add dummy user ID for testing
-  const enhancedMetadata = {
-    ...metadata,
-    userId: 'guest_user' // Dummy user ID for testing
-  };
-  
-  const fileName = file.name || file.fileName || `photo_${Date.now()}.jpg`;
-  const fileSize = file.size || file.fileSize || 0;
-  
-  console.log('[PHOTO_UPLOAD]: Details', { fileName, fileSize });
-  
-  try {
-    // Step 1: Upload to BunnyCDN via PhotoBridge
-    const { PhotoBridge } = await import('./bridges/PhotoBridge');
-    const bridge = new PhotoBridge();
-    
-    const bunnyResult = await bridge.uploadPhoto(file, enhancedMetadata);
-    
-    if (!bunnyResult.success) {
-      throw new Error(bunnyResult.error || 'BunnyCDN upload failed');
-    }
-    
-    console.log('[PHOTO_UPLOAD]: BunnyCDN upload successful:', bunnyResult);
-    
-    // Step 2: Save metadata to MongoDB
-    console.log('[PHOTO_UPLOAD]: Saving metadata to MongoDB...');
-    const photoData = {
-      title: enhancedMetadata.title || bunnyResult.fileName,
-      description: enhancedMetadata.description,
-      bunny_id: bunnyResult.fileName, // Server expects 'bunny_id'
-      url: bunnyResult.url, // Server expects 'url'
-      thumbnail: bunnyResult.url, // Server expects 'thumbnail'
-      category: enhancedMetadata.category,
-      tags: enhancedMetadata.tags,
-      userId: 'guest_user' // Server expects 'userId'
-    };
-    
-    const response = await apiCall('/upload/photo', {
-      method: 'POST',
-      body: JSON.stringify(photoData)
-    });
-    
-    console.log('[PHOTO_UPLOAD]: MongoDB save successful:', response);
-    return { success: true, photoId: bunnyResult.fileName, url: bunnyResult.url, data: response };
-    
-  } catch (error) {
-    console.error('[PHOTO_UPLOAD]: ERROR', error instanceof Error ? error.message : String(error));
-    throw error;
-  }
-};
-
-export const uploadStory = async (file: any, metadata: any) => {
-  console.log('[STORY_UPLOAD]: START');
-  
-  // BYPASS LOGIN: Add dummy user ID for testing
-  const enhancedMetadata = {
-    ...metadata,
-    userId: 'guest_user' // Dummy user ID for testing
-  };
-  
-  const fileName = file.name || file.fileName || `story_${Date.now()}.jpg`;
-  const fileSize = file.size || file.fileSize || 0;
-  
-  console.log('[STORY_UPLOAD]: Details', { fileName, fileSize });
-  
-  try {
-    // Step 1: Upload to BunnyCDN via StoryBridge
-    const { StoryBridge } = await import('./bridges/StoryBridge');
-    const bridge = new StoryBridge();
-    
-    const bunnyResult = await bridge.uploadStory(file, enhancedMetadata);
-    
-    if (!bunnyResult.success) {
-      throw new Error(bunnyResult.error || 'BunnyCDN upload failed');
-    }
-    
-    console.log('[STORY_UPLOAD]: BunnyCDN upload successful:', bunnyResult);
-    
-    // Step 2: Save metadata to MongoDB
-    console.log('[STORY_UPLOAD]: Saving metadata to MongoDB...');
-    const storyData = {
-      title: enhancedMetadata.title || bunnyResult.fileName,
-      description: enhancedMetadata.description,
-      bunny_id: bunnyResult.fileName, // Server expects 'bunny_id'
-      url: bunnyResult.url, // Server expects 'url'
-      thumbnail: bunnyResult.url, // Server expects 'thumbnail'
-      tags: enhancedMetadata.tags,
-      userId: 'guest_user' // Server expects 'userId'
-    };
-    
-    const response = await apiCall('/upload/story', {
-      method: 'POST',
-      body: JSON.stringify(storyData)
-    });
-    
-    console.log('[STORY_UPLOAD]: MongoDB save successful:', response);
-    return { success: true, storyId: bunnyResult.fileName, url: bunnyResult.url, data: response };
-    
-  } catch (error) {
-    console.error('[STORY_UPLOAD]: ERROR', error instanceof Error ? error.message : String(error));
-    throw error;
-  }
-};
-
-export const uploadLive = async (metadata: any) => {
-  console.log('[LIVE_UPLOAD]: START');
-  
-  // BYPASS LOGIN: Add dummy user ID for testing
-  const enhancedMetadata = {
-    ...metadata,
-    userId: 'guest_user' // Dummy user ID for testing
-  };
-  
-  console.log('[LIVE_UPLOAD]: Details', enhancedMetadata);
-  
-  try {
-    const response = await apiCall('/content/live/upload', {
-      method: 'POST',
-      body: JSON.stringify(enhancedMetadata)
-    });
-    
-    console.log('[LIVE_UPLOAD]: SUCCESS', response);
-    return response;
-  } catch (error) {
-    console.error('[LIVE_UPLOAD]: ERROR', error instanceof Error ? error.message : String(error));
-    throw error;
-  }
-};
-
-export const uploadShayari = async (file: any, metadata: any) => {
-  console.log('[SHAYARI_UPLOAD]: START');
-  
-  // BYPASS LOGIN: Add dummy user ID for testing
-  const enhancedMetadata = {
-    ...metadata,
-    userId: 'guest_user' // Dummy user ID for testing
-  };
-  
-  const fileName = file.name || file.fileName || `shayari_${Date.now()}.jpg`;
-  const fileSize = file.size || file.fileSize || 0;
-  
-  console.log('[SHAYARI_UPLOAD]: Details', { fileName, fileSize });
-  
-  try {
-    // Step 1: Upload to BunnyCDN via ShayariBridge
-    const { ShayariBridge } = await import('./bridges/ShayariBridge');
-    const bridge = new ShayariBridge();
-    
-    const bunnyResult = await bridge.uploadShayari(file, enhancedMetadata);
-    
-    if (!bunnyResult.success) {
-      throw new Error(bunnyResult.error || 'BunnyCDN upload failed');
-    }
-    
-    console.log('[SHAYARI_UPLOAD]: BunnyCDN upload successful:', bunnyResult);
-    
-    // Step 2: Save metadata to MongoDB
-    console.log('[SHAYARI_UPLOAD]: Saving metadata to MongoDB...');
-    const shayariData = {
-      title: enhancedMetadata.title || bunnyResult.fileName,
-      description: enhancedMetadata.description,
-      bunny_id: bunnyResult.fileName, // Server expects 'bunny_id'
-      url: bunnyResult.url, // Server expects 'url'
-      thumbnail: bunnyResult.url, // Server expects 'thumbnail'
-      tags: enhancedMetadata.tags,
-      userId: 'guest_user', // Server expects 'userId'
-      shayari_text: enhancedMetadata.content, // Server expects 'shayari_text'
-      shayari_author: enhancedMetadata.author // Server expects 'shayari_author'
-    };
-    
-    const response = await apiCall('/upload/shayari', {
-      method: 'POST',
-      body: JSON.stringify(shayariData)
-    });
-    
-    console.log('[SHAYARI_UPLOAD]: MongoDB save successful:', response);
-    return { success: true, shayariId: bunnyResult.fileName, url: bunnyResult.url, data: response };
-    
-  } catch (error) {
-    console.error('[SHAYARI_UPLOAD]: ERROR', error instanceof Error ? error.message : String(error));
-    throw error;
-  }
-};
-
 // ==================== CONTENT MANAGEMENT API ====================
+// Upload system completely removed - no upload functionality
 export const photosApi = {
   getPhotos: async (page = 1, limit = 20, category?: string) => {
     const params = new URLSearchParams({
@@ -414,9 +139,8 @@ export const photosApi = {
     return await apiCall('/photos/user');
   },
 
-  uploadPhoto: async (file: any, metadata: any) => {
-    return await uploadPhoto(file, metadata);
-  },
+  // Upload functionality removed
+  // uploadPhoto: REMOVED
 
   updatePhoto: async (photoId: string, updates: any) => {
     return await apiCall(`/photos/${photoId}`, {
@@ -454,18 +178,8 @@ export const shayariPhotosApi = {
     return await apiCall('/content/shayari-photo');
   },
 
-  uploadShayariPhoto: async (file: any, metadata: any) => {
-    console.log('[UPLOADING START] Uploading shayari photo:', { fileName: file.name, fileSize: file.size });
-    
-    try {
-      const response = await uploadShayari(file, metadata);
-      console.log('[UPLOADING SUCCESS] Shayari photo uploaded:', response);
-      return response;
-    } catch (error) {
-      console.error('[UPLOADING ERROR] Shayari photo upload failed:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
-    }
-  },
+  // Upload functionality removed
+  // uploadShayariPhoto: REMOVED
 
   updateShayariPhoto: async (photoId: string, updates: any) => {
     return await apiCall(`/shayari-photos/${photoId}`, {
@@ -516,15 +230,8 @@ export const reelsApi = {
     }
   },
 
-  uploadReel: async (file: any, metadata: any) => {
-    try {
-      console.log('🎬 Calling reelsService.uploadReel...');
-      return await reelsService.uploadReel(file, metadata);
-    } catch (error) {
-      console.error('🎬 reelsApi.uploadReel error:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
-    }
-  },
+  // Upload functionality removed
+  // uploadReel: REMOVED
 
   updateReel: async (reelId: string, updates: any) => {
     try {
@@ -592,15 +299,8 @@ export const videosApi = {
     }
   },
 
-  uploadVideo: async (file: any, metadata: any) => {
-    try {
-      console.log('[VIDEO_UPLOAD]: Starting upload...');
-      return await uploadVideo(file, metadata);
-    } catch (error) {
-      console.error('[VIDEO_UPLOAD]: ERROR', error instanceof Error ? error.message : String(error));
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
-    }
-  },
+  // Upload functionality removed
+  // uploadVideo: REMOVED
 
   updateVideo: async (videoId: string, updates: any) => {
     try {
@@ -647,9 +347,8 @@ export const storiesApi = {
     return await apiCall(`/stories?${params}`);
   },
 
-  uploadStory: async (file: any, metadata: any) => {
-    return await uploadStory(file, metadata);
-  },
+  // Upload functionality removed
+  // uploadStory: REMOVED
   
   // Add other methods as needed to match pattern
 };
@@ -664,9 +363,8 @@ export const liveApi = {
     return await apiCall(`/live?${params}`);
   },
 
-  uploadLive: async (metadata: any) => {
-    return await uploadLive(metadata);
-  },
+  // Upload functionality removed
+  // uploadLive: REMOVED
 };
 
 
