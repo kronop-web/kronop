@@ -293,6 +293,7 @@ class AutoSyncSystem {
         
         // Remove from active reels if invalid
         if (typeof window !== 'undefined' && window.localStorage) {
+          // Web platform - use localStorage
           const invalidReel = {
             videoUrl,
             thumbnailUrl,
@@ -300,10 +301,23 @@ class AutoSyncSystem {
             reason: thumbnailCheck.status === 'rejected' ? 'thumbnail_404' : 'video_404'
           };
           
-          // Store invalid reel for filtering
           const invalidReels = JSON.parse(window.localStorage.getItem('invalidReels') || '[]');
           invalidReels.push(invalidReel);
-          window.localStorage.setItem('invalidReels', JSON.stringify(invalidReels.slice(-100))); // Keep last 100
+          window.localStorage.setItem('invalidReels', JSON.stringify(invalidReels.slice(-100)));
+        } else {
+          // React Native platform - use AsyncStorage
+          const invalidReel = {
+            videoUrl,
+            thumbnailUrl,
+            timestamp: Date.now(),
+            reason: thumbnailCheck.status === 'rejected' ? 'thumbnail_404' : 'video_404'
+          };
+          
+          AsyncStorage.getItem('invalidReels').then(invalidReelsStr => {
+            const invalidReels = invalidReelsStr ? JSON.parse(invalidReelsStr) : [];
+            invalidReels.push(invalidReel);
+            AsyncStorage.setItem('invalidReels', JSON.stringify(invalidReels.slice(-100)));
+          }).catch(() => {});
         }
         
         return; // Don't preload invalid content

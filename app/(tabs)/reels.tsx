@@ -1025,60 +1025,101 @@ export default function ReelsScreen() {
     return () => unsubscribe();
   }, []);
 
-  // AGGRESSIVE CLEANUP: Listen for force refresh and cleanup events
+  // AGGRESSIVE CLEANUP: React Native Alternative to Window Events
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    // Handle force content refresh
-    const handleForceRefresh = (event: any) => {
-      console.log('🔄 Force refresh event received:', event.detail);
-      
-      // Re-index and filter reels
-      if (event.detail.contentType === 'reels') {
-        // Remove invalid reels from active list
-        setReels(prevReels => {
-          const validReels = prevReels.filter(reel => {
-            // Check if reel is in invalid list
-            const invalidReels = JSON.parse(window.localStorage.getItem('invalidReels') || '[]');
-            const isInvalid = invalidReels.some((invalid: any) => 
-              invalid.videoUrl === reel.video_url || invalid.thumbnailUrl === reel.thumbnail_url
-            );
-            
-            if (isInvalid) {
-              console.log('🗑️ Filtering out invalid reel:', reel.id);
-            }
-            
-            return !isInvalid; // Only keep valid reels
-          });
-          
-          console.log(`✅ Re-indexed reels: ${validReels.length} valid, ${prevReels.length - validReels.length} removed`);
-          return validReels;
-        });
-      }
-    };
-
-    // Handle cleanup invalid content
-    const handleCleanupInvalid = (event: any) => {
-      console.log('🧹 Cleanup invalid content event received:', event.detail);
-      
-      if (event.detail.contentType === 'reels') {
-        // Clear invalid reels cache and refresh
-        window.localStorage.removeItem('invalidReels');
+    // PLATFORM CHECK: Use React Native alternatives instead of window events
+    if (Platform.OS === 'web') {
+      // Web platform - use window events
+      const handleForceRefresh = (event: any) => {
+        console.log('🔄 Force refresh event received:', event.detail);
         
-        // Trigger data refresh
-        refresh();
-      }
-    };
+        if (event.detail.contentType === 'reels') {
+          setReels(prevReels => {
+            const validReels = prevReels.filter(reel => {
+              const invalidReels = JSON.parse(window.localStorage.getItem('invalidReels') || '[]');
+              const isInvalid = invalidReels.some((invalid: any) => 
+                invalid.videoUrl === reel.video_url || invalid.thumbnailUrl === reel.thumbnail_url
+              );
+              
+              if (isInvalid) {
+                console.log('🗑️ Filtering out invalid reel:', reel.id);
+              }
+              
+              return !isInvalid;
+            });
+            
+            console.log(`✅ Re-indexed reels: ${validReels.length} valid, ${prevReels.length - validReels.length} removed`);
+            return validReels;
+          });
+        }
+      };
 
-    // Add event listeners
-    window.addEventListener('forceContentRefresh', handleForceRefresh);
-    window.addEventListener('cleanupInvalidContent', handleCleanupInvalid);
+      const handleCleanupInvalid = (event: any) => {
+        console.log('🧹 Cleanup invalid content event received:', event.detail);
+        
+        if (event.detail.contentType === 'reels') {
+          window.localStorage.removeItem('invalidReels');
+          refresh();
+        }
+      };
 
-    // Cleanup function
-    return () => {
-      window.removeEventListener('forceContentRefresh', handleForceRefresh);
-      window.removeEventListener('cleanupInvalidContent', handleCleanupInvalid);
-    };
+      window.addEventListener('forceContentRefresh', handleForceRefresh);
+      window.addEventListener('cleanupInvalidContent', handleCleanupInvalid);
+
+      return () => {
+        window.removeEventListener('forceContentRefresh', handleForceRefresh);
+        window.removeEventListener('cleanupInvalidContent', handleCleanupInvalid);
+      };
+
+    } else {
+      // React Native platform - use AsyncStorage and focus effects
+      const cleanupInvalidReels = async () => {
+        try {
+          // Get invalid reels from AsyncStorage
+          const invalidReelsStr = await AsyncStorage.getItem('invalidReels');
+          const invalidReels = invalidReelsStr ? JSON.parse(invalidReelsStr) : [];
+          
+          if (invalidReels.length > 0) {
+            console.log('🧹 Cleaning up invalid reels in React Native:', invalidReels.length);
+            
+            // Filter out invalid reels
+            setReels(prevReels => {
+              const validReels = prevReels.filter(reel => {
+                const isInvalid = invalidReels.some((invalid: any) => 
+                  invalid.videoUrl === reel.video_url || invalid.thumbnailUrl === reel.thumbnail_url
+                );
+                
+                if (isInvalid) {
+                  console.log('🗑️ Filtering out invalid reel:', reel.id);
+                }
+                
+                return !isInvalid;
+              });
+              
+              console.log(`✅ Re-indexed reels: ${validReels.length} valid, ${prevReels.length - validReels.length} removed`);
+              return validReels;
+            });
+            
+            // Clear invalid reels cache
+            await AsyncStorage.removeItem('invalidReels');
+          }
+        } catch (error) {
+          console.error('❌ Error cleaning invalid reels:', error);
+        }
+      };
+
+      // Run cleanup on screen focus
+      const unsubscribeFocus = useFocusEffect(() => {
+        cleanupInvalidReels();
+      });
+
+      return () => {
+        // Cleanup focus effect if needed
+        if (unsubscribeFocus) {
+          unsubscribeFocus();
+        }
+      };
+    }
   }, [refresh]);
 
   // MODULAR INTERACTION HANDLERS
