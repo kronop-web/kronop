@@ -1067,15 +1067,13 @@ export default function ReelsScreen() {
     cleanupInvalidReels();
     
     // Run cleanup on screen focus
-    const unsubscribeFocus = useFocusEffect(() => {
+    useFocusEffect(() => {
       cleanupInvalidReels();
     });
 
     return () => {
       // Cleanup focus effect if needed
-      if (unsubscribeFocus) {
-        unsubscribeFocus();
-      }
+      // Note: useFocusEffect doesn't return unsubscribe, so no cleanup needed
     };
   }, []);
 
