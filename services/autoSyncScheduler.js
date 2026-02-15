@@ -202,9 +202,11 @@ class AutoSyncScheduler {
    */
   async getCurrentMongoContent() {
     try {
-      // This would use your existing database service
-      // For now, return empty array (will be implemented with actual DB call)
-      return [];
+      // Use the existing DatabaseService.getAllContent function
+      const DatabaseService = require('./databaseService');
+      const mongoContent = await DatabaseService.getAllContent();
+      console.log(`📊 Retrieved ${mongoContent.length} items from MongoDB for comparison`);
+      return mongoContent;
     } catch (error) {
       console.error('❌ Error getting current MongoDB content:', error);
       return [];
@@ -279,14 +281,66 @@ class AutoSyncScheduler {
     try {
       console.log('🗑️ Running cleanup for deleted content...');
       
-      // Use existing BunnySync cleanup
-      const cleanupResult = await BunnySyncService.cleanupAllMissingVideos();
+      // Get current MongoDB content
+      const mongoContent = await this.getCurrentMongoContent();
       
-      const totalDeleted = Object.values(cleanupResult).reduce((sum, result) => sum + (result.deleted || 0), 0);
+      // Get current BunnyCDN content
+      const bunnyContent = await this.checkForNewContent();
+      
+      if (bunnyContent.error) {
+        console.error('❌ Cannot cleanup - failed to fetch BunnyCDN content');
+        return { deletedCount: 0, error: 'Failed to fetch BunnyCDN content' };
+      }
+      
+      // Create sets for comparison
+      const bunnyGuids = new Set();
+      
+      // Collect all GUIDs from BunnyCDN
+      ['reels', 'videos', 'live'].forEach(type => {
+        if (bunnyContent.data && bunnyContent.data[type]) {
+          bunnyContent.data[type].forEach(item => {
+            const guid = item.guid || item.id || item.videoId;
+            if (guid) bunnyGuids.add(guid);
+          });
+        }
+      });
+      
+      console.log(`🔍 BunnyCDN has ${bunnyGuids.size} items, MongoDB has ${mongoContent.length} items`);
+      
+      // Find items in MongoDB but not in BunnyCDN
+      const itemsToDelete = mongoContent.filter(mongoItem => {
+        const mongoGuid = mongoItem.guid || mongoItem.id || mongoItem.bunny_id;
+        return mongoGuid && !bunnyGuids.has(mongoGuid);
+      });
+      
+      console.log(`🎯 Found ${itemsToDelete.length} items to delete from MongoDB`);
+      
+      // Delete missing items from MongoDB
+      const DatabaseService = require('./databaseService');
+      let deletedCount = 0;
+      
+      for (const itemToDelete of itemsToDelete) {
+        try {
+          await DatabaseService.deleteContent(itemToDelete.id, itemToDelete.type);
+          console.log(`🗑️ Deleted missing item: ${itemToDelete.title || itemToDelete.id} (${itemToDelete.type})`);
+          deletedCount++;
+        } catch (error) {
+          console.error(`❌ Failed to delete item ${itemToDelete.id}:`, error.message);
+        }
+      }
+      
+      console.log(`✅ Cleanup completed: ${deletedCount} items deleted from MongoDB`);
       
       return {
-        deletedCount: totalDeleted,
-        details: cleanupResult
+        deletedCount,
+        totalChecked: mongoContent.length,
+        bunnyTotal: bunnyGuids.size,
+        itemsDeleted: itemsToDelete.map(item => ({
+          id: item.id,
+          title: item.title,
+          type: item.type,
+          guid: item.guid
+        }))
       };
       
     } catch (error) {
