@@ -489,8 +489,8 @@ export default function ProfileScreen() {
                 key={reel.id || reel._id} 
                 style={[styles.reelItem, { width: itemWidth }]}
                 onPress={() => router.push({
-                  pathname: '/profile/[contentType]',
-                  params: { contentType: 'reels' }
+                  pathname: '/video/[id]',
+                  params: { id: reel?.id?.toString() || '' }
                 })}
               >
                 <Image 
@@ -526,8 +526,8 @@ export default function ProfileScreen() {
                 key={video.id || video._id} 
                 style={[styles.videoItem, { width: itemWidth }]}
                 onPress={() => router.push({
-                  pathname: '/profile/[contentType]',
-                  params: { contentType: 'videos' }
+                  pathname: '/video/[id]',
+                  params: { id: video?.id?.toString() || '' }
                 })}
               >
                 <Image 
@@ -560,8 +560,8 @@ export default function ProfileScreen() {
                 key={live.id || live._id} 
                 style={[styles.liveItem, { width: itemWidth }]}
                 onPress={() => router.push({
-                  pathname: '/profile/[contentType]',
-                  params: { contentType: 'live' }
+                  pathname: '/video/[id]',
+                  params: { id: live?.id?.toString() || '' }
                 })}
               >
                 <Image 
@@ -594,8 +594,8 @@ export default function ProfileScreen() {
                 key={photo.id || photo._id} 
                 style={[styles.photoItem, { width: itemWidth }]}
                 onPress={() => router.push({
-                  pathname: '/profile/[contentType]',
-                  params: { contentType: 'photos' }
+                  pathname: '/video/[id]',
+                  params: { id: photo?.id?.toString() || '' }
                 })}
               >
                 <Image 

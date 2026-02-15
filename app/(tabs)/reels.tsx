@@ -1202,7 +1202,7 @@ export default function ReelsScreen() {
             console.log(`⚡ Auto-trigger next player for reel ${nextIndex}`);
             
             // TRIPLE-BUFFER: Pre-activate next player (index 1)
-            if (playerRefs.current[1]) {
+            if (playerRefs.current[1] && playerRefs.current[1] !== null) {
               safePlayerPlay(1); // Play next player immediately
             }
             
