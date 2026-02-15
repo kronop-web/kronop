@@ -242,30 +242,8 @@ class AutoSyncSystem {
       const timestamp = Date.now();
       AsyncStorage.setItem(`latest_${contentType}_timestamp`, timestamp.toString());
       
-      // FORCE REFRESH WINDOW: Send signal to filter and re-index
-      if (typeof window !== 'undefined' && window.dispatchEvent) {
-        // Event for immediate content refresh
-        const refreshEvent = new CustomEvent('forceContentRefresh', {
-          detail: { 
-            contentType, 
-            timestamp,
-            action: 'reindex_and_filter'
-          }
-        });
-        window.dispatchEvent(refreshEvent);
-
-        // Event for invalid content cleanup
-        const cleanupEvent = new CustomEvent('cleanupInvalidContent', {
-          detail: { 
-            contentType, 
-            timestamp,
-            action: 'remove_deleted_entries'
-          }
-        });
-        window.dispatchEvent(cleanupEvent);
-      }
-      
-      console.log(`🔔 Force refresh signal sent for ${contentType} - reindex and filter active`);
+      // React Native: Direct function calls instead of events
+      console.log(`🔔 New ${contentType} content ready - React Native direct notification`);
       
     } catch (error) {
       console.error('❌ Failed to notify new content:', error);
@@ -292,33 +270,19 @@ class AutoSyncSystem {
         console.warn('🗑️ Invalid content detected, clearing from cache');
         
         // Remove from active reels if invalid
-        if (typeof window !== 'undefined' && window.localStorage) {
-          // Web platform - use localStorage
-          const invalidReel = {
-            videoUrl,
-            thumbnailUrl,
-            timestamp: Date.now(),
-            reason: thumbnailCheck.status === 'rejected' ? 'thumbnail_404' : 'video_404'
-          };
-          
-          const invalidReels = JSON.parse(window.localStorage.getItem('invalidReels') || '[]');
+        // React Native platform - use AsyncStorage only
+        const invalidReel = {
+          videoUrl,
+          thumbnailUrl,
+          timestamp: Date.now(),
+          reason: thumbnailCheck.status === 'rejected' ? 'thumbnail_404' : 'video_404'
+        };
+        
+        AsyncStorage.getItem('invalidReels').then(invalidReelsStr => {
+          const invalidReels = invalidReelsStr ? JSON.parse(invalidReelsStr) : [];
           invalidReels.push(invalidReel);
-          window.localStorage.setItem('invalidReels', JSON.stringify(invalidReels.slice(-100)));
-        } else {
-          // React Native platform - use AsyncStorage
-          const invalidReel = {
-            videoUrl,
-            thumbnailUrl,
-            timestamp: Date.now(),
-            reason: thumbnailCheck.status === 'rejected' ? 'thumbnail_404' : 'video_404'
-          };
-          
-          AsyncStorage.getItem('invalidReels').then(invalidReelsStr => {
-            const invalidReels = invalidReelsStr ? JSON.parse(invalidReelsStr) : [];
-            invalidReels.push(invalidReel);
-            AsyncStorage.setItem('invalidReels', JSON.stringify(invalidReels.slice(-100)));
-          }).catch(() => {});
-        }
+          AsyncStorage.setItem('invalidReels', JSON.stringify(invalidReels.slice(-100)));
+        }).catch(() => {});
         
         return; // Don't preload invalid content
       }

@@ -1025,18 +1025,21 @@ export default function ReelsScreen() {
     return () => unsubscribe();
   }, []);
 
-  // AGGRESSIVE CLEANUP: React Native Alternative to Window Events
+  // CLEAN COMPONENT: Remove all window logic for React Native
   useEffect(() => {
-    // PLATFORM CHECK: Use React Native alternatives instead of window events
-    if (Platform.OS === 'web') {
-      // Web platform - use window events
-      const handleForceRefresh = (event: any) => {
-        console.log('🔄 Force refresh event received:', event.detail);
+    // React Native cleanup - run on component mount and focus
+    const cleanupInvalidReels = async () => {
+      try {
+        // Get invalid reels from AsyncStorage
+        const invalidReelsStr = await AsyncStorage.getItem('invalidReels');
+        const invalidReels = invalidReelsStr ? JSON.parse(invalidReelsStr) : [];
         
-        if (event.detail.contentType === 'reels') {
+        if (invalidReels.length > 0) {
+          console.log('🧹 Cleaning up invalid reels in React Native:', invalidReels.length);
+          
+          // Filter out invalid reels
           setReels(prevReels => {
             const validReels = prevReels.filter(reel => {
-              const invalidReels = JSON.parse(window.localStorage.getItem('invalidReels') || '[]');
               const isInvalid = invalidReels.some((invalid: any) => 
                 invalid.videoUrl === reel.video_url || invalid.thumbnailUrl === reel.thumbnail_url
               );
@@ -1051,76 +1054,30 @@ export default function ReelsScreen() {
             console.log(`✅ Re-indexed reels: ${validReels.length} valid, ${prevReels.length - validReels.length} removed`);
             return validReels;
           });
-        }
-      };
-
-      const handleCleanupInvalid = (event: any) => {
-        console.log('🧹 Cleanup invalid content event received:', event.detail);
-        
-        if (event.detail.contentType === 'reels') {
-          window.localStorage.removeItem('invalidReels');
-          refresh();
-        }
-      };
-
-      window.addEventListener('forceContentRefresh', handleForceRefresh);
-      window.addEventListener('cleanupInvalidContent', handleCleanupInvalid);
-
-      return () => {
-        window.removeEventListener('forceContentRefresh', handleForceRefresh);
-        window.removeEventListener('cleanupInvalidContent', handleCleanupInvalid);
-      };
-
-    } else {
-      // React Native platform - use AsyncStorage and focus effects
-      const cleanupInvalidReels = async () => {
-        try {
-          // Get invalid reels from AsyncStorage
-          const invalidReelsStr = await AsyncStorage.getItem('invalidReels');
-          const invalidReels = invalidReelsStr ? JSON.parse(invalidReelsStr) : [];
           
-          if (invalidReels.length > 0) {
-            console.log('🧹 Cleaning up invalid reels in React Native:', invalidReels.length);
-            
-            // Filter out invalid reels
-            setReels(prevReels => {
-              const validReels = prevReels.filter(reel => {
-                const isInvalid = invalidReels.some((invalid: any) => 
-                  invalid.videoUrl === reel.video_url || invalid.thumbnailUrl === reel.thumbnail_url
-                );
-                
-                if (isInvalid) {
-                  console.log('🗑️ Filtering out invalid reel:', reel.id);
-                }
-                
-                return !isInvalid;
-              });
-              
-              console.log(`✅ Re-indexed reels: ${validReels.length} valid, ${prevReels.length - validReels.length} removed`);
-              return validReels;
-            });
-            
-            // Clear invalid reels cache
-            await AsyncStorage.removeItem('invalidReels');
-          }
-        } catch (error) {
-          console.error('❌ Error cleaning invalid reels:', error);
+          // Clear invalid reels cache
+          await AsyncStorage.removeItem('invalidReels');
         }
-      };
+      } catch (error) {
+        console.error('❌ Error cleaning invalid reels:', error);
+      }
+    };
 
-      // Run cleanup on screen focus
-      const unsubscribeFocus = useFocusEffect(() => {
-        cleanupInvalidReels();
-      });
+    // Run cleanup on mount
+    cleanupInvalidReels();
+    
+    // Run cleanup on screen focus
+    const unsubscribeFocus = useFocusEffect(() => {
+      cleanupInvalidReels();
+    });
 
-      return () => {
-        // Cleanup focus effect if needed
-        if (unsubscribeFocus) {
-          unsubscribeFocus();
-        }
-      };
-    }
-  }, [refresh]);
+    return () => {
+      // Cleanup focus effect if needed
+      if (unsubscribeFocus) {
+        unsubscribeFocus();
+      }
+    };
+  }, []);
 
   // MODULAR INTERACTION HANDLERS
   const handleLikeChange = useCallback((itemId: string, isLiked: boolean, count: number) => {
