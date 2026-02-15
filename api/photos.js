@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const DatabaseService = require('../services/databaseService');
-const UserInterestTrackingService = require('../services/userInterestTrackingService');
+// const DatabaseService = require('../services/databaseService'); // Service removed
+// const UserInterestTrackingService = require('../services/userInterestTrackingService'); // Service removed
 const Content = require('../models/Content');
 const SignedUrlService = require('../services/signedUrlService');
 

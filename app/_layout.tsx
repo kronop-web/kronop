@@ -11,7 +11,7 @@ import BackgroundManager from '../services/backgroundManager';
 import ScreenMemoryManager from '../services/screenMemoryManager';
 import NavigationOptimizer from '../services/navigationOptimizer';
 import CleanupManager from '../services/cleanupManager';
-import autoSyncSystem from '../services/autoSyncSystem';
+// import autoSyncSystem from '../services/autoSyncSystem'; // Service removed
 
 export default function RootLayout() {
 
@@ -19,8 +19,8 @@ export default function RootLayout() {
     // Initialize Ultra-Focus Engine for 0.5ms performance
     console.log('🚀 Initializing Ultra-Focus Engine...');
     
-    // Initialize 40-Second Auto-Sync System
-    console.log('🔄 Initializing 40-Second Auto-Sync System...');
+    // Auto-Sync System has been disabled
+    console.log('⚠️ Auto-Sync System Disabled - Service removed');
     
     try {
       // Optimize for maximum speed
@@ -51,7 +51,7 @@ export default function RootLayout() {
       }
       
       console.log('⚡ Ultra-Focus Engine Ready - 0.5ms Response Time');
-      console.log('🔄 Auto-Sync System Active - 40s Pulse');
+      console.log('⚠️ Auto-Sync System Disabled');
     } catch (error) {
       console.error('❌ Failed to initialize systems:', error);
     }

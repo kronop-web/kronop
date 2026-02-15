@@ -32,10 +32,10 @@ export class SupabaseAuthService {
         await AsyncStorage.setItem('supabase_token', data.session.access_token);
       }
 
-      // Sync user with MongoDB - this will throw error if user not found
+      // Sync user with server - this will throw error if user not found
       if (data.user) {
         try {
-          await this.syncUserWithMongoDB(data.user);
+          await this.syncUserWithServer(data.user);
         } catch (syncError: any) {
           // Clear session if sync fails
           await supabase.auth.signOut();
@@ -69,9 +69,9 @@ export class SupabaseAuthService {
         await AsyncStorage.setItem('supabase_token', data.session.access_token);
       }
 
-      // Sync user with MongoDB
+      // Sync user with server
       if (data.user) {
-        await this.syncUserWithMongoDB(data.user);
+        await this.syncUserWithServer(data.user);
       }
 
       return { success: true, data };
@@ -115,7 +115,7 @@ export class SupabaseAuthService {
     }
   }
 
-  static async syncUserWithMongoDB(user: any) {
+  static async syncUserWithServer(user: any) {
     try {
       const response = await fetch(`${process.env.KOYEB_API_URL || process.env.EXPO_PUBLIC_API_URL}/api/users/sync`, {
         method: 'POST',
@@ -135,17 +135,17 @@ export class SupabaseAuthService {
         if (response.status === 403) {
           throw new Error('Access Denied - User not found in database');
         }
-        throw new Error(result.error || 'Failed to sync with MongoDB');
+        throw new Error(result.error || 'Failed to sync with server');
       }
       
       if (!result.success) {
-        console.error('MongoDB sync failed:', result.error);
+        console.error('Server sync failed:', result.error);
         throw new Error('Access Denied - User verification failed');
       }
 
       return result;
     } catch (error) {
-      console.error('MongoDB sync error:', error);
+      console.error('Server sync error:', error);
       throw error;
     }
   }

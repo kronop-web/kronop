@@ -13,13 +13,13 @@ const WebSocket = require('ws');
 const User = require('./models/User');
 const Content = require('./models/Content');
 const BunnyContentService = require('./services/bunnyContentService');
-const BunnySyncService = require('./services/bunnySyncService');
-const DatabaseService = require('./services/databaseService');
+// const BunnySyncService = require('./services/bunnySyncService'); // Service removed
+// const DatabaseService = require('./services/databaseService'); // Service removed
 const autoSyncIntegration = require('./services/autoSyncIntegration');
-const AutoSyncService = require('./services/autoSyncService');
-const RealtimeService = require('./services/realtimeService');
-const RedisCacheService = require('./services/redisCacheService');
-const UserInterestTrackingService = require('./services/userInterestTrackingService');
+// const AutoSyncService = require('./services/autoSyncService'); // Service removed
+// const RealtimeService = require('./services/realtimeService'); // Service removed
+// const RedisCacheService = require('./services/redisCacheService'); // Service removed
+// const UserInterestTrackingService = require('./services/userInterestTrackingService'); // Service removed
 const SignedUrlService = require('./services/signedUrlService');
 
 // Routes
@@ -91,11 +91,11 @@ if (!MONGO_URI) {
 } else {
   mongoose.connection.once('connected', async () => {
     try {
-      await BunnyContentService.syncAllContent();
-      await DatabaseService.deactivateExpiredStories();
+      // await BunnyContentService.syncAllContent(); // Service removed
+      // await DatabaseService.deactivateExpiredStories(); // Service removed
       await User.syncIndexes();
-      AutoSyncService.start();
-      BunnySyncService.scheduleCleanupOnly();
+      // AutoSyncService.start(); // Service removed
+      // BunnySyncService.scheduleCleanupOnly(); // Service removed
     } catch (err) {
       console.error('❌ Database service initialization failed:', err.message);
     }
@@ -174,11 +174,11 @@ apiRouter.use('/notifications', notificationRoutes);
 apiRouter.use('/viral', viralRoutes);
 apiRouter.use('/support', supportRoutes);
 
-// Auto-sync routes
+// Auto-sync routes - Service removed
 apiRouter.get('/sync/status', (req, res) => {
   try {
-    const status = AutoSyncService.getStatus();
-    res.json({ success: true, data: status });
+    // const status = AutoSyncService.getStatus(); // Service removed
+    res.json({ success: false, message: 'AutoSync service removed' });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -186,8 +186,9 @@ apiRouter.get('/sync/status', (req, res) => {
 
 apiRouter.post('/sync/trigger', async (req, res) => {
   try {
-    await AutoSyncService.performFullSync();
-    res.json({ success: true, message: 'Sync completed', data: AutoSyncService.getStatus() });
+    // await AutoSyncService.performFullSync(); // Service removed
+    // res.json({ success: true, message: 'Sync completed', data: AutoSyncService.getStatus() });
+    res.json({ success: false, message: 'AutoSync service removed' });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }

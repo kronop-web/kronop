@@ -20,7 +20,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../constants/theme';
 import { useSWRContent } from '../../hooks/swr';
-import { hlsOptimizerService } from '../../services/hlsOptimizer';
+// import { hlsOptimizerService } from '../../services/hlsOptimizer'; // Service removed
 import { CommentSheet } from '../../components/feature/CommentSheet';
 import StatusBarOverlay from '../../components/common/StatusBarOverlay';
 import AudioController from '../../services/AudioController';
@@ -107,8 +107,9 @@ function ReelItem({
 
   const getVideoSource = () => {
     let videoUrl = item.video_url;
-    videoUrl = hlsOptimizerService.optimizeForBunnyCDN(videoUrl);
-    videoUrl = hlsOptimizerService.convertToOptimizedHLS(videoUrl);
+    // HLS optimization removed - use direct URL
+    // videoUrl = hlsOptimizerService.optimizeForBunnyCDN(videoUrl);
+    // videoUrl = hlsOptimizerService.convertToOptimizedHLS(videoUrl);
     return videoUrl;
   };
 

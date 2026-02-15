@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const DatabaseService = require('../services/databaseService');
+// const DatabaseService = require('../services/databaseService'); // Service removed
 
 // /api/auth/login
 router.post('/login', async (req, res) => {

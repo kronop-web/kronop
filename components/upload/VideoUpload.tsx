@@ -2,63 +2,358 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, TextInput, ScrollView, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
+import { theme } from '../../constants/theme';
 
 interface VideoData {
   title: string;
   description: string;
-  tags: string[];
   category: string;
+  tags: string[];
+  coverPhoto?: any;
 }
 
 interface VideoUploadProps {
   onClose: () => void;
 }
 
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background.primary,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border.primary,
+  },
+  placeholder: {
+    width: 34,
+  },
+  uploadArea: {
+    padding: theme.spacing.lg,
+  },
+  uploadButton: {
+    flex: 1,
+    borderWidth: 2,
+    borderColor: theme.colors.border.secondary,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    alignItems: 'center',
+    backgroundColor: theme.colors.background.secondary,
+  },
+  uploadButtonSelected: {
+    borderColor: theme.colors.primary.main,
+    backgroundColor: theme.colors.background.elevated,
+  },
+  coverPhotoOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: theme.borderRadius.lg,
+  },
+  coverPhotoLabel: {
+    fontSize: theme.typography.fontSize.sm,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.xs,
+  },
+  coverPhotoImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: theme.borderRadius.lg,
+  },
+  coverPhotoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing.md,
+    borderWidth: 2,
+    borderColor: theme.colors.border.secondary,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.background.tertiary,
+  },
+  coverPhotoText: {
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.text.secondary,
+    marginLeft: theme.spacing.sm,
+  },
+  coverPhotoSubtext: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.tertiary,
+    marginLeft: theme.spacing.sm,
+  },
+  uploadText: {
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.text.secondary,
+    marginTop: theme.spacing.sm,
+  },
+  uploadTextSelected: {
+    color: theme.colors.primary.main,
+  },
+  uploadSubtext: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.tertiary,
+    marginTop: theme.spacing.xs,
+  },
+  fileInfo: {
+    marginTop: theme.spacing.md,
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.background.elevated,
+    borderRadius: theme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border.light,
+  },
+  fileInfoItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: theme.spacing.xs,
+  },
+  fileInfoLabel: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.secondary,
+    fontWeight: theme.typography.fontWeight.medium,
+  },
+  fileInfoValue: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.primary,
+    fontWeight: theme.typography.fontWeight.semibold,
+  },
+  thumbnailSection: {
+    marginTop: theme.spacing.md,
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.background.elevated,
+    borderRadius: theme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border.light,
+  },
+  thumbnailButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing.md,
+    borderWidth: 2,
+    borderColor: theme.colors.border.secondary,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.background.tertiary,
+  },
+  thumbnailButtonSelected: {
+    borderColor: theme.colors.primary.main,
+    backgroundColor: theme.colors.background.elevated,
+  },
+  thumbnailPreview: {
+    width: 80,
+    height: 80,
+    borderRadius: theme.borderRadius.md,
+    marginTop: theme.spacing.md,
+  },
+  formSection: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.xxl,
+  },
+  inputGroup: {
+    marginBottom: theme.spacing.xl,
+  },
+  label: {
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.sm,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: theme.colors.border.primary,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.primary,
+    backgroundColor: theme.colors.background.elevated,
+  },
+  textArea: {
+    height: 100,
+    paddingTop: theme.spacing.md,
+  },
+  charCount: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.tertiary,
+    textAlign: 'right',
+    marginTop: theme.spacing.xs,
+  },
+  categoryScroll: {
+    marginTop: theme.spacing.sm,
+  },
+  categoryChip: {
+    backgroundColor: theme.colors.background.tertiary,
+    borderRadius: theme.borderRadius.xl,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.sm,
+    marginRight: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.border.primary,
+  },
+  categoryChipSelected: {
+    backgroundColor: theme.colors.primary.main,
+    borderColor: theme.colors.primary.main,
+  },
+  categoryChipText: {
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.secondary,
+    fontWeight: theme.typography.fontWeight.medium,
+  },
+  categoryChipTextSelected: {
+    color: '#FFFFFF',
+  },
+  tagInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.background.elevated,
+    borderWidth: 1,
+    borderColor: theme.colors.border.primary,
+    borderRadius: theme.borderRadius.md,
+    paddingHorizontal: theme.spacing.md,
+  },
+  tagInput: {
+    flex: 1,
+    paddingVertical: theme.spacing.md,
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.primary,
+  },
+  addTagButton: {
+    padding: theme.spacing.sm,
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: theme.spacing.sm,
+    gap: theme.spacing.sm,
+  },
+  tag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.background.tertiary,
+    borderRadius: theme.borderRadius.xl,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    gap: theme.spacing.sm,
+  },
+  tagText: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.secondary,
+    fontWeight: theme.typography.fontWeight.medium,
+  },
+  uploadButtonMain: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.primary.main,
+    marginHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.xl,
+    paddingVertical: theme.spacing.lg,
+    borderRadius: theme.borderRadius.md,
+    gap: theme.spacing.sm,
+    ...theme.elevation.md,
+  },
+  uploadButtonDisabled: {
+    backgroundColor: theme.colors.border.primary,
+  },
+  uploadButtonText: {
+    color: '#FFFFFF',
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.semibold,
+  },
+});
+
 export default function VideoUpload({ onClose }: VideoUploadProps) {
   const router = useRouter();
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [uploading, setUploading] = useState(false);
-  const [videoData, setVideoData] = useState<VideoData>({ title: '', description: '', tags: [], category: '' });
+  const [videoData, setVideoData] = useState<VideoData>({ title: '', description: '', category: '', tags: [], coverPhoto: null });
   const [tagInput, setTagInput] = useState('');
 
-  const categories = ['Entertainment', 'Music', 'Gaming', 'Education', 'Technology', 'News', 'Sports', 'Business', 'Health', 'Travel', 'Comedy', 'Lifestyle', 'Food', 'Science', 'Documentary'];
+  const categories = [
+    'Entertainment', 'Music', 'Gaming', 'Education', 'Technology', 
+    'News', 'Sports', 'Business', 'Health', 'Travel', 'Comedy', 
+    'Lifestyle', 'Food', 'Science', 'Documentary'
+  ];
 
-  const pickFile = async () => {
+  const formatFileSize = (bytes?: number): string => {
+    if (!bytes) return '0 MB';
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  const pickVideo = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ['video/*'], // Allow all video types
+        type: ['video/*'],
         copyToCacheDirectory: true,
       });
 
       if (!result.canceled && result.assets[0]) {
         const file = result.assets[0];
-        
-        // More lenient validation - just check if it is a video file
         const fileName = file.name || '';
         const extension = fileName.split('.').pop()?.toLowerCase();
         const allowedExtensions = ['mp4', 'mov', 'avi', 'webm', '3gp', 'mkv'];
         
         if (!extension || !allowedExtensions.includes(extension)) {
-          console.error('[VIDEO_UPLOAD_FAIL]: Invalid file extension -', extension);
+          Alert.alert('Invalid File', `Please select a valid video file. Allowed: ${allowedExtensions.join(', ')}`);
           return;
         }
 
-        // Basic file size validation
-        const MAX_SIZE = 2 * 1024 * 1024 * 1024; // 2GB for videos
+        const MAX_SIZE = 2 * 1024 * 1024 * 1024; // 2GB
         if (file.size && file.size > MAX_SIZE) {
-          console.error('[VIDEO_UPLOAD_FAIL]: File too large -', file.size);
+          Alert.alert('File Too Large', 'Video files must be less than 2GB');
           return;
         }
 
         setSelectedFile(file);
-        setVideoData(prev => ({
-          ...prev,
-          title: prev.title || file.name.split('.')[0]
+        setVideoData(prev => ({ 
+          ...prev, 
+          title: prev.title || file.name.split('.')[0] 
         }));
       }
     } catch (error) {
-      console.error('[VIDEO_PICK_FAIL]:', error);
+      Alert.alert('Error', 'Failed to pick video file');
+    }
+  };
+
+  const pickCoverPhoto = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert('Permission Required', 'Please allow access to your photos');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setVideoData(prev => ({ ...prev, coverPhoto: result.assets[0] }));
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to pick cover photo');
     }
   };
 
@@ -90,6 +385,11 @@ export default function VideoUpload({ onClose }: VideoUploadProps) {
       return;
     }
 
+    if (!videoData.category.trim()) {
+      Alert.alert('Missing Category', 'Please select a category for your video');
+      return;
+    }
+
     setUploading(true);
     try {
       // TODO: Implement upload logic
@@ -114,35 +414,50 @@ export default function VideoUpload({ onClose }: VideoUploadProps) {
       <View style={styles.uploadArea}>
         <TouchableOpacity 
           style={[styles.uploadButton, selectedFile && styles.uploadButtonSelected]}
-          onPress={pickFile}
+          onPress={pickVideo}
           disabled={uploading}
         >
+          {selectedFile && videoData.coverPhoto && (
+            <View style={styles.coverPhotoOverlay}>
+              <Image 
+                source={{ uri: videoData.coverPhoto.uri }} 
+                style={styles.coverPhotoImage}
+                contentFit="cover"
+              />
+            </View>
+          )}
+          
           <MaterialIcons 
-            name="videocam" 
-            size={48} 
-            color={selectedFile ? "#6A5ACD" : "#666"} 
+            name="video-library" 
+            size={theme.iconSize.xl} 
+            color={selectedFile ? theme.colors.primary.main : theme.colors.text.tertiary} 
           />
           <Text style={[styles.uploadText, selectedFile && styles.uploadTextSelected]}>
-            {selectedFile ? selectedFile.name : 'Choose Video File'}
+            {selectedFile ? 'Video Selected' : 'Choose Video'}
           </Text>
           <Text style={styles.uploadSubtext}>
-            MP4, MOV, AVI, WebM (Max 100MB)
+            {selectedFile ? `MP4 • ${formatFileSize(selectedFile.size)} • Max 2GB` : 'MP4, MOV, AVI (Max 2GB)'}
           </Text>
         </TouchableOpacity>
 
-        {selectedFile && (
-          <View style={styles.fileInfo}>
-            <View style={styles.fileInfoItem}>
-              <Text style={styles.fileInfoLabel}>Size:</Text>
-              <Text style={styles.fileInfoValue}>
-                {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
-              </Text>
-            </View>
-            <View style={styles.fileInfoItem}>
-              <Text style={styles.fileInfoLabel}>Type:</Text>
-              <Text style={styles.fileInfoValue}>{selectedFile.mimeType}</Text>
-            </View>
-          </View>
+        {selectedFile && !videoData.coverPhoto && (
+          <TouchableOpacity 
+            style={styles.coverPhotoButton}
+            onPress={pickCoverPhoto}
+            disabled={uploading}
+          >
+            <MaterialIcons 
+              name="image" 
+              size={theme.iconSize.lg} 
+              color={theme.colors.text.tertiary} 
+            />
+            <Text style={styles.coverPhotoText}>
+              Add Cover Photo
+            </Text>
+            <Text style={styles.coverPhotoSubtext}>
+              JPG, PNG (16:9)
+            </Text>
+          </TouchableOpacity>
         )}
       </View>
 
@@ -158,6 +473,22 @@ export default function VideoUpload({ onClose }: VideoUploadProps) {
             maxLength={100}
           />
           <Text style={styles.charCount}>{videoData.title.length}/100</Text>
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Description</Text>
+          <TextInput
+            style={[styles.input, styles.textArea]}
+            value={videoData.description}
+            onChangeText={(text) => setVideoData(prev => ({ ...prev, description: text }))}
+            placeholder="Describe your video..."
+            placeholderTextColor="#666"
+            multiline
+            numberOfLines={4}
+            textAlignVertical="top"
+            maxLength={500}
+          />
+          <Text style={styles.charCount}>{videoData.description.length}/500</Text>
         </View>
 
         <View style={styles.inputGroup}>
@@ -184,22 +515,6 @@ export default function VideoUpload({ onClose }: VideoUploadProps) {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Description</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            value={videoData.description}
-            onChangeText={(text) => setVideoData(prev => ({ ...prev, description: text }))}
-            placeholder="Describe your video..."
-            placeholderTextColor="#666"
-            multiline
-            numberOfLines={4}
-            textAlignVertical="top"
-            maxLength={500}
-          />
-          <Text style={styles.charCount}>{videoData.description.length}/500</Text>
-        </View>
-
-        <View style={styles.inputGroup}>
           <Text style={styles.label}>Tags</Text>
           <View style={styles.tagInputContainer}>
             <TextInput
@@ -212,7 +527,7 @@ export default function VideoUpload({ onClose }: VideoUploadProps) {
               returnKeyType="done"
             />
             <TouchableOpacity style={styles.addTagButton} onPress={addTag}>
-              <MaterialIcons name="add" size={20} color="#6A5ACD" />
+              <MaterialIcons name="add" size={theme.iconSize.md} color={theme.colors.primary.main} />
             </TouchableOpacity>
           </View>
           
@@ -222,7 +537,7 @@ export default function VideoUpload({ onClose }: VideoUploadProps) {
                 <View key={index} style={styles.tag}>
                   <Text style={styles.tagText}>#{tag}</Text>
                   <TouchableOpacity onPress={() => removeTag(tag)}>
-                    <MaterialIcons name="close" size={16} color="#666" />
+                    <MaterialIcons name="close" size={theme.iconSize.sm} color={theme.colors.text.tertiary} />
                   </TouchableOpacity>
                 </View>
               ))}
@@ -238,12 +553,12 @@ export default function VideoUpload({ onClose }: VideoUploadProps) {
       >
         {uploading ? (
           <>
-            <ActivityIndicator size="small" color="#fff" />
+            <ActivityIndicator size="small" color="#FFFFFF" />
             <Text style={styles.uploadButtonText}>Uploading...</Text>
           </>
         ) : (
           <>
-            <MaterialIcons name="upload" size={20} color="#fff" />
+            <MaterialIcons name="upload" size={theme.iconSize.md} color="#FFFFFF" />
             <Text style={styles.uploadButtonText}>Upload Video</Text>
           </>
         )}
@@ -251,219 +566,3 @@ export default function VideoUpload({ onClose }: VideoUploadProps) {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000000',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333333',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  placeholder: {
-    width: 34,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#212529',
-    marginTop: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#6c757d',
-    marginTop: 4,
-  },
-  uploadArea: {
-    padding: 16,
-  },
-  uploadButton: {
-    borderWidth: 2,
-    borderColor: '#333333',
-    borderStyle: 'dashed',
-    borderRadius: 12,
-    padding: 32,
-    alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-  },
-  uploadButtonSelected: {
-    borderColor: '#6A5ACD',
-    backgroundColor: '#1a1a1a',
-  },
-  uploadText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#CCCCCC',
-    marginTop: 12,
-  },
-  uploadTextSelected: {
-    color: '#6A5ACD',
-  },
-  uploadSubtext: {
-    fontSize: 12,
-    color: '#666666',
-    marginTop: 4,
-  },
-  fileInfo: {
-    marginTop: 12,
-    backgroundColor: '#1a1a1a',
-    borderRadius: 8,
-    padding: 12,
-  },
-  fileInfoItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  fileInfoLabel: {
-    fontSize: 12,
-    color: '#6c757d',
-    fontWeight: '500',
-  },
-  fileInfoValue: {
-    fontSize: 12,
-    color: '#212529',
-    fontWeight: '600',
-  },
-  formSection: {
-    padding: 16,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#212529',
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#dee2e6',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 14,
-    color: '#212529',
-  },
-  textArea: {
-    height: 100,
-    paddingTop: 12,
-  },
-  charCount: {
-    fontSize: 12,
-    color: '#6c757d',
-    textAlign: 'right',
-    marginTop: 4,
-  },
-  categoryScroll: {
-    flexDirection: 'row',
-  },
-  categoryChip: {
-    backgroundColor: '#e9ecef',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 8,
-  },
-  categoryChipSelected: {
-    backgroundColor: '#2196F3',
-  },
-  categoryChipText: {
-    fontSize: 14,
-    color: '#495057',
-    fontWeight: '500',
-  },
-  categoryChipTextSelected: {
-    color: '#fff',
-  },
-  tagInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#dee2e6',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-  },
-  tagInput: {
-    flex: 1,
-    paddingVertical: 12,
-    fontSize: 14,
-    color: '#212529',
-  },
-  addTagButton: {
-    padding: 8,
-  },
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 8,
-    gap: 8,
-  },
-  tag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#e9ecef',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    gap: 6,
-  },
-  tagText: {
-    fontSize: 12,
-    color: '#495057',
-    fontWeight: '500',
-  },
-  uploadButtonMain: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#2196F3',
-    marginHorizontal: 16,
-    marginBottom: 20,
-    paddingVertical: 16,
-    borderRadius: 8,
-    gap: 8,
-  },
-  uploadButtonDisabled: {
-    backgroundColor: '#ccc',
-  },
-  uploadButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  progressContainer: {
-    marginHorizontal: 16,
-    marginBottom: 20,
-  },
-  progressBar: {
-    height: 4,
-    backgroundColor: '#e9ecef',
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#2196F3',
-  },
-  progressText: {
-    fontSize: 12,
-    color: '#6c757d',
-    textAlign: 'center',
-    marginTop: 8,
-  },
-});

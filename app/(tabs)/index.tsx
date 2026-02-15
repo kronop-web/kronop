@@ -23,6 +23,15 @@ import LiveUpload from '../../components/upload/LiveUpload';
 import ShayariPhotoUpload from '../../components/upload/ShayariPhotoUpload';
 import SongUpload from '../../components/upload/SongUpload';
 
+// Bridge imports
+import BridgeStory from '../../app/bridge-story';
+import BridgePhoto from '../../app/bridge-photo';
+import BridgeReels from '../../app/bridge-reels';
+import BridgeVideo from '../../app/bridge-video';
+import BridgeLive from '../../app/bridge-live';
+import BridgeShayari from '../../app/bridge-shayari';
+import BridgeSongs from '../../app/bridge-songs';
+
 // Mock songs data for music player - Hindi New Songs (15 Songs)
 const mockSongs = [
   {
@@ -817,13 +826,13 @@ export default function HomeScreen() {
           
           {/* Upload Screen Content */}
           <View style={styles.uploadScreenContainer}>
-            {selectedUploadScreen === 'Story' && <StoryUpload onClose={() => setSelectedUploadScreen(null)} />}
-            {selectedUploadScreen === 'Photo' && <PhotoUpload onClose={() => setSelectedUploadScreen(null)} />}
-            {selectedUploadScreen === 'Reels' && <ReelsUpload onClose={() => setSelectedUploadScreen(null)} />}
-            {selectedUploadScreen === 'Video' && <VideoUpload onClose={() => setSelectedUploadScreen(null)} />}
-            {selectedUploadScreen === 'Live' && <LiveUpload onClose={() => setSelectedUploadScreen(null)} />}
-            {selectedUploadScreen === 'Shayari' && <ShayariPhotoUpload onClose={() => setSelectedUploadScreen(null)} />}
-            {selectedUploadScreen === 'Song' && <SongUpload onClose={() => setSelectedUploadScreen(null)} />}
+            {selectedUploadScreen === 'Story' && <BridgeStory onClose={() => setSelectedUploadScreen(null)} />}
+            {selectedUploadScreen === 'Photo' && <BridgePhoto onClose={() => setSelectedUploadScreen(null)} />}
+            {selectedUploadScreen === 'Reels' && <BridgeReels onClose={() => setSelectedUploadScreen(null)} />}
+            {selectedUploadScreen === 'Video' && <BridgeVideo onClose={() => setSelectedUploadScreen(null)} />}
+            {selectedUploadScreen === 'Live' && <BridgeLive onClose={() => setSelectedUploadScreen(null)} />}
+            {selectedUploadScreen === 'Shayari' && <BridgeShayari onClose={() => setSelectedUploadScreen(null)} />}
+            {selectedUploadScreen === 'Song' && <BridgeSongs onClose={() => setSelectedUploadScreen(null)} />}
           </View>
         </View>
       </Modal>

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Content = require('../models/Content');
-const redis = require('../services/redisCacheService');
+// const redis = require('../services/redisCacheService'); // Service removed
 
 // Ultra-fast viral content API with Redis caching and MongoDB indexing
 router.get('/', async (req, res) => {

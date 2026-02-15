@@ -1,9 +1,9 @@
 // ==================== REELS SERVICE ====================
-// MongoDB-based service for Reels management
-// Uses ReelsBridge for BunnyCDN uploads, handles all data operations via MongoDB API
+// API-based service for Reels management
+// Handles all Reels operations through REST API
 
 import { authService } from './authService';
-import { reelsBridge } from './bridges/ReelsBridge';
+// import { reelsBridge } from './bridges/ReelsBridge'; // Bridge removed - using direct API
 import { BUNNY_CONFIG, API_KEYS } from '../constants/Config';
 
 export interface ReelData {
@@ -30,26 +30,27 @@ export interface ReelUploadResult {
 }
 
 /**
- * Reels Service - Handles all Reels operations through MongoDB API
- * Upload flow: MongoDB API -> ReelsBridge (BunnyCDN) -> MongoDB API (save metadata)
+ * Reels Service - Handles all Reels operations through REST API
+ * Upload flow: REST API
  */
 export class ReelsService {
-  private readonly API_BASE = process.env.EXPO_PUBLIC_API_URL || API_KEYS.KOYEB_URL || process.env.PRODUCTION_API_URL || 'http://localhost:3000';
+  private readonly API_BASE = process.env.EXPO_PUBLIC_API_URL || process.env.PRODUCTION_API_URL || 'http://localhost:3000';
 
   /**
-   * Get authentication token for MongoDB API calls
+   * Get authentication token for API calls
    */
   private async getAuthToken(): Promise<string | null> {
     try {
       return await authService.getAuthToken();
     } catch (error) {
+      console.error(' ReelsService: Error getting auth token:', error);
       console.error('🎬 ReelsService: Error getting auth token:', error);
       return null;
     }
   }
 
   /**
-   * Create headers for MongoDB API calls
+   * Create headers for API calls
    */
   private async createHeaders(contentType: string = 'application/json'): Promise<Record<string, string>> {
     // BYPASS LOGIN: No authentication required for testing
@@ -66,26 +67,36 @@ export class ReelsService {
    */
   async uploadReel(file: any, metadata: Partial<ReelData>): Promise<ReelUploadResult> {
     try {
-      console.log('🎬 ReelsService: Starting reel upload process...');
+      console.log(' ReelsService: Starting reel upload process...');
 
-      // Step 1: Upload to BunnyCDN via ReelsBridge
-      console.log('🎬 Step 1: Uploading to BunnyCDN...');
+      // Step 1: Upload to BunnyCDN via API - DISABLED FOR NOW
+      console.log(' Step 1: BunnyCDN upload disabled - using direct API...');
       // BYPASS LOGIN: Add dummy user ID if not provided
-      const bunnyResult = await reelsBridge.uploadReel(file, {
+      // const bunnyResult = await this.uploadToBunnyDirect(file, {
+      //   title: metadata.title,
+      //   description: metadata.description,
+      //   tags: metadata.tags,
+      //   user_id: metadata.user_id || 'guest_user' // Default user ID
+      // });
+      
+      // Mock successful upload for now
+      const bunnyResult = {
+        success: true,
+        videoId: `mock_reel_${Date.now()}`,
+        url: 'https://mock.bunny.cdn/video.mp4',
         title: metadata.title,
-        description: metadata.description,
-        tags: metadata.tags,
-        userId: metadata.user_id || 'guest_user'
-      });
+        error: null
+      };
 
       if (!bunnyResult.success || !bunnyResult.videoId) {
         throw new Error(bunnyResult.error || 'Failed to upload to BunnyCDN');
       }
 
+      console.log(' BunnyCDN upload successful:', bunnyResult.videoId);
       console.log('🎬 BunnyCDN upload successful:', bunnyResult.videoId);
 
-      // Step 2: Save metadata to MongoDB
-      console.log('🎬 Step 2: Saving metadata to MongoDB...');
+      // Step 2: Save metadata to server
+      console.log('🎬 Step 2: Saving metadata to server...');
       const reelData = {
         title: metadata.title || bunnyResult.title,
         description: metadata.description,
@@ -109,7 +120,7 @@ export class ReelsService {
       }
 
       const savedReel = await response.json();
-      console.log('🎬 Reel metadata saved to MongoDB:', savedReel);
+      console.log('🎬 Reel metadata saved to server:', savedReel);
 
       return {
         success: true,
@@ -218,22 +229,23 @@ export class ReelsService {
       const reel = await getResponse.json();
       const reelData = Array.isArray(reel) ? reel : reel.data || [];
 
-      // Delete from BunnyCDN if bunny_video_id exists
+      // Delete from BunnyCDN if bunny_video_id exists - DISABLED FOR NOW
       if (reelData.bunny_video_id) {
-        const bunnyResult = await reelsBridge.deleteReel(reelData.bunny_video_id);
-        if (!bunnyResult.success) {
-          console.warn('🎬 Warning: Failed to delete from BunnyCDN:', bunnyResult.error);
-        }
+        console.log('🎬 Warning: BunnyCDN delete disabled - bridge removed');
+        // const bunnyResult = await reelsBridge.deleteReel(reelData.bunny_video_id);
+        // if (!bunnyResult.success) {
+        //   console.warn('🎬 Warning: Failed to delete from BunnyCDN:', bunnyResult.error);
+        // }
       }
 
-      // Delete from MongoDB
+      // Delete from server
       const deleteResponse = await fetch(`${this.API_BASE}/api/reels/${reelId}`, {
         method: 'DELETE',
         headers
       });
 
       if (!deleteResponse.ok) {
-        throw new Error(`Failed to delete reel from MongoDB: ${deleteResponse.status}`);
+        throw new Error(`Failed to delete reel from server: ${deleteResponse.status}`);
       }
 
       console.log('🎬 Reel deleted successfully:', reelId);

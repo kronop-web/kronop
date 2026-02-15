@@ -3,7 +3,39 @@
 // Provides real-time data updates without polling
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { realtimeSyncService, RealtimeEvent, SyncResult } from '../services/autoSyncService';
+// import { realtimeSyncService, RealtimeEvent, SyncResult } from '../services/autoSyncService'; // Service removed
+
+// Mock types since service is removed
+export interface RealtimeEvent {
+  type: string;
+  contentType: string;
+  data: any;
+  timestamp: string;
+}
+
+export interface SyncResult {
+  success: boolean;
+  synced: number;
+  cleaned: number;
+  errors: string[];
+  lastSync: string;
+}
+
+// Mock service since real service is removed
+const mockRealtimeSyncService = {
+  start: () => console.log('Mock: AutoSync started'),
+  stop: () => console.log('Mock: AutoSync stopped'),
+  on: (event: string, handler: Function) => console.log('Mock: Event listener added'),
+  off: (event: string, handler: Function) => console.log('Mock: Event listener removed'),
+  isReady: () => false,
+  getStatus: () => ({
+    success: false,
+    synced: 0,
+    cleaned: 0,
+    errors: ['Service removed'],
+    lastSync: new Date().toISOString()
+  })
+};
 
 export interface UseRealtimeSyncOptions {
   autoStart?: boolean;
@@ -50,7 +82,7 @@ export const useRealtimeSync = (options: UseRealtimeSyncOptions = {}): UseRealti
   });
   const [eventCount, setEventCount] = useState(0);
 
-  const serviceRef = useRef(realtimeSyncService);
+  const serviceRef = useRef(mockRealtimeSyncService);
   const eventHandlersRef = useRef<Map<string, (event: RealtimeEvent) => void>>(new Map());
 
   /**

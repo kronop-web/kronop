@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const DatabaseService = require('../services/databaseService');
+// const DatabaseService = require('../services/databaseService'); // Service removed
 const axios = require('axios');
 const Notification = require('../models/Notification');
 

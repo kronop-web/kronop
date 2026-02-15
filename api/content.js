@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const DatabaseService = require('../services/databaseService');
-const BunnyContentService = require('../services/bunnyContentService');
-const BunnySyncService = require('../services/bunnySyncService');
-const SignedUrlService = require('../services/signedUrlService');
+// const DatabaseService = require('../services/databaseService'); // Service removed
+const BunnyContentService = require('./services/bunnyContentService');
+// const BunnySyncService = require('./services/bunnySyncService'); // Service removed
+const SignedUrlService = require('./services/signedUrlService');
 
 // POST /api/content/sync - One-click sync from BunnyCDN to MongoDB
 router.post('/sync', async (req, res) => {
@@ -40,8 +40,10 @@ router.get('/', async (req, res) => {
     const allContent = {};
     
     for (const type of types) {
-      const content = await DatabaseService.getContentByType(type, parsedPage, parsedLimit, 0);
-      const totalCount = await DatabaseService.getContentCount(type);
+      // const content = await DatabaseService.getContentByType(type, parsedPage, parsedLimit, 0);
+      // const totalCount = await DatabaseService.getContentCount(type);
+      const content = [];
+      const totalCount = 0;
       
       allContent[type.toLowerCase()] = {
         data: SignedUrlService.generateSignedUrlsForContent(content),
@@ -96,7 +98,8 @@ router.get('/:type', async (req, res) => {
     const parsedLimit = Math.min(parseInt(limit), 20);
     const parsedSkip = parseInt(skip) || (parsedPage - 1) * parsedLimit;
 
-    const content = await DatabaseService.getContentByType(finalType, parsedPage, parsedLimit, parsedSkip);
+    // const content = await DatabaseService.getContentByType(finalType, parsedPage, parsedLimit, parsedSkip);
+    const content = [];
     
     // Generate signed URLs
     const contentWithUrls = SignedUrlService.generateSignedUrlsForContent(content);
@@ -114,7 +117,8 @@ router.get('/user/:userId', async (req, res) => {
     const { userId } = req.params;
     const { type } = req.query;
     
-    const content = await DatabaseService.getUserContent(userId, type);
+    // const content = await DatabaseService.getUserContent(userId, type);
+    const content = [];
     res.json({ success: true, data: content });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -125,7 +129,8 @@ router.get('/video/user', async (req, res) => {
   try {
     const { userId, page = 1, limit = 20 } = req.query;
     const effectiveUserId = userId || process.env.DEFAULT_USER_ID || null;
-    const content = await DatabaseService.getUserContent(effectiveUserId, 'Video', parseInt(page), parseInt(limit));
+    // const content = await DatabaseService.getUserContent(effectiveUserId, 'Video', parseInt(page), parseInt(limit));
+    const content = [];
     res.json({ success: true, data: content });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -136,7 +141,8 @@ router.get('/photo/user', async (req, res) => {
   try {
     const { userId, page = 1, limit = 20 } = req.query;
     const effectiveUserId = userId || process.env.DEFAULT_USER_ID || null;
-    const content = await DatabaseService.getUserContent(effectiveUserId, 'Photo', parseInt(page), parseInt(limit));
+    // const content = await DatabaseService.getUserContent(effectiveUserId, 'Photo', parseInt(page), parseInt(limit));
+    const content = [];
     res.json({ success: true, data: content });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -147,7 +153,8 @@ router.get('/reels/user', async (req, res) => {
   try {
     const { userId, page = 1, limit = 20 } = req.query;
     const effectiveUserId = userId || process.env.DEFAULT_USER_ID || null;
-    const content = await DatabaseService.getUserContent(effectiveUserId, 'Reel', parseInt(page), parseInt(limit));
+    // const content = await DatabaseService.getUserContent(effectiveUserId, 'Reel', parseInt(page), parseInt(limit));
+    const content = [];
     res.json({ success: true, data: content });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -157,7 +164,8 @@ router.get('/reels/user', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const contentData = req.body;
-    const content = await DatabaseService.createContent(contentData);
+    // const content = await DatabaseService.createContent(contentData);
+    const content = null;
     res.status(201).json({ success: true, data: content });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -168,7 +176,8 @@ router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
-    const content = await DatabaseService.updateContent(id, updateData);
+    // const content = await DatabaseService.updateContent(id, updateData);
+    const content = null;
     res.json({ success: true, data: content });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -178,7 +187,8 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await DatabaseService.deleteContent(id);
+    // await DatabaseService.deleteContent(id);
+    // DatabaseService removed
     res.json({ success: true, message: 'Content deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -188,7 +198,8 @@ router.delete('/:id', async (req, res) => {
 router.post('/:id/view', async (req, res) => {
   try {
     const { id } = req.params;
-    const content = await DatabaseService.incrementViews(id);
+    // const content = await DatabaseService.incrementViews(id);
+    const content = null;
     res.json({ success: true, data: content });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -198,7 +209,8 @@ router.post('/:id/view', async (req, res) => {
 router.post('/:id/like', async (req, res) => {
   try {
     const { id } = req.params;
-    const content = await DatabaseService.incrementLikes(id);
+    // const content = await DatabaseService.incrementLikes(id);
+    const content = null;
     res.json({ success: true, data: content });
   } catch (error) {
     res.status(500).json({ error: error.message });

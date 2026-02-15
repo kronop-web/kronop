@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const supabase = require('../services/supabaseClient');
-const DatabaseService = require('../services/databaseService');
+// const DatabaseService = require('../services/databaseService'); // Service removed
 
 /**
  * Middleware to verify Supabase JWT Token

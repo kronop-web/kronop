@@ -10,10 +10,12 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
+import { theme } from '../../constants/theme';
 
 interface StoryData {
   title: string;
@@ -173,7 +175,7 @@ export default function StoryUpload({ onClose }: StoryUploadProps) {
           <MaterialIcons 
             name={storyData.type === 'video' ? "videocam" : "photo-camera"} 
             size={48} 
-            color={selectedFile ? "#6A5ACD" : "#666"} 
+            color={selectedFile ? theme.colors.primary.main : theme.colors.text.tertiary} 
           />
           <Text style={[styles.uploadText, selectedFile && styles.uploadTextSelected]}>
             {selectedFile ? selectedFile.name : 'Choose Photo or Video'}
@@ -232,7 +234,7 @@ export default function StoryUpload({ onClose }: StoryUploadProps) {
                   duration: Math.max(1, prev.duration - 5) 
                 }))}
               >
-                <MaterialIcons name="remove" size={20} color="#9C27B0" />
+                <MaterialIcons name="remove" size={20} color={theme.colors.primary.main} />
               </TouchableOpacity>
               <Text style={styles.durationText}>{storyData.duration}s</Text>
               <TouchableOpacity
@@ -242,7 +244,7 @@ export default function StoryUpload({ onClose }: StoryUploadProps) {
                   duration: Math.min(60, prev.duration + 5) 
                 }))}
               >
-                <MaterialIcons name="add" size={20} color="#9C27B0" />
+                <MaterialIcons name="add" size={20} color={theme.colors.primary.main} />
               </TouchableOpacity>
             </View>
             <Text style={styles.helpText}>
@@ -262,7 +264,7 @@ export default function StoryUpload({ onClose }: StoryUploadProps) {
                 <MaterialIcons 
                   name={storyData.isPrivate ? "visibility-off" : "visibility"} 
                   size={20} 
-                  color={storyData.isPrivate ? "#9C27B0" : "#4CAF50"} 
+                  color={storyData.isPrivate ? theme.colors.primary.main : theme.colors.text.secondary} 
                 />
                 <View style={styles.settingText}>
                   <Text style={styles.settingTitle}>Visibility</Text>
@@ -285,7 +287,7 @@ export default function StoryUpload({ onClose }: StoryUploadProps) {
         </View>
 
         <View style={styles.infoBox}>
-          <MaterialIcons name="timer" size={20} color="#6A5ACD" />
+          <MaterialIcons name="timer" size={20} color={theme.colors.primary.main} />
           <Text style={styles.infoText}>
             Stories automatically disappear after 24 hours. They&apos;re perfect for sharing casual moments and behind-the-scenes content.
           </Text>
@@ -304,7 +306,7 @@ export default function StoryUpload({ onClose }: StoryUploadProps) {
           </>
         ) : (
           <>
-            <MaterialIcons name="upload" size={20} color="#fff" />
+            <MaterialIcons name="upload" size={20} color="#FFFFFF" />
             <Text style={styles.uploadButtonText}>Upload Story</Text>
           </>
         )}
@@ -327,186 +329,186 @@ export default function StoryUpload({ onClose }: StoryUploadProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: theme.colors.background.primary,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#333333',
+    borderBottomColor: theme.colors.border.primary,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontSize: theme.typography.fontSize.xl,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.text.primary,
   },
   placeholder: {
     width: 34,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#212529',
-    marginTop: 8,
+    fontSize: theme.typography.fontSize.xxxl,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.text.primary,
+    marginTop: theme.spacing.sm,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#6c757d',
-    marginTop: 4,
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.secondary,
+    marginTop: theme.spacing.xs,
   },
   uploadArea: {
-    padding: 16,
+    padding: theme.spacing.lg,
   },
   uploadButton: {
     borderWidth: 2,
-    borderColor: '#333333',
-    borderStyle: 'dashed',
-    borderRadius: 12,
-    padding: 32,
+    borderColor: theme.colors.border.secondary,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.xxl,
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: theme.colors.background.secondary,
   },
   uploadButtonSelected: {
-    borderColor: '#6A5ACD',
-    backgroundColor: '#1a1a1a',
+    borderColor: theme.colors.primary.main,
+    backgroundColor: theme.colors.background.elevated,
   },
   uploadText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#CCCCCC',
-    marginTop: 12,
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.text.secondary,
+    marginTop: theme.spacing.md,
   },
   uploadTextSelected: {
-    color: '#6A5ACD',
+    color: theme.colors.primary.main,
   },
   uploadSubtext: {
-    fontSize: 12,
-    color: '#666666',
-    marginTop: 4,
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.tertiary,
+    marginTop: theme.spacing.xs,
   },
   fileInfo: {
-    marginTop: 12,
-    backgroundColor: '#1a1a1a',
-    borderRadius: 8,
-    padding: 12,
+    marginTop: theme.spacing.md,
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.background.elevated,
+    borderRadius: theme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border.light,
   },
   fileInfoItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: theme.spacing.xs,
   },
   fileInfoLabel: {
-    fontSize: 12,
-    color: '#6c757d',
-    fontWeight: '500',
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.secondary,
+    fontWeight: theme.typography.fontWeight.medium,
   },
   fileInfoValue: {
-    fontSize: 12,
-    color: '#212529',
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.primary,
+    fontWeight: theme.typography.fontWeight.semibold,
   },
   formSection: {
-    padding: 16,
+    padding: theme.spacing.lg,
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: theme.spacing.xl,
   },
   label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#212529',
-    marginBottom: 8,
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.sm,
   },
   input: {
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#dee2e6',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 14,
-    color: '#212529',
+    borderColor: theme.colors.border.primary,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.primary,
+    backgroundColor: theme.colors.background.elevated,
   },
   charCount: {
-    fontSize: 12,
-    color: '#6c757d',
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.tertiary,
     textAlign: 'right',
-    marginTop: 4,
+    marginTop: theme.spacing.xs,
   },
   durationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background.elevated,
     borderWidth: 1,
-    borderColor: '#dee2e6',
-    borderRadius: 8,
-    paddingVertical: 12,
+    borderColor: theme.colors.border.primary,
+    borderRadius: theme.borderRadius.md,
+    paddingVertical: theme.spacing.md,
   },
   durationButton: {
-    padding: 8,
+    padding: theme.spacing.sm,
   },
   durationText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#212529',
-    marginHorizontal: 24,
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.text.primary,
+    marginHorizontal: theme.spacing.xl,
   },
   helpText: {
-    fontSize: 12,
-    color: '#6c757d',
-    marginTop: 4,
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.tertiary,
+    marginTop: theme.spacing.xs,
     fontStyle: 'italic',
   },
   settingsContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
+    backgroundColor: theme.colors.background.elevated,
+    borderRadius: theme.borderRadius.md,
     borderWidth: 1,
-    borderColor: '#dee2e6',
+    borderColor: theme.colors.border.primary,
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    padding: theme.spacing.md,
   },
   settingLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    gap: 12,
+    gap: theme.spacing.md,
   },
   settingText: {
     flex: 1,
   },
   settingTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#212529',
-    marginBottom: 2,
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.xs,
   },
   settingDescription: {
-    fontSize: 14,
-    color: '#6c757d',
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.secondary,
   },
   toggle: {
     width: 48,
     height: 28,
-    backgroundColor: '#ccc',
+    backgroundColor: theme.colors.border.primary,
     borderRadius: 14,
     justifyContent: 'center',
     paddingHorizontal: 2,
   },
   toggleActive: {
-    backgroundColor: '#9C27B0',
+    backgroundColor: theme.colors.primary.main,
   },
   toggleDot: {
     width: 24,
     height: 24,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.text.primary,
     borderRadius: 12,
   },
   toggleDotActive: {
@@ -514,55 +516,58 @@ const styles = StyleSheet.create({
   },
   infoBox: {
     flexDirection: 'row',
-    backgroundColor: '#f3e5f5',
-    borderRadius: 8,
-    padding: 12,
-    gap: 12,
-    marginTop: 8,
+    backgroundColor: theme.colors.background.elevated,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    gap: theme.spacing.md,
+    marginTop: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.border.light,
   },
   infoText: {
     flex: 1,
-    fontSize: 12,
-    color: '#666',
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.secondary,
     lineHeight: 18,
   },
   uploadButtonMain: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#9C27B0',
-    marginHorizontal: 16,
-    marginBottom: 20,
-    paddingVertical: 16,
-    borderRadius: 8,
-    gap: 8,
+    backgroundColor: theme.colors.primary.main,
+    marginHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.xl,
+    paddingVertical: theme.spacing.lg,
+    borderRadius: theme.borderRadius.md,
+    gap: theme.spacing.sm,
+    ...theme.elevation.md,
   },
   uploadButtonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: theme.colors.border.primary,
   },
   uploadButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    color: '#FFFFFF',
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.semibold,
   },
   progressContainer: {
-    marginHorizontal: 16,
-    marginBottom: 20,
+    marginHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.xl,
   },
   progressBar: {
     height: 4,
-    backgroundColor: '#e9ecef',
+    backgroundColor: theme.colors.border.primary,
     borderRadius: 2,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#9C27B0',
+    backgroundColor: theme.colors.primary.main,
   },
   progressText: {
-    fontSize: 12,
-    color: '#6c757d',
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.tertiary,
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: theme.spacing.sm,
   },
 });

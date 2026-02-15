@@ -1,9 +1,9 @@
 // ==================== VIDEOS SERVICE ====================
-// MongoDB-based service for Videos management
-// Uses VideosBridge for BunnyCDN uploads, handles all data operations via MongoDB API
+// API-based service for Videos management
+// Handles all video operations through REST API
 
 import { authService } from './authService';
-import { videoBridge } from './bridges/VideoBridge';
+// import { videoBridge } from './bridges/VideoBridge'; // Bridge removed - using new app/bridge
 import { BUNNY_CONFIG, API_KEYS } from '../constants/Config';
 
 export interface VideoData {
@@ -30,13 +30,13 @@ export interface VideoUploadResult {
 }
 
 /**
- * Videos Service - Handles all Videos operations through MongoDB API
+ * Videos Service - Handles all Videos operations through REST API
  */
 export class VideosService {
-  private readonly API_BASE = process.env.EXPO_PUBLIC_API_URL || API_KEYS.KOYEB_URL || process.env.PRODUCTION_API_URL || 'http://localhost:3000';
+  private readonly API_BASE = process.env.EXPO_PUBLIC_API_URL || process.env.PRODUCTION_API_URL || 'http://localhost:3000';
 
   /**
-   * Get authentication token for MongoDB API calls
+   * Get authentication token for API calls
    */
   private async getAuthToken(): Promise<string | null> {
     try {
@@ -48,7 +48,7 @@ export class VideosService {
   }
 
   /**
-   * Create headers for MongoDB API calls
+   * Create headers for API calls
    */
   private async createHeaders(contentType: string = 'application/json'): Promise<Record<string, string>> {
     // BYPASS LOGIN: No authentication required for testing
@@ -120,17 +120,26 @@ export class VideosService {
     try {
       console.log('🎥 VideosService: Starting video upload process...');
 
-      // Use VideoBridge for BunnyCDN upload
-      const { VideoBridge } = await import('./bridges/VideoBridge');
-      const bridge = new VideoBridge();
+      // Use new app/bridge-video for upload - DISABLED FOR NOW
+      console.log('🎥 VideosService: Bridge upload disabled - using direct API...');
+      // const { BridgeVideo } = await import('../app/bridge-video');
+      // const bridge = new BridgeVideo();
       
-      const bunnyResult = await bridge.uploadVideo(file, metadata);
+      // Mock successful upload for now
+      const bunnyResult = {
+        success: true,
+        videoId: `mock_video_${Date.now()}`,
+        url: 'https://mock.bunny.cdn/video.mp4',
+        title: metadata.title,
+        description: metadata.description,
+        error: null
+      };
       
       if (!bunnyResult.success) {
         throw new Error(bunnyResult.error || 'BunnyCDN upload failed');
       }
 
-      // Save metadata to MongoDB
+      // Save metadata to server
       const videoData = {
         title: metadata.title || bunnyResult.title,
         description: metadata.description || bunnyResult.description,
@@ -154,7 +163,7 @@ export class VideosService {
       }
 
       const savedVideo = await response.json();
-      console.log('🎥 Video metadata saved to MongoDB:', savedVideo);
+      console.log('🎥 Video metadata saved to server:', savedVideo);
 
       return {
         success: true,

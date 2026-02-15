@@ -1,5 +1,5 @@
 // ==================== SUPPORT/UNSUPPORT API ====================
-// Real support/unsupport functionality with MongoDB backend
+// Real support/unsupport functionality with server backend
 import { API_BASE_URL } from '../constants/network';
 
 const API_URL = API_BASE_URL;
@@ -15,7 +15,7 @@ export interface ApiResponse<T> {
 }
 
 /**
- * Support a user - MongoDB implementation
+ * Support a user - Server implementation
  */
 export const supportUser = async (targetUserId: string, currentUserId: string): Promise<ApiResponse<void>> => {
   try {
@@ -34,7 +34,7 @@ export const supportUser = async (targetUserId: string, currentUserId: string): 
 };
 
 /**
- * Unsupport a user - MongoDB implementation
+ * Unsupport a user - Server implementation
  */
 export const unsupportUser = async (targetUserId: string, currentUserId: string): Promise<ApiResponse<void>> => {
   try {

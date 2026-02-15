@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,127 +8,34 @@ import {
   TextInput,
   ScrollView,
   ActivityIndicator,
-  Platform,
-  Dimensions,
 } from 'react-native';
-import { MaterialIcons, Ionicons } from '@expo/vector-icons';
-import { CameraView, useCameraPermissions } from 'expo-camera';
-import type { CameraType, FlashMode } from 'expo-camera';
-import { Audio } from 'expo-av';
-import { SafeScreen } from '../layout';
-import { liveStreamingService } from '../../services/liveStreamingService';
+import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 interface LiveData {
   title: string;
-  description: string;
+  category: string;
+  audienceType: string;
 }
 
 interface LiveUploadProps {
   onClose: () => void;
 }
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
 export default function LiveUpload({ onClose }: LiveUploadProps) {
-  const [permission, requestPermission] = useCameraPermissions();
-  const [audioPermission, setAudioPermission] = useState<boolean | null>(null);
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [streamId, setStreamId] = useState<string | null>(null);
-  const [viewerCount, setViewerCount] = useState(0);
+  const router = useRouter();
   const [liveData, setLiveData] = useState<LiveData>({
     title: '',
-    description: ''
+    category: '',
+    audienceType: ''
   });
-  const [showPreview, setShowPreview] = useState(true);
-  
-  const cameraRef = useRef<React.ElementRef<typeof CameraView> | null>(null);
+  const [isSetup, setIsSetup] = useState(true);
+  const [isLive, setIsLive] = useState(false);
 
-  useEffect(() => {
-    requestAudioPermission();
-  }, []);
-
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | undefined;
-    
-    if (isStreaming && streamId) {
-      // Update viewer count every 5 seconds
-      interval = setInterval(async () => {
-        try {
-          const count = await liveStreamingService.getViewerCount(streamId);
-          setViewerCount(count);
-        } catch (error) {
-          console.error('Failed to get viewer count:', error);
-        }
-      }, 5000);
-    }
-    
-    return () => {
-      if (interval !== undefined) {
-        clearInterval(interval);
-      }
-    };
-  }, [isStreaming, streamId]);
-
-  const requestAudioPermission = async () => {
-    const { status } = await Audio.requestPermissionsAsync();
-    setAudioPermission(status === 'granted');
-  };
-
-  if (!permission) {
-    return <View />;
-  }
-
-  if (!permission.granted) {
-    return (
-      <SafeScreen>
-        <View style={styles.permissionContainer}>
-          <Ionicons name="camera" size={64} color="#6A5ACD" />
-          <Text style={styles.permissionTitle}>Camera Permission Required</Text>
-          <Text style={styles.permissionText}>
-            Please grant camera permission to go live
-          </Text>
-          <TouchableOpacity 
-            style={styles.permissionButton}
-            onPress={requestPermission}
-          >
-            <Text style={styles.permissionButtonText}>Grant Permission</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.cancelButton}
-            onPress={onClose}
-          >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeScreen>
-    );
-  }
-
-  if (audioPermission === false) {
-    return (
-      <SafeScreen>
-        <View style={styles.permissionContainer}>
-          <Ionicons name="mic" size={64} color="#6A5ACD" />
-          <Text style={styles.permissionTitle}>Microphone Permission Required</Text>
-          <Text style={styles.permissionText}>
-            Please grant microphone permission to include audio in your live stream
-          </Text>
-          <TouchableOpacity 
-            style={styles.permissionButton}
-            onPress={requestAudioPermission}
-          >
-            <Text style={styles.permissionButtonText}>Grant Permission</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.cancelButton}
-            onPress={onClose}
-          >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeScreen>
-    );
-  }
+  const categories = [
+    'Gaming', 'Music', 'Talk Show', 'Education', 'Entertainment',
+    'Sports', 'News', 'Cooking', 'Travel', 'Lifestyle', 'Other'
+  ];
 
   const startLiveStream = async () => {
     if (!liveData.title.trim()) {
@@ -136,146 +43,54 @@ export default function LiveUpload({ onClose }: LiveUploadProps) {
       return;
     }
 
+    if (!liveData.category.trim()) {
+      Alert.alert('Missing Category', 'Please select a category for your live stream');
+      return;
+    }
+
+    if (!liveData.audienceType.trim()) {
+      Alert.alert('Missing Audience', 'Please select audience type for your live stream');
+      return;
+    }
+
     try {
-      setIsStreaming(true);
-      setShowPreview(false);
+      setIsLive(true);
+      Alert.alert('Live Started!', 'Your live stream has started successfully!');
       
-      // Set camera reference for streaming service
-      if (cameraRef.current) {
-        liveStreamingService.setCameraRef(cameraRef.current);
-      }
-      
-      // Start live stream using service
-      const result = await liveStreamingService.startLiveStream({
-        title: liveData.title.trim(),
-        description: liveData.description.trim(),
-        userId: 'guest_user' // Using dummy user ID as per bypass system
+      // TODO: Implement actual live streaming logic
+      console.log('Live Stream Started:', {
+        title: liveData.title,
+        category: liveData.category,
+        audienceType: liveData.audienceType
       });
       
-      if (result.success && result.streamId) {
-        setStreamId(result.streamId);
-        Alert.alert(
-          'Live Stream Started!',
-          'Your live stream has started successfully.',
-          [{ text: 'OK' }]
-        );
-      } else {
-        throw new Error(result.error || 'Failed to start stream');
-      }
     } catch (error) {
       console.error('Failed to start live stream:', error);
       Alert.alert('Error', 'Failed to start live stream');
-      setIsStreaming(false);
-      setShowPreview(true);
-      setStreamId(null);
+      setIsLive(false);
     }
   };
 
-  const stopLiveStream = async () => {
+  const endLiveStream = async () => {
     try {
-      // Stop live stream using service
-      if (streamId) {
-        const result = await liveStreamingService.stopLiveStream(streamId);
-        if (!result.success) {
-          console.error('Failed to stop stream via service:', result.error);
-        }
-      }
+      setIsLive(false);
+      Alert.alert('Live Ended', 'Your live stream has ended successfully.');
       
-      setIsStreaming(false);
-      setShowPreview(true);
-      setStreamId(null);
+      // TODO: Implement actual live streaming end logic
+      console.log('Live Stream Ended');
       
-      Alert.alert(
-        'Live Stream Ended',
-        'Your live stream has ended successfully.',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              setLiveData({ title: '', description: '' });
-              onClose();
-            }
-          }
-        ]
-      );
+      // Reset form
+      setLiveData({ title: '', category: '', audienceType: '' });
+      setIsSetup(true);
+      
     } catch (error) {
-      console.error('Failed to stop live stream:', error);
-      Alert.alert('Error', 'Failed to stop live stream');
+      console.error('Failed to end live stream:', error);
+      Alert.alert('Error', 'Failed to end live stream');
     }
   };
 
-  if (showPreview) {
+    if (isSetup) {
     return (
-      <SafeScreen>
-        <View style={styles.container}>
-          {/* Camera Preview */}
-          <CameraView
-            ref={cameraRef}
-            style={styles.camera}
-            facing={'front' satisfies CameraType}
-            flash={'off' satisfies FlashMode}
-          />
-
-          {/* Live Indicator */}
-          <View style={styles.liveIndicator}>
-            <View style={styles.liveDot} />
-            <Text style={styles.liveText}>LIVE</Text>
-          </View>
-
-          {/* Form Overlay */}
-          <View style={styles.formOverlay}>
-            <View style={styles.formContainer}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Stream Title *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={liveData.title}
-                  onChangeText={(text) => setLiveData(prev => ({ ...prev, title: text }))}
-                  placeholder="Enter live stream title..."
-                  placeholderTextColor="rgba(255,255,255,0.6)"
-                  maxLength={100}
-                  autoFocus
-                />
-                <Text style={styles.charCount}>{liveData.title.length}/100</Text>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Description</Text>
-                <TextInput
-                  style={[styles.input, styles.textArea]}
-                  value={liveData.description}
-                  onChangeText={(text) => setLiveData(prev => ({ ...prev, description: text }))}
-                  placeholder="Describe your live stream..."
-                  placeholderTextColor="rgba(255,255,255,0.6)"
-                  multiline
-                  numberOfLines={3}
-                  textAlignVertical="top"
-                  maxLength={500}
-                />
-                <Text style={styles.charCount}>{liveData.description.length}/500</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Go Live Button */}
-          <View style={styles.bottomControls}>
-            <TouchableOpacity 
-              style={styles.goLiveButton}
-              onPress={startLiveStream}
-              disabled={!liveData.title.trim()}
-            >
-              <MaterialIcons name="live-tv" size={24} color="#6A5ACD" />
-              <Text style={styles.goLiveButtonText}>Go Live</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </SafeScreen>
-    );
-  }
-
-  // Streaming View
-  return (
-    <SafeScreen>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={styles.placeholder} />
@@ -283,38 +98,131 @@ export default function LiveUpload({ onClose }: LiveUploadProps) {
           <View style={styles.placeholder} />
         </View>
 
-        {/* Camera View while streaming */}
-        <CameraView
-          ref={cameraRef}
-          style={styles.camera}
-          facing={'front' satisfies CameraType}
-          flash={'off' satisfies FlashMode}
-        />
-
-        {/* Streaming Header */}
-        <View style={styles.streamingHeader}>
-          <View style={styles.streamingInfo}>
-            <View style={styles.liveIndicator}>
-              <View style={styles.liveDot} />
-              <Text style={styles.liveText}>LIVE</Text>
-            </View>
-            <Text style={styles.streamTitle}>{liveData.title}</Text>
+        <View style={styles.setupArea}>
+          <Text style={styles.setupTitle}>Setup Your Live Stream</Text>
+          
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Stream Title *</Text>
+            <TextInput
+              style={styles.input}
+              value={liveData.title}
+              onChangeText={(text) => setLiveData(prev => ({ ...prev, title: text }))}
+              placeholder="Enter your live stream title..."
+              placeholderTextColor="#666"
+              maxLength={100}
+            />
+            <Text style={styles.charCount}>{liveData.title.length}/100</Text>
           </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Category *</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+              {categories.map((category) => (
+                <TouchableOpacity
+                  key={category}
+                  style={[
+                    styles.categoryChip,
+                    liveData.category === category && styles.categoryChipSelected
+                  ]}
+                  onPress={() => setLiveData(prev => ({ ...prev, category }))}
+                >
+                  <Text style={[
+                    styles.categoryChipText,
+                    liveData.category === category && styles.categoryChipTextSelected
+                  ]}>
+                    {category}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          <View style={styles.audienceSection}>
+            <Text style={styles.label}>Who can join? *</Text>
+            <View style={styles.audienceButtonsContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.audienceButton,
+                  liveData.audienceType === 'invite' && styles.audienceButtonSelected
+                ]}
+                onPress={() => setLiveData(prev => ({ ...prev, audienceType: 'invite' }))}
+              >
+                <MaterialIcons name="person-add" size={24} color="#6A5ACD" />
+                <Text style={styles.audienceButtonText}>Invite</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.audienceButton,
+                  liveData.audienceType === 'friends' && styles.audienceButtonSelected
+                ]}
+                onPress={() => setLiveData(prev => ({ ...prev, audienceType: 'friends' }))}
+              >
+                <MaterialIcons name="people" size={24} color="#6A5ACD" />
+                <Text style={styles.audienceButtonText}>Friends</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.audienceButton,
+                  liveData.audienceType === 'country' && styles.audienceButtonSelected
+                ]}
+                onPress={() => setLiveData(prev => ({ ...prev, audienceType: 'country' }))}
+              >
+                <MaterialIcons name="public" size={24} color="#6A5ACD" />
+                <Text style={styles.audienceButtonText}>Country</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           <TouchableOpacity 
-            style={styles.stopButton}
-            onPress={stopLiveStream}
+            style={[
+              styles.goLiveButton,
+              (!liveData.title.trim() || !liveData.category.trim() || !liveData.audienceType.trim()) && styles.goLiveButtonDisabled
+            ]}
+            onPress={startLiveStream}
           >
-            <Text style={styles.stopButtonText}>END</Text>
+            <MaterialIcons name="live-tv" size={24} color="#fff" />
+            <Text style={styles.goLiveButtonText}>Go Live</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Viewers Count */}
-        <View style={styles.viewersContainer}>
-          <Ionicons name="eye" size={16} color="#fff" />
-          <Text style={styles.viewersText}>{viewerCount} viewers</Text>
-        </View>
       </ScrollView>
-    </SafeScreen>
+    );
+  }
+
+  // Live Streaming View
+  return (
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <View style={styles.header}>
+        <View style={styles.placeholder} />
+        <View style={styles.placeholder} />
+        <View style={styles.placeholder} />
+      </View>
+
+      <View style={styles.liveArea}>
+        <View style={styles.liveIndicator}>
+          <View style={styles.liveDot} />
+          <Text style={styles.liveText}>LIVE</Text>
+        </View>
+        
+        <View style={styles.streamInfo}>
+          <Text style={styles.streamTitle}>{liveData.title}</Text>
+          <Text style={styles.streamCategory}>{liveData.category}</Text>
+          <Text style={styles.streamAudience}>
+            {liveData.audienceType === 'invite' && 'Invite Only'}
+            {liveData.audienceType === 'friends' && 'Friends Only'}
+            {liveData.audienceType === 'country' && 'Public'}
+          </Text>
+        </View>
+
+        <TouchableOpacity 
+          style={styles.endButton}
+          onPress={endLiveStream}
+        >
+          <Text style={styles.endButtonText}>END STREAM</Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   );
 }
 
@@ -332,20 +240,122 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#333333',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
   placeholder: {
     width: 34,
   },
-  camera: {
+  setupArea: {
+    padding: 20,
+  },
+  setupTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 30,
+    textAlign: 'center',
+  },
+  inputGroup: {
+    marginBottom: 25,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginBottom: 10,
+  },
+  input: {
+    backgroundColor: '#1a1a1a',
+    borderWidth: 1,
+    borderColor: '#333333',
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: '#FFFFFF',
+  },
+  charCount: {
+    fontSize: 12,
+    color: '#666666',
+    textAlign: 'right',
+    marginTop: 4,
+  },
+  categoryScroll: {
+    marginTop: 10,
+  },
+  categoryChip: {
+    backgroundColor: '#1a1a1a',
+    borderWidth: 1,
+    borderColor: '#333333',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 8,
+  },
+  categoryChipSelected: {
+    backgroundColor: '#6A5ACD',
+    borderColor: '#6A5ACD',
+  },
+  categoryChipText: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
+  categoryChipTextSelected: {
+    color: '#fff',
+  },
+  audienceSection: {
+    marginBottom: 30,
+  },
+  audienceButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  audienceButton: {
     flex: 1,
+    backgroundColor: '#1a1a1a',
+    borderWidth: 2,
+    borderColor: '#333333',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+  },
+  audienceButtonSelected: {
+    borderColor: '#6A5ACD',
+    backgroundColor: 'rgba(106, 90, 205, 0.1)',
+  },
+  audienceButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginTop: 8,
+  },
+  goLiveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#6A5ACD',
+    marginHorizontal: 20,
+    marginBottom: 30,
+    paddingVertical: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
+  goLiveButtonDisabled: {
+    backgroundColor: '#444444',
+  },
+  goLiveButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  liveArea: {
+    flex: 1,
+    padding: 20,
+    justifyContent: 'center',
   },
   liveIndicator: {
     position: 'absolute',
-    top: 100,
+    top: 50,
     left: 20,
     flexDirection: 'row',
     alignItems: 'center',
@@ -353,13 +363,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
-    zIndex: 100,
   },
   liveDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FF0000',
     marginRight: 6,
   },
   liveText: {
@@ -367,155 +376,34 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-  formOverlay: {
-    position: 'absolute',
-    bottom: 120,
-    left: 20,
-    right: 20,
-    zIndex: 100,
+  streamInfo: {
+    marginTop: 100,
+    alignItems: 'center',
   },
-  formContainer: {
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    borderRadius: 12,
-    padding: 20,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
+  streamTitle: {
+    fontSize: 20,
+    fontWeight: '700',
     color: '#FFFFFF',
     marginBottom: 8,
   },
-  input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 14,
-    color: '#FFFFFF',
-  },
-  textArea: {
-    height: 80,
-    paddingTop: 12,
-  },
-  charCount: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.6)',
-    textAlign: 'right',
-    marginTop: 4,
-  },
-  bottomControls: {
-    position: 'absolute',
-    bottom: 40,
-    left: 20,
-    right: 20,
-    zIndex: 100,
-  },
-  goLiveButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#6A5ACD',
-    paddingVertical: 16,
-    borderRadius: 12,
-    gap: 8,
-  },
-  goLiveButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  streamingHeader: {
-    position: 'absolute',
-    top: 50,
-    left: 20,
-    right: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    zIndex: 100,
-  },
-  streamingInfo: {
-    flex: 1,
-  },
-  streamTitle: {
-    color: '#FFFFFF',
+  streamCategory: {
     fontSize: 16,
-    fontWeight: '600',
-    marginTop: 8,
+    color: '#6A5ACD',
+    marginBottom: 4,
   },
-  stopButton: {
+  streamAudience: {
+    fontSize: 14,
+    color: '#CCCCCC',
+  },
+  endButton: {
     backgroundColor: 'rgba(255, 0, 0, 0.8)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
     borderRadius: 20,
+    marginTop: 40,
   },
-  stopButtonText: {
+  endButtonText: {
     color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  viewersContainer: {
-    position: 'absolute',
-    bottom: 40,
-    right: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 6,
-    zIndex: 100,
-  },
-  viewersText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  permissionContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  permissionTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#212529',
-    marginTop: 20,
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  permissionText: {
-    fontSize: 16,
-    color: '#6c757d',
-    textAlign: 'center',
-    marginBottom: 30,
-    lineHeight: 24,
-  },
-  permissionButton: {
-    backgroundColor: '#6A5ACD',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  permissionButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  cancelButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-  },
-  cancelButtonText: {
-    color: '#6c757d',
     fontSize: 16,
     fontWeight: '600',
   },

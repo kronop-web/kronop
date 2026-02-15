@@ -4,7 +4,7 @@
 
 import { videosApi } from './api';
 import { videoChunkingService } from './videoChunkingService'; // Import micro-chunking
-import { hlsOptimizerService } from './hlsOptimizer'; // Import HLS optimization
+// import { hlsOptimizerService } from './hlsOptimizer'; // Service removed
 
 export interface LongVideo {
   id: string;

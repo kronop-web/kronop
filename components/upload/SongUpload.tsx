@@ -7,7 +7,6 @@ import { useRouter } from 'expo-router';
 interface SongData {
   title: string;
   artist: string;
-  description: string;
   tags: string[];
   genre: string;
 }
@@ -24,7 +23,6 @@ export default function SongUpload({ onClose }: SongUploadProps) {
   const [songData, setSongData] = useState<SongData>({
     title: '',
     artist: '',
-    description: '',
     tags: [],
     genre: ''
   });
@@ -214,18 +212,6 @@ export default function SongUpload({ onClose }: SongUploadProps) {
           </ScrollView>
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Description</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            value={songData.description}
-            onChangeText={(text) => setSongData(prev => ({ ...prev, description: text }))}
-            placeholder="Describe your songs (optional)"
-            placeholderTextColor="#666"
-            multiline
-            numberOfLines={3}
-          />
-        </View>
 
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>Tags</Text>

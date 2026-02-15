@@ -1,6 +1,6 @@
 // ==================== SUPPORT SERVICE ====================
 // Handle support/unsupport functionality for reels
-// Sync with MongoDB for persistent support data
+// Sync with server for persistent support data
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -30,7 +30,7 @@ class SupportService {
       // Update local storage first
       await this.updateLocalSupport(reelId, userId, newSupportStatus, timestamp);
       
-      // Try to sync with MongoDB API (with fallback)
+      // Try to sync with server API (with fallback)
       try {
         const response = await fetch(`${this.API_BASE}/api/support`, {
           method: 'POST',
@@ -129,9 +129,9 @@ class SupportService {
   }
 
   /**
-   * Sync all local support data with MongoDB
+   * Sync all local support data with server
    */
-  async syncWithMongoDB(): Promise<{ success: boolean; synced: number; error?: string }> {
+  async syncWithServer(): Promise<{ success: boolean; synced: number; error?: string }> {
     try {
       const supportData = await this.getAllSupportData();
       
@@ -154,7 +154,7 @@ class SupportService {
       }
       
       const result = await response.json();
-      console.log(`🔄 Synced ${supportData.length} support records to MongoDB`);
+      console.log(`🔄 Synced ${supportData.length} support records to server`);
       
       return {
         success: true,
@@ -162,7 +162,7 @@ class SupportService {
       };
       
     } catch (error) {
-      console.error('❌ MongoDB sync failed:', error);
+      console.error('❌ Server sync failed:', error);
       return {
         success: false,
         synced: 0,

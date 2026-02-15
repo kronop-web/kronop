@@ -55,9 +55,8 @@ export default function ShayariPhotoUpload({ onClose }: ShayariPhotoUploadProps)
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsMultipleSelection: false,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
+        allowsEditing: false,
+        quality: 1,
       });
 
       if (!result.canceled && result.assets[0]) {
@@ -83,8 +82,8 @@ export default function ShayariPhotoUpload({ onClose }: ShayariPhotoUploadProps)
         setSelectedFile(file);
       }
     } catch (error) {
-      console.error('Error picking photo:', error);
-      Alert.alert('Error', 'Failed to pick photo');
+      console.error('Error taking photo:', error);
+      Alert.alert('Error', 'Failed to take photo');
     }
   };
 
@@ -183,45 +182,35 @@ export default function ShayariPhotoUpload({ onClose }: ShayariPhotoUploadProps)
       </View>
 
       <View style={styles.uploadArea}>
-        <View style={styles.uploadButtonsRow}>
+        <View style={styles.photoWithButtonContainer}>
           <TouchableOpacity 
-            style={[styles.uploadButton, styles.galleryButton]}
+            style={styles.uploadButton}
             onPress={pickPhoto}
             disabled={uploading}
           >
             <MaterialIcons name="photo-library" size={24} color="#6A5ACD" />
-            <Text style={styles.uploadButtonText}>Gallery</Text>
-            <Text style={styles.uploadButtonSubtext}>Choose photo</Text>
+            <Text style={styles.uploadButtonText}>Choose Photo</Text>
+            <Text style={styles.uploadButtonSubtext}>From gallery</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={[styles.uploadButton, styles.cameraButton]}
-            onPress={takePhoto}
-            disabled={uploading}
-          >
-            <MaterialIcons name="photo-camera" size={24} color="#6A5ACD" />
-            <Text style={styles.uploadButtonText}>Camera</Text>
-            <Text style={styles.uploadButtonSubtext}>Take photo</Text>
-          </TouchableOpacity>
+          {selectedFile && (
+            <View style={styles.photoBesideButton}>
+              <Image 
+                source={{ uri: selectedFile.uri }} 
+                style={styles.selectedFileImage} 
+                onLoad={() => console.log('[SHAYARI_UPLOAD]: Image loaded successfully:', selectedFile.uri)}
+                onError={(error) => console.error('[SHAYARI_UPLOAD]: Image failed to load:', error)}
+              />
+              {shayariData.shayari_text.trim() && (
+                <View style={styles.shayariTextOverlay}>
+                  <Text style={styles.shayariTextOnPhoto}>
+                    {shayariData.shayari_text}
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
         </View>
-
-        {selectedFile && (
-          <View style={styles.selectedFileContainer}>
-            <Text style={styles.selectedFileTitle}>Selected Photo</Text>
-            <Image 
-              source={{ uri: selectedFile.uri }} 
-              style={styles.selectedFileImage} 
-              onLoad={() => console.log('[SHAYARI_UPLOAD]: Image loaded successfully:', selectedFile.uri)}
-              onError={(error) => console.error('[SHAYARI_UPLOAD]: Image failed to load:', error)}
-            />
-            <TouchableOpacity
-              style={styles.removeFileButton}
-              onPress={() => setSelectedFile(null)}
-            >
-              <MaterialIcons name="close" size={16} color="#fff" />
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
 
       <View style={styles.formSection}>
@@ -390,7 +379,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#1a1a1a',
     borderWidth: 2,
-    borderColor: '#333333',
+    borderColor: '#6A5ACD',
     borderRadius: 12,
     padding: 20,
     alignItems: 'center',
@@ -412,9 +401,13 @@ const styles = StyleSheet.create({
     color: '#6c757d',
     marginTop: 4,
   },
-  selectedFileContainer: {
-    marginTop: 16,
+  photoWithButtonContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 16,
+  },
+  photoBesideButton: {
+    position: 'relative',
   },
   selectedFileTitle: {
     fontSize: 16,
@@ -423,15 +416,39 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   selectedFileImage: {
-    width: 200,
-    height: 150,
+    width: 100,
+    height: 100,
     borderRadius: 8,
     backgroundColor: '#1a1a1a',
+    resizeMode: 'cover',
+  },
+  photoWithTextContainer: {
+    position: 'relative',
+    width: 100,
+    height: 100,
+  },
+  shayariTextOverlay: {
+    position: 'absolute',
+    bottom: 5,
+    left: 5,
+    right: 5,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 4,
+    padding: 4,
+  },
+  shayariTextOnPhoto: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '600',
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   removeFileButton: {
     position: 'absolute',
     top: -4,
-    right: 80,
+    right: -4,
     backgroundColor: '#6A5ACD',
     borderRadius: 10,
     width: 20,
