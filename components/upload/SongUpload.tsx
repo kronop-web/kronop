@@ -13,13 +13,21 @@ interface SongData {
 
 interface SongUploadProps {
   onClose: () => void;
+  onUpload?: (files: any[], metadata: any) => Promise<void>;
+  uploading?: boolean;
+  uploadProgress?: number;
 }
 
-export default function SongUpload({ onClose }: SongUploadProps) {
+export default function SongUpload({ 
+  onClose, 
+  onUpload, 
+  uploading: bridgeUploading = false, 
+  uploadProgress: bridgeProgress = 0 
+}: SongUploadProps) {
   const router = useRouter();
   const [selectedFiles, setSelectedFiles] = useState<any[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [internalUploading, setInternalUploading] = useState(false);
+  const [internalUploadProgress, setInternalUploadProgress] = useState(0);
   const [songData, setSongData] = useState<SongData>({
     title: '',
     artist: '',
@@ -114,17 +122,192 @@ export default function SongUpload({ onClose }: SongUploadProps) {
       return;
     }
 
-    uploadSongs();
+    // UI Component - Delegate to Bridge Controller
+    if (onUpload) {
+      // Bridge controls the upload
+      await onUpload(selectedFiles, songData);
+    } else {
+      // Fallback for standalone usage
+      setInternalUploading(true);
+      try {
+        await uploadAudioWithStreaming(selectedFiles, songData, (progress) => {
+          setInternalUploadProgress(progress.percentage);
+        });
+        Alert.alert('Success', 'Songs uploaded successfully to Kronop!');
+        setSelectedFiles([]);
+        setInternalUploading(false);
+        setInternalUploadProgress(0);
+        onClose();
+        router.replace('/');
+      } catch (error: any) {
+        console.error('Song upload failed:', error);
+        Alert.alert('Upload Failed', error.message || 'Failed to upload songs');
+        setInternalUploading(false);
+      }
+    }
   };
 
   const uploadSongs = async () => {
-    // TODO: Implement upload logic
-    Alert.alert('Success', 'Songs uploaded successfully!');
-    setSelectedFiles([]);
-    setUploading(false);
-    setUploadProgress(0);
-    onClose();
-    router.replace('/');
+    setInternalUploading(true);
+    
+    try {
+      // Kronop Audio Streaming Upload System
+      await uploadAudioWithStreaming(selectedFiles, songData, (progress) => {
+        setInternalUploadProgress(progress.percentage);
+      });
+      
+      Alert.alert('Success', 'Songs uploaded successfully to Kronop!');
+      setSelectedFiles([]);
+      setInternalUploading(false);
+      setInternalUploadProgress(0);
+      onClose();
+      router.replace('/');
+    } catch (error: any) {
+      console.error('Song upload failed:', error);
+      Alert.alert('Upload Failed', error.message || 'Failed to upload songs');
+      setInternalUploading(false);
+    }
+  };
+
+  // Audio Streaming Upload Function
+  const uploadAudioWithStreaming = async (files: any[], metadata: any, onProgress?: (progress: any) => void) => {
+    const BUNNY_API_KEY = process.env.EXPO_PUBLIC_BUNNY_API_KEY || '';
+    const BUNNY_STORAGE_ZONE = process.env.EXPO_PUBLIC_BUNNY_STORAGE_ZONE || 'kronop';
+    
+    const uploadResults = [];
+    
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      
+      try {
+        // Update progress
+        const fileProgress = ((i + 1) / files.length) * 100;
+        if (onProgress) onProgress({ percentage: Math.round(fileProgress) });
+        
+        // For large audio files (>10MB), use chunking
+        if (file.size > 10 * 1024 * 1024) {
+          const chunkResult = await uploadAudioInChunks(file, metadata, i);
+          uploadResults.push(chunkResult);
+        } else {
+          // Direct upload for smaller files
+          const fileName = `kronop_audio_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${file.name.split('.').pop() || 'mp3'}`;
+          const bunnyUrl = `https://storage.bunnycdn.net/${BUNNY_STORAGE_ZONE}/${fileName}`;
+          
+          const response = await fetch(bunnyUrl, {
+            method: 'PUT',
+            headers: {
+              'AccessKey': BUNNY_API_KEY,
+              'Content-Type': file.mimeType || 'audio/mpeg'
+            },
+            body: file
+          });
+          
+          if (!response.ok) {
+            throw new Error(`BunnyCDN upload failed: ${response.status}`);
+          }
+          
+          const result = {
+            url: `https://${BUNNY_STORAGE_ZONE}.b-cdn.net/${fileName}`,
+            id: fileName,
+            metadata: {
+              ...metadata,
+              userId: 'guest_user',
+              uploadId: `audio_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              appName: 'Kronop',
+              timestamp: Date.now(),
+              fileName,
+              duration: 180, // Mock duration
+              bitrate: 128, // Mock bitrate
+              streamingUrl: `https://${BUNNY_STORAGE_ZONE}.b-cdn.net/${fileName}`
+            },
+            success: true
+          };
+          
+          uploadResults.push(result);
+        }
+        
+        console.log(`Audio ${i + 1}/${files.length} uploaded successfully`);
+        
+      } catch (error: any) {
+        console.error(`Audio ${i + 1} upload failed:`, error);
+        uploadResults.push({
+          success: false,
+          error: error.message,
+          file: file.name
+        });
+      }
+    }
+    
+    // Check if all uploads succeeded
+    const failedUploads = uploadResults.filter(r => !r.success);
+    if (failedUploads.length > 0) {
+      throw new Error(`${failedUploads.length} songs failed to upload`);
+    }
+    
+    console.log('Audio upload completed:', uploadResults);
+    return uploadResults;
+  };
+
+  // Chunk upload for large audio files
+  const uploadAudioInChunks = async (file: any, metadata: any, index: number) => {
+    const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB chunks
+    const BUNNY_API_KEY = process.env.EXPO_PUBLIC_BUNNY_API_KEY || '';
+    const BUNNY_STORAGE_ZONE = process.env.EXPO_PUBLIC_BUNNY_STORAGE_ZONE || 'kronop';
+    
+    // Get file as ArrayBuffer
+    const response = await fetch(file.uri);
+    const arrayBuffer = await response.arrayBuffer();
+    const blob = new Blob([arrayBuffer]);
+    
+    // Create chunks
+    const chunks: Blob[] = [];
+    let start = 0;
+    while (start < blob.size) {
+      const end = Math.min(start + CHUNK_SIZE, blob.size);
+      chunks.push(blob.slice(start, end));
+      start = end;
+    }
+    
+    const uploadId = `audio_chunk_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    let uploadedUrl = '';
+    
+    // Upload each chunk
+    for (let i = 0; i < chunks.length; i++) {
+      const fileName = `kronop_audio_${uploadId}_chunk_${i}.bin`;
+      const bunnyUrl = `https://storage.bunnycdn.net/${BUNNY_STORAGE_ZONE}/${fileName}`;
+      
+      const chunkResponse = await fetch(bunnyUrl, {
+        method: 'PUT',
+        headers: {
+          'AccessKey': BUNNY_API_KEY,
+          'Content-Type': 'application/octet-stream'
+        },
+        body: chunks[i]
+      });
+      
+      if (!chunkResponse.ok) {
+        throw new Error(`Audio chunk upload failed: ${chunkResponse.status}`);
+      }
+      
+      if (i === 0) {
+        uploadedUrl = `https://${BUNNY_STORAGE_ZONE}.b-cdn.net/${fileName}`;
+      }
+    }
+    
+    return {
+      url: uploadedUrl,
+      id: uploadId,
+      metadata: {
+        ...metadata,
+        userId: 'guest_user',
+        uploadId,
+        appName: 'Kronop',
+        timestamp: Date.now(),
+        totalChunks: chunks.length,
+        chunked: true
+      },
+      success: true
+    };
   };
 
   return (
@@ -246,15 +429,15 @@ export default function SongUpload({ onClose }: SongUploadProps) {
       {/* Upload Button */}
       <View style={styles.section}>
         <TouchableOpacity 
-          style={[styles.uploadButton, uploading && styles.uploadButtonDisabled]}
+          style={[styles.uploadButton, (bridgeUploading || internalUploading) && styles.uploadButtonDisabled]}
           onPress={validateAndUpload}
-          disabled={uploading}
+          disabled={bridgeUploading || internalUploading}
         >
-          {uploading ? (
+          {(bridgeUploading || internalUploading) ? (
             <View style={styles.uploadingContainer}>
               <ActivityIndicator size="small" color="#fff" />
               <Text style={styles.uploadButtonText}>
-                Uploading... {Math.round(uploadProgress)}%
+                Uploading... {Math.round(bridgeProgress || internalUploadProgress)}%
               </Text>
             </View>
           ) : (

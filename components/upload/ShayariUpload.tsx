@@ -23,13 +23,21 @@ interface ShayariPhotoData {
 
 interface ShayariPhotoUploadProps {
   onClose: () => void;
+  onUpload?: (imageUri: string, shayariText: string, metadata: any) => Promise<void>;
+  uploading?: boolean;
+  uploadProgress?: number;
 }
 
-export default function ShayariPhotoUpload({ onClose }: ShayariPhotoUploadProps) {
+export default function ShayariPhotoUpload({ 
+  onClose, 
+  onUpload, 
+  uploading: bridgeUploading = false, 
+  uploadProgress: bridgeProgress = 0 
+}: ShayariPhotoUploadProps) {
   const router = useRouter();
   const [selectedFile, setSelectedFile] = useState<any>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [internalUploading, setInternalUploading] = useState(false);
+  const [internalUploadProgress, setInternalUploadProgress] = useState(0);
   const [shayariData, setShayariData] = useState<ShayariPhotoData>({
     shayari_text: '',
     shayari_author: '',
@@ -164,13 +172,105 @@ export default function ShayariPhotoUpload({ onClose }: ShayariPhotoUploadProps)
       return;
     }
 
-    // TODO: Implement upload logic
-    Alert.alert('Success', 'Shayari uploaded successfully!');
-    setSelectedFile(null);
-    setUploadProgress(0);
-    setUploading(false);
-    onClose();
-    router.replace('/');
+    // UI Component - Delegate to Bridge Controller
+    if (onUpload) {
+      // Bridge controls the upload - Send imageUri, shayariText, and metadata
+      await onUpload(selectedFile.uri, shayariData.shayari_text, {
+        ...shayariData,
+        size: selectedFile.size,
+        type: selectedFile.mimeType || 'image/jpeg',
+        name: selectedFile.name
+      });
+    } else {
+      // Fallback for standalone usage
+      setInternalUploading(true);
+      try {
+        await uploadShayariHybrid(selectedFile, shayariData, (progress) => {
+          setInternalUploadProgress(progress.percentage);
+        });
+        Alert.alert('Success', 'Shayari uploaded successfully to Kronop!');
+        setSelectedFile(null);
+        setInternalUploadProgress(0);
+        setInternalUploading(false);
+        onClose();
+        router.replace('/');
+      } catch (error: any) {
+        console.error('Shayari upload failed:', error);
+        Alert.alert('Upload Failed', error.message || 'Failed to upload shayari');
+        setInternalUploading(false);
+      }
+    }
+  };
+
+  // Text + Image Hybrid Upload Function
+  const uploadShayariHybrid = async (image: any, metadata: any, onProgress?: (progress: any) => void) => {
+    const BUNNY_API_KEY = process.env.EXPO_PUBLIC_BUNNY_API_KEY || '';
+    const BUNNY_STORAGE_ZONE = process.env.EXPO_PUBLIC_BUNNY_STORAGE_ZONE || 'kronop';
+    
+    try {
+      // Step 1: Upload image first (50% progress)
+      if (onProgress) onProgress({ percentage: 25 });
+      
+      const imageFileName = `kronop_shayari_img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${image.name.split('.').pop() || 'jpg'}`;
+      const imageBunnyUrl = `https://storage.bunnycdn.net/${BUNNY_STORAGE_ZONE}/${imageFileName}`;
+      
+      const imageResponse = await fetch(imageBunnyUrl, {
+        method: 'PUT',
+        headers: {
+          'AccessKey': BUNNY_API_KEY,
+          'Content-Type': image.mimeType || 'image/jpeg'
+        },
+        body: image
+      });
+      
+      if (!imageResponse.ok) {
+        throw new Error(`BunnyCDN image upload failed: ${imageResponse.status}`);
+      }
+      
+      const imageUrl = `https://${BUNNY_STORAGE_ZONE}.b-cdn.net/${imageFileName}`;
+      
+      // Step 2: Save text data (75% progress)
+      if (onProgress) onProgress({ percentage: 75 });
+      
+      const shayariTextData = {
+        text: metadata.shayari_text,
+        category: metadata.category,
+        tags: metadata.tags,
+        userId: 'guest_user',
+        uploadId: `shayari_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        appName: 'Kronop',
+        timestamp: Date.now(),
+        imageUrl,
+        imageFileName,
+        type: 'hybrid'
+      };
+      
+      // Mock text data save (in production, this would save to database)
+      const textResult = {
+        id: shayariTextData.uploadId,
+        ...shayariTextData,
+        saved: true
+      };
+      
+      // Step 3: Complete (100% progress)
+      if (onProgress) onProgress({ percentage: 100 });
+      
+      const hybridResult = {
+        imageUrl,
+        imageId: imageFileName,
+        textId: textResult.id,
+        textData: textResult,
+        type: 'hybrid',
+        metadata: shayariTextData
+      };
+      
+      console.log('Shayari hybrid upload completed:', hybridResult);
+      return hybridResult;
+      
+    } catch (error: any) {
+      console.error('Shayari hybrid upload failed:', error);
+      throw error;
+    }
   };
 
   return (
@@ -186,7 +286,7 @@ export default function ShayariPhotoUpload({ onClose }: ShayariPhotoUploadProps)
           <TouchableOpacity 
             style={styles.uploadButton}
             onPress={pickPhoto}
-            disabled={uploading}
+            disabled={bridgeUploading || internalUploading}
           >
             <MaterialIcons name="photo-library" size={24} color="#6A5ACD" />
             <Text style={styles.uploadButtonText}>Choose Photo</Text>
@@ -298,11 +398,11 @@ export default function ShayariPhotoUpload({ onClose }: ShayariPhotoUploadProps)
       </View>
 
       <TouchableOpacity 
-        style={[styles.uploadButtonMain, uploading && styles.uploadButtonDisabled]}
+        style={[styles.uploadButtonMain, (bridgeUploading || internalUploading) && styles.uploadButtonDisabled]}
         onPress={handleUpload}
-        disabled={uploading || !selectedFile}
+        disabled={(bridgeUploading || internalUploading) || !selectedFile}
       >
-        {uploading ? (
+        {(bridgeUploading || internalUploading) ? (
           <>
             <ActivityIndicator size="small" color="#fff" />
             <Text style={styles.uploadButtonText}>
@@ -319,21 +419,19 @@ export default function ShayariPhotoUpload({ onClose }: ShayariPhotoUploadProps)
         )}
       </TouchableOpacity>
 
-      {uploading && (
+      {(bridgeUploading || internalUploading) && (
         <View style={styles.progressContainer}>
           <View style={styles.progressBar}>
             <View 
-              style={[styles.progressFill, { width: `${uploadProgress}%` }]} 
+              style={[styles.progressFill, { width: `${bridgeProgress || internalUploadProgress}%` }]} 
             />
           </View>
-          <Text style={styles.progressText}>
-            {uploadProgress}% - Uploading Shayari Photo...
-          </Text>
+          <Text style={styles.progressText}>{bridgeProgress || internalUploadProgress}%</Text>
         </View>
       )}
     </ScrollView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {

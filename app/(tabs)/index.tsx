@@ -20,7 +20,7 @@ import PhotoUpload from '../../components/upload/PhotoUpload';
 import ReelsUpload from '../../components/upload/ReelsUpload';
 import VideoUpload from '../../components/upload/VideoUpload';
 import LiveUpload from '../../components/upload/LiveUpload';
-import ShayariPhotoUpload from '../../components/upload/ShayariPhotoUpload';
+import ShayariPhotoUpload from '../../components/upload/ShayariUpload';
 import SongUpload from '../../components/upload/SongUpload';
 
 // Bridge imports

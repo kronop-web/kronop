@@ -26,13 +26,21 @@ interface StoryData {
 
 interface StoryUploadProps {
   onClose: () => void;
+  onUpload?: (file: any, metadata: any) => Promise<void>;
+  uploading?: boolean;
+  uploadProgress?: number;
 }
 
-export default function StoryUpload({ onClose }: StoryUploadProps) {
+export default function StoryUpload({ 
+  onClose, 
+  onUpload, 
+  uploading: bridgeUploading = false, 
+  uploadProgress: bridgeProgress = 0 
+}: StoryUploadProps) {
   const router = useRouter();
   const [selectedFile, setSelectedFile] = useState<any>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [internalUploading, setInternalUploading] = useState(false);
+  const [internalUploadProgress, setInternalUploadProgress] = useState(0);
   const [storyData, setStoryData] = useState<StoryData>({
     title: '',
     type: 'photo',
@@ -147,15 +155,79 @@ export default function StoryUpload({ onClose }: StoryUploadProps) {
       return;
     }
 
-    // TODO: Implement upload logic
-    Alert.alert('Success', 'Story uploaded successfully!');
-    setSelectedFile(null);
-    setStoryData({ title: '', type: 'photo', duration: 15, isPrivate: false });
-    setUploadProgress(0);
-    setUploading(false);
+    // UI Component - Delegate to Bridge Controller
+    if (onUpload) {
+      // Bridge controls the upload
+      await onUpload(selectedFile, storyData);
+    } else {
+      // Fallback for standalone usage
+      setInternalUploading(true);
+      try {
+        await uploadStoryDirectly(selectedFile, storyData, (progress) => {
+          setInternalUploadProgress(progress.percentage);
+        });
+        Alert.alert('Success', 'Story uploaded successfully to Kronop!');
+        setSelectedFile(null);
+        setStoryData({ title: '', type: 'photo', duration: 15, isPrivate: false });
+        setInternalUploadProgress(0);
+        setInternalUploading(false);
+        onClose();
+        router.replace('/');
+      } catch (error: any) {
+        console.error('Story upload failed:', error);
+        Alert.alert('Upload Failed', error.message || 'Failed to upload story');
+        setInternalUploading(false);
+      }
+    }
+  };
 
-    onClose();
-    router.replace('/');
+  // Direct Upload Function for Stories
+  const uploadStoryDirectly = async (file: any, metadata: any, onProgress?: (progress: any) => void) => {
+    const BUNNY_API_KEY = process.env.EXPO_PUBLIC_BUNNY_API_KEY || '';
+    const BUNNY_STORAGE_ZONE = process.env.EXPO_PUBLIC_BUNNY_STORAGE_ZONE || 'kronop';
+    
+    try {
+      // Upload directly to BunnyCDN
+      const fileName = `kronop_story_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${file.name.split('.').pop() || 'jpg'}`;
+      const bunnyUrl = `https://storage.bunnycdn.net/${BUNNY_STORAGE_ZONE}/${fileName}`;
+      
+      // Update progress
+      if (onProgress) onProgress({ percentage: 50 });
+      
+      const response = await fetch(bunnyUrl, {
+        method: 'PUT',
+        headers: {
+          'AccessKey': BUNNY_API_KEY,
+          'Content-Type': file.mimeType || 'image/jpeg'
+        },
+        body: file
+      });
+      
+      if (!response.ok) {
+        throw new Error(`BunnyCDN upload failed: ${response.status}`);
+      }
+      
+      // Update progress
+      if (onProgress) onProgress({ percentage: 100 });
+      
+      // Save metadata
+      const storyMetadata = {
+        ...metadata,
+        userId: 'guest_user',
+        uploadId: `story_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        url: `https://${BUNNY_STORAGE_ZONE}.b-cdn.net/${fileName}`,
+        appName: 'Kronop',
+        timestamp: Date.now(),
+        fileName
+      };
+      
+      console.log('Story upload completed:', storyMetadata);
+      return storyMetadata;
+      
+    } catch (error: any) {
+      console.error('Story upload failed:', error);
+      throw error;
+    }
   };
 
   return (
@@ -170,7 +242,7 @@ export default function StoryUpload({ onClose }: StoryUploadProps) {
         <TouchableOpacity 
           style={[styles.uploadButton, selectedFile && styles.uploadButtonSelected]}
           onPress={pickFile}
-          disabled={uploading}
+          disabled={bridgeUploading || internalUploading}
         >
           <MaterialIcons 
             name={storyData.type === 'video' ? "videocam" : "photo-camera"} 
@@ -295,11 +367,11 @@ export default function StoryUpload({ onClose }: StoryUploadProps) {
       </View>
 
       <TouchableOpacity 
-        style={[styles.uploadButtonMain, uploading && styles.uploadButtonDisabled]}
+        style={[styles.uploadButtonMain, (bridgeUploading || internalUploading) && styles.uploadButtonDisabled]}
         onPress={handleUpload}
-        disabled={uploading || !selectedFile}
+        disabled={(bridgeUploading || internalUploading) || !selectedFile}
       >
-        {uploading ? (
+        {(bridgeUploading || internalUploading) ? (
           <>
             <ActivityIndicator size="small" color="#fff" />
             <Text style={styles.uploadButtonText}>Uploading...</Text>
@@ -312,14 +384,14 @@ export default function StoryUpload({ onClose }: StoryUploadProps) {
         )}
       </TouchableOpacity>
 
-      {uploading && (
+      {(bridgeUploading || internalUploading) && (
         <View style={styles.progressContainer}>
           <View style={styles.progressBar}>
             <View 
-              style={[styles.progressFill, { width: `${uploadProgress}%` }]} 
+              style={[styles.progressFill, { width: `${bridgeProgress || internalUploadProgress}%` }]} 
             />
           </View>
-          <Text style={styles.progressText}>{uploadProgress}%</Text>
+          <Text style={styles.progressText}>{bridgeProgress || internalUploadProgress}%</Text>
         </View>
       )}
     </ScrollView>

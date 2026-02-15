@@ -17,6 +17,9 @@ interface VideoData {
 
 interface VideoUploadProps {
   onClose: () => void;
+  onUpload?: (fileUri: string, metadata: any) => Promise<void>;
+  uploading?: boolean;
+  uploadProgress?: number;
 }
 
 const styles = StyleSheet.create({
@@ -279,18 +282,16 @@ const styles = StyleSheet.create({
   },
 });
 
-export default function VideoUpload({ onClose }: VideoUploadProps) {
+export default function VideoUpload({ 
+  onClose, 
+  onUpload, 
+  uploading = false, 
+  uploadProgress = 0 
+}: VideoUploadProps) {
   const router = useRouter();
   const [selectedFile, setSelectedFile] = useState<any>(null);
-  const [uploading, setUploading] = useState(false);
   const [videoData, setVideoData] = useState<VideoData>({ title: '', description: '', category: '', tags: [], coverPhoto: null });
   const [tagInput, setTagInput] = useState('');
-
-  const categories = [
-    'Entertainment', 'Music', 'Gaming', 'Education', 'Technology', 
-    'News', 'Sports', 'Business', 'Health', 'Travel', 'Comedy', 
-    'Lifestyle', 'Food', 'Science', 'Documentary'
-  ];
 
   const formatFileSize = (bytes?: number): string => {
     if (!bytes) return '0 MB';
@@ -298,6 +299,12 @@ export default function VideoUpload({ onClose }: VideoUploadProps) {
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
     return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
   };
+
+  const categories = [
+    'Entertainment', 'Music', 'Gaming', 'Education', 'Technology', 
+    'News', 'Sports', 'Business', 'Health', 'Travel', 'Comedy', 
+    'Lifestyle', 'Food', 'Science', 'Documentary'
+  ];
 
   const pickVideo = async () => {
     try {
@@ -390,17 +397,101 @@ export default function VideoUpload({ onClose }: VideoUploadProps) {
       return;
     }
 
-    setUploading(true);
-    try {
-      // TODO: Implement upload logic
-      Alert.alert('Success', 'Video upload started!');
-      onClose();
-      router.replace('/');
-    } catch (error) {
-      Alert.alert('Error', 'Upload failed');
-    } finally {
-      setUploading(false);
+    // Bridge Control - Send only URI and metadata
+    if (onUpload) {
+      await onUpload(selectedFile.uri, {
+        ...videoData,
+        size: selectedFile.size,
+        type: selectedFile.mimeType || 'video/mp4',
+        name: selectedFile.name
+      });
     }
+  };
+
+  // Chunking Upload Function for Videos
+  const uploadVideoWithChunking = async (file: any, metadata: any, onProgress?: (progress: any) => void) => {
+    const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB chunks
+    const MAX_RETRIES = 3;
+    const BUNNY_API_KEY = process.env.EXPO_PUBLIC_BUNNY_API_KEY || '';
+    const BUNNY_STORAGE_ZONE = process.env.EXPO_PUBLIC_BUNNY_STORAGE_ZONE || 'kronop';
+    
+    // Get file as ArrayBuffer
+    const response = await fetch(file.uri);
+    const arrayBuffer = await response.arrayBuffer();
+    const blob = new Blob([arrayBuffer]);
+    
+    // Create chunks
+    const chunks: Blob[] = [];
+    let start = 0;
+    while (start < blob.size) {
+      const end = Math.min(start + CHUNK_SIZE, blob.size);
+      chunks.push(blob.slice(start, end));
+      start = end;
+    }
+    
+    const uploadId = `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    let uploadedUrl = '';
+    
+    // Upload each chunk to BunnyCDN
+    for (let i = 0; i < chunks.length; i++) {
+      let retries = 0;
+      let success = false;
+      
+      while (retries < MAX_RETRIES && !success) {
+        try {
+          const percentage = Math.round(((i + 1) / chunks.length) * 100);
+          if (onProgress) onProgress({ percentage, currentChunk: i + 1, totalChunks: chunks.length });
+          
+          const fileName = `kronop_video_${uploadId}_chunk_${i}.bin`;
+          const bunnyUrl = `https://storage.bunnycdn.net/${BUNNY_STORAGE_ZONE}/${fileName}`;
+          
+          const uploadResponse = await fetch(bunnyUrl, {
+            method: 'PUT',
+            headers: {
+              'AccessKey': BUNNY_API_KEY,
+              'Content-Type': 'application/octet-stream'
+            },
+            body: chunks[i]
+          });
+          
+          if (!uploadResponse.ok) {
+            throw new Error(`BunnyCDN upload failed: ${uploadResponse.status}`);
+          }
+          
+          if (i === 0) {
+            uploadedUrl = `https://${BUNNY_STORAGE_ZONE}.b-cdn.net/${fileName}`;
+          }
+          
+          success = true;
+          console.log(`Chunk ${i + 1}/${chunks.length} uploaded successfully`);
+          
+        } catch (error) {
+          retries++;
+          console.error(`Chunk ${i + 1} upload failed (attempt ${retries}/${MAX_RETRIES}):`, error);
+          
+          if (retries >= MAX_RETRIES) {
+            throw new Error(`Failed to upload chunk ${i + 1} after ${MAX_RETRIES} attempts`);
+          }
+          
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 1000 * retries));
+        }
+      }
+    }
+    
+    // Save metadata to database (mock implementation)
+    const videoMetadata = {
+      ...metadata,
+      userId: 'guest_user',
+      uploadId,
+      url: uploadedUrl,
+      totalChunks: chunks.length,
+      appName: 'Kronop',
+      timestamp: Date.now()
+    };
+    
+    console.log('Video upload completed:', videoMetadata);
+    return videoMetadata;
   };
 
   return (

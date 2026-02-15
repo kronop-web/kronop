@@ -14,12 +14,21 @@ interface PhotoData {
 interface PhotoUploadProps {
   onClose: () => void;
   isShayari?: boolean;
+  onUpload?: (fileUri: string, metadata: any) => Promise<void>;
+  uploading?: boolean;
+  uploadProgress?: number;
 }
 
-export default function PhotoUpload({ onClose, isShayari = false }: PhotoUploadProps) {
+export default function PhotoUpload({ 
+  onClose, 
+  isShayari = false, 
+  onUpload, 
+  uploading = false, 
+  uploadProgress = 0 
+}: PhotoUploadProps) {
   const router = useRouter();
   const [selectedFiles, setSelectedFiles] = useState<any[]>([]);
-  const [uploading, setUploading] = useState(false);
+  const [internalUploading, setInternalUploading] = useState(false);
   const [photoData, setPhotoData] = useState<PhotoData>({ title: '', description: '', tags: [], category: '' });
   const [tagInput, setTagInput] = useState('');
 
@@ -168,17 +177,111 @@ export default function PhotoUpload({ onClose, isShayari = false }: PhotoUploadP
       return;
     }
 
-    setUploading(true);
-    try {
-      // TODO: Implement upload logic
-      Alert.alert('Success', `${isShayari ? 'Shayari' : 'Photo'} upload started!`);
-      onClose();
-      router.replace('/');
-    } catch (error) {
-      Alert.alert('Error', 'Upload failed');
-    } finally {
-      setUploading(false);
+    // UI Component - Delegate to Bridge Controller
+    if (onUpload) {
+      // Bridge controls the upload - Send first file URI and metadata
+      await onUpload(selectedFiles[0]?.uri || '', {
+        ...photoData,
+        size: selectedFiles[0].size,
+        type: selectedFiles[0].mimeType || 'image/jpeg',
+        name: selectedFiles[0].name
+      });
+    } else {
+      // Fallback for standalone usage
+      setInternalUploading(true);
+      try {
+        await uploadPhotosDirectly(selectedFiles, photoData, isShayari);
+        Alert.alert('Success', `${isShayari ? 'Shayari' : 'Photo'} uploaded successfully to Kronop!`);
+        onClose();
+        router.replace('/');
+      } catch (error: any) {
+        console.error('Photo upload failed:', error);
+        Alert.alert('Upload Failed', error.message || 'Failed to upload photos');
+      } finally {
+        setInternalUploading(false);
+      }
     }
+  };
+
+  // Direct Upload Function for Photos
+  const uploadPhotosDirectly = async (files: any[], metadata: any, isShayari: boolean = false) => {
+    const BUNNY_API_KEY = process.env.EXPO_PUBLIC_BUNNY_API_KEY || '';
+    const BUNNY_STORAGE_ZONE = process.env.EXPO_PUBLIC_BUNNY_STORAGE_ZONE || 'kronop';
+    
+    const uploadResults = [];
+    
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      
+      try {
+        // Create FormData for direct upload
+        const formData = new FormData();
+        formData.append('file', {
+          uri: file.uri,
+          type: file.mimeType || 'image/jpeg',
+          name: file.fileName || `photo_${Date.now()}.jpg`
+        } as any);
+        
+        // Add metadata
+        const uploadMetadata = {
+          ...metadata,
+          userId: 'guest_user',
+          uploadId: `photo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          appName: 'Kronop',
+          timestamp: Date.now(),
+          isShayari,
+          index: i
+        };
+        
+        Object.keys(uploadMetadata).forEach(key => {
+          formData.append(key, uploadMetadata[key]);
+        });
+        
+        // Upload directly to BunnyCDN
+        const fileName = `kronop_photo_${uploadMetadata.uploadId}_${file.fileName || 'image.jpg'}`;
+        const bunnyUrl = `https://storage.bunnycdn.net/${BUNNY_STORAGE_ZONE}/${fileName}`;
+        
+        const response = await fetch(bunnyUrl, {
+          method: 'PUT',
+          headers: {
+            'AccessKey': BUNNY_API_KEY,
+            'Content-Type': 'image/jpeg'
+          },
+          body: file
+        });
+        
+        if (!response.ok) {
+          throw new Error(`BunnyCDN upload failed: ${response.status}`);
+        }
+        
+        const result = {
+          url: `https://${BUNNY_STORAGE_ZONE}.b-cdn.net/${fileName}`,
+          id: fileName,
+          metadata: uploadMetadata,
+          success: true
+        };
+        
+        uploadResults.push(result);
+        console.log(`Photo ${i + 1}/${files.length} uploaded successfully`);
+        
+      } catch (error: any) {
+        console.error(`Photo ${i + 1} upload failed:`, error);
+        uploadResults.push({
+          success: false,
+          error: error.message,
+          file: file.fileName
+        });
+      }
+    }
+    
+    // Check if all uploads succeeded
+    const failedUploads = uploadResults.filter(r => !r.success);
+    if (failedUploads.length > 0) {
+      throw new Error(`${failedUploads.length} photos failed to upload`);
+    }
+    
+    console.log('Photo upload completed:', uploadResults);
+    return uploadResults;
   };
 
   const renderSelectedFile = ({ item, index }: { item: any; index: number }) => (
@@ -323,21 +426,21 @@ export default function PhotoUpload({ onClose, isShayari = false }: PhotoUploadP
       </View>
 
       <TouchableOpacity 
-        style={[styles.uploadButtonMain, uploading && styles.uploadButtonDisabled]}
+        style={[styles.uploadButtonMain, (uploading || internalUploading) && styles.uploadButtonDisabled]}
         onPress={handleUpload}
-        disabled={uploading || selectedFiles.length === 0}
+        disabled={(uploading || internalUploading) || selectedFiles.length === 0}
       >
-        {uploading ? (
+        {(uploading || internalUploading) ? (
           <>
-            <ActivityIndicator size="small" color="#fff" />
+            <ActivityIndicator size="small" color="#FFFFFF" />
             <Text style={styles.uploadButtonText}>
-              Uploading {selectedFiles.length} {isShayari ? 'shayari' : 'photo'}{selectedFiles.length > 1 ? 's' : ''}...
+              {uploading ? `Uploading... ${uploadProgress}%` : 'Uploading...'}
             </Text>
           </>
         ) : (
           <>
-            <MaterialIcons name="cloud-upload" size={20} color="#fff" />
-            <Text style={styles.uploadButtonText}>{isShayari ? 'Upload Shayari' : 'Upload'} {selectedFiles.length} {isShayari ? 'Shayari' : 'Photo'}{selectedFiles.length !== 1 ? 's' : ''}</Text>
+            <MaterialIcons name="upload" size={24} color="#FFFFFF" />
+            <Text style={styles.uploadButtonText}>Upload {isShayari ? 'Shayari' : 'Photos'}</Text>
           </>
         )}
       </TouchableOpacity>

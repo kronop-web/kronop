@@ -13,6 +13,9 @@ interface ReelData {
 
 interface ReelsUploadProps {
   onClose: () => void;
+  onUpload?: (fileUri: string, metadata: any) => Promise<void>;
+  uploading?: boolean;
+  uploadProgress?: number;
 }
 
 const styles = StyleSheet.create({
@@ -196,10 +199,14 @@ const styles = StyleSheet.create({
   },
 });
 
-export default function ReelsUpload({ onClose }: ReelsUploadProps) {
+export default function ReelsUpload({ 
+  onClose, 
+  onUpload, 
+  uploading = false, 
+  uploadProgress = 0 
+}: ReelsUploadProps) {
   const router = useRouter();
   const [selectedFile, setSelectedFile] = useState<any>(null);
-  const [uploading, setUploading] = useState(false);
   const [reelData, setReelData] = useState<ReelData>({ title: '', category: '', tags: [] });
   const [tagInput, setTagInput] = useState('');
 
@@ -213,9 +220,6 @@ export default function ReelsUpload({ onClose }: ReelsUploadProps) {
       const result = await DocumentPicker.getDocumentAsync({
         type: ['video/*'],
         copyToCacheDirectory: true,
-        allowMultiSelection: false,
-        // Full gallery access - not limited to recent files
-        presentationStyle: 'fullScreen',
       });
 
       if (!result.canceled && result.assets[0]) {
@@ -276,17 +280,102 @@ export default function ReelsUpload({ onClose }: ReelsUploadProps) {
       return;
     }
 
-    setUploading(true);
-    try {
-      // TODO: Implement upload logic
-      Alert.alert('Success', 'Reel upload started!');
-      onClose();
-      router.replace('/');
-    } catch (error) {
-      Alert.alert('Error', 'Upload failed');
-    } finally {
-      setUploading(false);
+    // Bridge Control - Send only URI and metadata
+    if (onUpload) {
+      await onUpload(selectedFile.uri, {
+        ...reelData,
+        size: selectedFile.size,
+        type: selectedFile.mimeType || 'video/mp4',
+        name: selectedFile.name
+      });
     }
+  };
+
+  // Chunking Upload Function for Reels
+  const uploadReelWithChunking = async (file: any, metadata: any, onProgress?: (progress: any) => void) => {
+    const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB chunks
+    const MAX_RETRIES = 3;
+    const BUNNY_API_KEY = process.env.EXPO_PUBLIC_BUNNY_API_KEY || '';
+    const BUNNY_STORAGE_ZONE = process.env.EXPO_PUBLIC_BUNNY_STORAGE_ZONE || 'kronop';
+    
+    // Get file as ArrayBuffer
+    const response = await fetch(file.uri);
+    const arrayBuffer = await response.arrayBuffer();
+    const blob = new Blob([arrayBuffer]);
+    
+    // Create chunks
+    const chunks: Blob[] = [];
+    let start = 0;
+    while (start < blob.size) {
+      const end = Math.min(start + CHUNK_SIZE, blob.size);
+      chunks.push(blob.slice(start, end));
+      start = end;
+    }
+    
+    const uploadId = `reel_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    let uploadedUrl = '';
+    
+    // Upload each chunk to BunnyCDN
+    for (let i = 0; i < chunks.length; i++) {
+      let retries = 0;
+      let success = false;
+      
+      while (retries < MAX_RETRIES && !success) {
+        try {
+          const percentage = Math.round(((i + 1) / chunks.length) * 100);
+          if (onProgress) onProgress({ percentage, currentChunk: i + 1, totalChunks: chunks.length });
+          
+          const fileName = `kronop_reel_${uploadId}_chunk_${i}.bin`;
+          const bunnyUrl = `https://storage.bunnycdn.net/${BUNNY_STORAGE_ZONE}/${fileName}`;
+          
+          const uploadResponse = await fetch(bunnyUrl, {
+            method: 'PUT',
+            headers: {
+              'AccessKey': BUNNY_API_KEY,
+              'Content-Type': 'application/octet-stream'
+            },
+            body: chunks[i]
+          });
+          
+          if (!uploadResponse.ok) {
+            throw new Error(`BunnyCDN upload failed: ${uploadResponse.status}`);
+          }
+          
+          if (i === 0) {
+            uploadedUrl = `https://${BUNNY_STORAGE_ZONE}.b-cdn.net/${fileName}`;
+          }
+          
+          success = true;
+          console.log(`Reel Chunk ${i + 1}/${chunks.length} uploaded successfully`);
+          
+        } catch (error) {
+          retries++;
+          console.error(`Reel Chunk ${i + 1} upload failed (attempt ${retries}/${MAX_RETRIES}):`, error);
+          
+          if (retries >= MAX_RETRIES) {
+            throw new Error(`Failed to upload reel chunk ${i + 1} after ${MAX_RETRIES} attempts`);
+          }
+          
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 1000 * retries));
+        }
+      }
+    }
+    
+    // Save metadata to database (mock implementation)
+    const reelMetadata = {
+      ...metadata,
+      userId: 'guest_user',
+      uploadId,
+      url: uploadedUrl,
+      totalChunks: chunks.length,
+      appName: 'Kronop',
+      timestamp: Date.now(),
+      reelType: 'shorts' // For 9:16 vertical videos
+    };
+    
+    console.log('Reel upload completed:', reelMetadata);
+    return reelMetadata;
   };
 
   return (
