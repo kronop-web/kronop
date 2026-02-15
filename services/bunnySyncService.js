@@ -1,6 +1,6 @@
 const axios = require('axios');
 const DatabaseService = require('./databaseService');
-const { BUNNY_CONFIG, LIBRARY_ID_MAP } = require('./config/bunnyConfig');
+const { BUNNY_CONFIG } = require('./config/bunnyConfig');
 
 class BunnySyncService {
   static async verifyVideoExists(videoGuid, type) {
@@ -39,7 +39,7 @@ class BunnySyncService {
       });
       
       return response.status === 200;
-    } catch (error) {
+    } catch (_error) {
       console.log(`❌ Video URL not accessible: ${videoUrl}`);
       return false;
     }

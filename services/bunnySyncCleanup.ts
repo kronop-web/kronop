@@ -51,7 +51,7 @@ class BunnySyncCleanup {
   /**
    * Check multiple videos in parallel for maximum speed
    */
-  async checkMultipleVideos(videos: Array<{ id: string; url: string }>): Promise<SyncResult[]> {
+  async checkMultipleVideos(videos: { id: string; url: string }[]): Promise<SyncResult[]> {
     console.log(`🔍 BunnySync: Checking ${videos.length} videos...`);
     
     const startTime = Date.now();

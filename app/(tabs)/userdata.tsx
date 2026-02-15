@@ -110,12 +110,12 @@ export default function UserDataScreen() {
         return stats;
       };
 
-      const reelsStats = calculateStats(reelsData.data || []);
-      const videosStats = calculateStats(videosData.data || []);
-      const photosStats = calculateStats(photosData.data || []);
-      const liveStats = calculateStats(liveData.data || []);
-      const storiesStats = calculateStats(storiesData.data || []);
-      const shayariPhotosStats = calculateStats(shayariPhotosData.data || []);
+      const reelsStats = calculateStats(Array.isArray(reelsData) ? reelsData : []);
+      const videosStats = calculateStats(Array.isArray(videosData) ? videosData : []);
+      const photosStats = calculateStats(Array.isArray(photosData) ? photosData : []);
+      const liveStats = calculateStats(Array.isArray(liveData) ? liveData : []);
+      const storiesStats = calculateStats(Array.isArray(storiesData) ? storiesData : []);
+      const shayariPhotosStats = calculateStats(Array.isArray(shayariPhotosData) ? shayariPhotosData : []);
 
       // Update sections with new data
       const newSections = [

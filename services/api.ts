@@ -167,69 +167,43 @@ const getUploadUrl = async (contentType: string, fileName: string, fileSize: num
 };
 
 export const uploadReel = async (file: any, metadata: any) => {
-  console.log('[REELS_UPLOAD]: START');
-  
-  // BYPASS LOGIN: Add dummy user ID for testing
-  const enhancedMetadata = {
-    ...metadata,
-    userId: 'guest_user' // Dummy user ID for testing
-  };
-  
-  const fileName = file.name || file.fileName || `reel_${Date.now()}.mp4`;
-  const fileSize = file.size || file.fileSize || 0;
-  
-  console.log('[REELS_UPLOAD]: Details', { fileName, fileSize });
+  console.log('[REELS_UPLOAD]: START - ROCKET SPEED');
   
   try {
-    const { uploadUrl, videoId } = await getUploadUrl('reel', fileName, fileSize, enhancedMetadata);
+    // ROCKET UPLOAD: Instant connection to BunnyCDN
+    const { rocketUpload } = await import('./rocketUploadService');
+    const result = await rocketUpload.uploadReelRocket(file, metadata);
     
-    if (fileSize > 100 * 1024 * 1024) {
-      console.log('[FILE DETAILS] Large file detected, using chunk upload');
-      const config = BUNNY_CONFIG.reels;
-      await uploadInChunks(file, config, videoId, enhancedMetadata);
-    } else {
-      console.log('[FILE DETAILS] Small file detected, using direct upload');
-      await uploadToBunny(file, 'reel', enhancedMetadata);
+    if (!result.success) {
+      throw new Error(result.error || 'Rocket upload failed');
     }
     
-    console.log('[REELS_UPLOAD]: SUCCESS', { videoId, uploadUrl });
-    return { success: true, videoId, url: uploadUrl };
+    console.log('[REELS_UPLOAD]: ROCKET SUCCESS', { uploadTime: result.uploadTime });
+    return result;
+    
   } catch (error) {
-    console.error('[REELS_UPLOAD]: ERROR', error instanceof Error ? error.message : String(error));
+    console.error('[REELS_UPLOAD]: ROCKET ERROR', error);
     throw error;
   }
 };
 
 export const uploadVideo = async (file: any, metadata: any) => {
-  console.log('[VIDEO_UPLOAD]: START');
-  
-  // BYPASS LOGIN: Add dummy user ID for testing
-  const enhancedMetadata = {
-    ...metadata,
-    userId: 'guest_user' // Dummy user ID for testing
-  };
-  
-  const fileName = file.name || file.fileName || `video_${Date.now()}.mp4`;
-  const fileSize = file.size || file.fileSize || 0;
-  
-  console.log('[VIDEO_UPLOAD]: Details', { fileName, fileSize });
+  console.log('[VIDEO_UPLOAD]: START - ROCKET SPEED');
   
   try {
-    const { uploadUrl, videoId } = await getUploadUrl('video', fileName, fileSize, enhancedMetadata);
+    // ROCKET UPLOAD: Instant connection to BunnyCDN
+    const { rocketUpload } = await import('./rocketUploadService');
+    const result = await rocketUpload.uploadVideoRocket(file, metadata);
     
-    if (fileSize > 100 * 1024 * 1024) {
-      console.log('[FILE_DETAILS] Large file detected, using chunk upload');
-      const config = BUNNY_CONFIG.video;
-      await uploadInChunks(file, config, videoId, enhancedMetadata);
-    } else {
-      console.log('[FILE_DETAILS] Small file detected, using direct upload');
-      await uploadToBunny(file, 'video', enhancedMetadata);
+    if (!result.success) {
+      throw new Error(result.error || 'Rocket upload failed');
     }
     
-    console.log('[VIDEO_UPLOAD]: SUCCESS', { videoId, uploadUrl });
-    return { success: true, videoId, url: uploadUrl };
+    console.log('[VIDEO_UPLOAD]: ROCKET SUCCESS', { uploadTime: result.uploadTime });
+    return result;
+    
   } catch (error) {
-    console.error('[VIDEO_UPLOAD]: ERROR', error instanceof Error ? error.message : String(error));
+    console.error('[VIDEO_UPLOAD]: ROCKET ERROR', error);
     throw error;
   }
 };
@@ -927,155 +901,7 @@ const uploadInChunks = async (
   }
 };
 
-// ==================== MAIN BUNNYCDN UPLOAD FUNCTION ====================
-// Real working upload function with proper BunnyCDN API calls
-
-export const uploadToBunny = async (file: any, contentType: string, metadata?: any) => {
-  const config = BUNNY_CONFIG[contentType as keyof typeof BUNNY_CONFIG];
-  if (!config) {
-    throw new Error(`Invalid content type: ${contentType}`);
-  }
-
-  try {
-    if (contentType === 'photos') {
-      // Photos - BunnyCDN Storage API
-      const photoConfig = config as { storageZoneName: string; host: string; apiKey: string };
-      const fileName = file.name || file.fileName || `photo_${Date.now()}.${file.type?.split('/')[1] || 'jpg'}`;
-      const url = `https://${photoConfig.host}/${photoConfig.storageZoneName}/${fileName}`;
-      
-      // Convert file to proper format for upload
-      let fileBlob;
-      if (file.uri) {
-        // React Native file - need to convert to blob
-        const response = await fetch(file.uri);
-        fileBlob = await response.blob();
-      } else {
-        fileBlob = file;
-      }
-      
-      const uploadResponse = await fetch(url, {
-        method: 'PUT',
-        headers: {
-          'AccessKey': photoConfig.apiKey,
-          'Content-Type': file.type || 'application/octet-stream'
-        },
-        body: fileBlob
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error(`BunnyCDN Storage upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`);
-      }
-
-      return {
-        success: true,
-        url: `https://${photoConfig.host}/${photoConfig.storageZoneName}/${fileName}`,
-        fileName: fileName,
-        size: file.size || file.fileSize
-      };
-
-    } else {
-      // Videos/Reels/Live/Story - BunnyCDN Stream API
-      const videoConfig = config as BunnyConfigType;
-      
-      // Step 1: Create video entry first
-      const createVideoUrl = `https://video.bunnycdn.com/library/${videoConfig.libraryId}/videos`;
-      
-      // Get file name for title
-      const fileName = file.name || file.fileName || `video_${Date.now()}.mp4`;
-      const fileSize = file.size || file.fileSize || 0;
-      
-      // Create video with JSON body first
-      const createResponse = await fetch(createVideoUrl, {
-        method: 'POST',
-        headers: {
-          'AccessKey': videoConfig.streamKey || videoConfig.apiKey,
-          'Content-Type': 'application/json',
-          'accept': 'application/json'
-        },
-        body: JSON.stringify({ 
-          title: metadata?.title || fileName.split('.')[0] 
-        })
-      });
-
-      if (!createResponse.ok) {
-        const errorText = await createResponse.text();
-        throw new Error(`BunnyCDN Stream create failed: ${createResponse.status} ${errorText}`);
-      }
-
-      const videoResult = await createResponse.json();
-      
-      // Step 2: Choose upload method based on file size
-      const LARGE_FILE_THRESHOLD = 100 * 1024 * 1024; // 100MB - use chunk upload for larger files
-      
-      if (fileSize > LARGE_FILE_THRESHOLD) {
-        // Use chunk upload for large files
-        console.log('Using chunk upload for large file');
-        await uploadInChunks(file, videoConfig, videoResult.guid, metadata);
-      } else {
-        // Use simple upload for smaller files
-        console.log('Using simple upload for small file');
-        
-        // Prepare file for upload
-        let fileBlob;
-        if (file.uri) {
-          // React Native file - convert to blob
-          const response = await fetch(file.uri);
-          fileBlob = await response.blob();
-        } else {
-          fileBlob = file;
-        }
-        
-        const uploadUrl = `https://video.bunnycdn.com/library/${videoConfig.libraryId}/videos/${videoResult.guid}`;
-        
-        const uploadResponse = await fetch(uploadUrl, {
-          method: 'PUT',
-          headers: {
-            'AccessKey': videoConfig.streamKey || videoConfig.apiKey,
-            'Content-Type': 'application/octet-stream'
-          },
-          body: fileBlob
-        });
-
-        if (!uploadResponse.ok) {
-          const errorText = await uploadResponse.text();
-          throw new Error(`BunnyCDN Stream upload failed: ${uploadResponse.status} ${errorText}`);
-        }
-      }
-      
-      // Step 3: Update video metadata if provided
-      if (metadata && (metadata.description || metadata.tags)) {
-        const updateData: any = {};
-        if (metadata.description) updateData.description = metadata.description;
-        if (metadata.tags && Array.isArray(metadata.tags)) updateData.tags = metadata.tags;
-        
-        await fetch(`https://video.bunnycdn.com/library/${videoConfig.libraryId}/videos/${videoResult.guid}`, {
-          method: 'POST',
-          headers: {
-            'AccessKey': videoConfig.streamKey || videoConfig.apiKey,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(updateData)
-        });
-      }
-      
-      // Step 4: Get final video URL
-      const videoUrl = `https://${videoConfig.host}/${videoResult.guid}/playlist.m3u8`;
-
-      return {
-        success: true,
-        videoId: videoResult.guid,
-        url: videoUrl,
-        libraryId: videoConfig.libraryId,
-        title: metadata?.title || fileName.split('.')[0],
-        description: metadata?.description || ''
-      };
-    }
-
-  } catch (error) {
-    console.error('BunnyCDN upload error:', error);
-    throw error;
-  }
-};
+// Removed unused uploadToBunny function - Using direct Bridge uploads
 
 // ==================== VALIDATION FUNCTIONS ====================
 // File type and size validation for different content types
@@ -1098,7 +924,6 @@ export const validateFileSize = (file: any, type: string) => {
 };
 
 export default {
-  uploadToBunny,
   validateFileType,
   validateFileSize,
   apiCall,

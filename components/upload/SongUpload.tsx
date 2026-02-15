@@ -146,11 +146,7 @@ export default function SongUpload({ onClose }: SongUploadProps) {
         size: file.size || 0,
       };
 
-      uploadQueue.enqueue({
-        type: 'SONG',
-        file: null,
-        metadata: songPayload
-      });
+      uploadQueue.upload('SONG', null, songPayload);
     }
 
     setSelectedFiles([]);

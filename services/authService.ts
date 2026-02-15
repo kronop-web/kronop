@@ -66,27 +66,38 @@ export class AuthService {
   }
 
   /**
-   * Create authenticated headers for API calls
+   * Create authenticated headers for API calls - SAFE VERSION
    */
   async createAuthHeaders(contentType: string = 'application/json'): Promise<Record<string, string>> {
-    const token = await this.getAuthToken();
-    const headers: Record<string, string> = {
-      'Content-Type': contentType,
-    };
-    
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+    try {
+      const token = await this.getAuthToken();
+      const headers: Record<string, string> = {
+        'Content-Type': contentType,
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      return headers;
+    } catch (error) {
+      console.error('🔐 AuthService: Error creating auth headers:', error);
+      // Return headers without auth on error
+      return {
+        'Content-Type': contentType,
+      };
     }
-    
-    return headers;
   }
 
   /**
-   * Login with email and password
+   * Login with email and password - SAFE VERSION
    */
   async login(email: string, password: string): Promise<AuthResult> {
     try {
       console.log('🔐 AuthService: Starting login process...');
+
+      // Clear any existing tokens first
+      await this.clearAllTokens();
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -94,7 +105,7 @@ export class AuthService {
       });
 
       if (error) {
-        throw new Error(error.message);
+        throw new Error(`Login failed: ${error.message}`);
       }
 
       if (!data.user || !data.session) {
@@ -128,6 +139,8 @@ export class AuthService {
 
     } catch (error) {
       console.error('🔐❌ AuthService: Login failed:', error);
+      // Clear tokens on login failure
+      await this.clearAllTokens();
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Login failed'
@@ -248,23 +261,36 @@ export class AuthService {
   }
 
   /**
-   * Refresh authentication token
+   * Refresh authentication token - FIXED VERSION
    */
   async refreshToken(): Promise<{ success: boolean; token?: string; error?: string }> {
     try {
       console.log('🔐 AuthService: Refreshing token...');
 
-      const { data, error } = await supabase.auth.refreshSession();
+      // Get stored refresh token
+      const refreshToken = await AsyncStorage.getItem('supabase_refresh_token');
+      
+      if (!refreshToken) {
+        throw new Error('No refresh token found - please login again');
+      }
+
+      // Use refresh token to get new session
+      const { data, error } = await supabase.auth.refreshSession({
+        refresh_token: refreshToken
+      });
       
       if (error) {
-        throw new Error(error.message);
+        // If refresh fails, clear tokens and force relogin
+        await this.clearAllTokens();
+        throw new Error(`Token expired: ${error.message}. Please login again.`);
       }
 
       if (!data.session) {
-        throw new Error('Token refresh failed: No session returned');
+        await this.clearAllTokens();
+        throw new Error('Token refresh failed: No session returned. Please login again.');
       }
 
-      // Store new token
+      // Store new tokens
       await AsyncStorage.setItem('supabase_token', data.session.access_token);
       
       if (data.session.refresh_token) {
@@ -279,10 +305,29 @@ export class AuthService {
 
     } catch (error) {
       console.error('🔐❌ AuthService: Token refresh failed:', error);
+      // Clear tokens on any error to prevent loops
+      await this.clearAllTokens();
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Token refresh failed'
+        error: error instanceof Error ? error.message : 'Token refresh failed - Please login again'
       };
+    }
+  }
+
+  /**
+   * Clear all authentication tokens
+   */
+  private async clearAllTokens(): Promise<void> {
+    try {
+      await AsyncStorage.multiRemove([
+        'supabase_token',
+        'supabase_refresh_token',
+        'user_token'
+      ]);
+      this.currentUser = null;
+      console.log('🔐 AuthService: All tokens cleared');
+    } catch (error) {
+      console.error('🔐 AuthService: Error clearing tokens:', error);
     }
   }
 

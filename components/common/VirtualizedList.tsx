@@ -1,12 +1,12 @@
 import React, { memo, useMemo, useCallback, useState, useEffect } from 'react';
-import { View, FlatList, Dimensions, ActivityIndicator, Text } from 'react-native';
+import { View, FlatList, Dimensions, ActivityIndicator, Text, FlatListProps } from 'react-native';
 import { theme } from '../../constants/theme';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface Props<T> {
   data: T[];
-  renderItem: (item: T, index: number) => React.ReactNode;
+  renderItem: (item: T, index: number) => React.ReactElement<any, any> | null;
   keyExtractor: (item: T, index: number) => string;
   itemHeight?: number;
   itemWidth?: number;
@@ -14,8 +14,8 @@ interface Props<T> {
   loading?: boolean;
   onEndReached?: () => void;
   onEndReachedThreshold?: number;
-  ListEmptyComponent?: React.ReactNode;
-  ListFooterComponent?: React.ReactNode;
+  ListEmptyComponent?: React.ReactElement<any, any> | null;
+  ListFooterComponent?: React.ReactElement<any, any> | null;
   showsVerticalScrollIndicator?: boolean;
   horizontal?: boolean;
   estimatedItemSize?: number;
@@ -67,7 +67,6 @@ function VirtualizedList<T>({
     
     const start = Math.floor(scrollOffset / itemSize);
     const visibleCount = Math.ceil(containerSize / itemSize) + 5; // Buffer 5 items
-    
     const end = Math.min(start + visibleCount, data.length);
     
     return { start: Math.max(0, start - 2), end }; // Start 2 items early for smooth scrolling
@@ -79,17 +78,11 @@ function VirtualizedList<T>({
     return data.slice(start, end);
   }, [data, visibleRange]);
   
-  // Memoized item layout
-  const getItemLayout = useCallback((data: T[], index: number) => ({
-    length: itemHeight,
-    offset: itemHeight * index,
-    index,
-  }), [itemHeight]);
-  
   // Optimized render item with memoization
   const optimizedRenderItem = useCallback(({ item, index }: { item: T; index: number }) => {
-    return renderItem(item, index);
-  }, [renderItem]);
+    const result = renderItem(item, index);
+    return result || null;
+  }, [renderItem]) as any;
   
   // Handle scroll events for virtualization
   const handleScroll = useCallback((event: any) => {
@@ -101,55 +94,6 @@ function VirtualizedList<T>({
       setVisibleRange(newRange);
     }
   }, [horizontal, getVisibleItems, visibleRange]);
-  
-  // Memoized list props
-  const listProps = useMemo(() => ({
-    data: visibleData,
-    renderItem: optimizedRenderItem,
-    keyExtractor,
-    getItemLayout: numColumns === 1 ? getItemLayout : undefined,
-    numColumns: numColumns > 1 ? numColumns : undefined,
-    onEndReached,
-    onEndReachedThreshold,
-    ListEmptyComponent,
-    ListFooterComponent: loading ? <ActivityIndicator color={theme.colors.primary.main} size="large" /> : ListFooterComponent,
-    showsVerticalScrollIndicator,
-    horizontal,
-    contentContainerStyle: {
-      width: horizontal ? undefined : '100%',
-      paddingHorizontal: numColumns > 1 ? theme.spacing.sm : 0,
-      paddingVertical: theme.spacing.sm,
-    },
-    style: {
-      minHeight: horizontal ? undefined : containerHeight,
-      minWidth: horizontal ? containerWidth : undefined,
-    },
-    removeClippedSubviews: true,
-    maxToRenderPerBatch: maxRenderItems,
-    updateCellsBatchingPeriod: 50, // Update every 50ms for smooth scrolling
-    initialNumToRender: Math.min(maxRenderItems, data.length),
-    windowSize: 10, // Render 10 screens worth of content
-    onScroll: handleScroll,
-    scrollEventThrottle: 16, // 60fps scrolling
-  }), [
-    visibleData,
-    optimizedRenderItem,
-    keyExtractor,
-    getItemLayout,
-    numColumns,
-    onEndReached,
-    onEndReachedThreshold,
-    ListEmptyComponent,
-    ListFooterComponent,
-    showsVerticalScrollIndicator,
-    horizontal,
-    containerHeight,
-    containerWidth,
-    maxRenderItems,
-    data.length,
-    handleScroll,
-    loading
-  ]);
   
   // Performance monitoring
   useEffect(() => {
@@ -167,7 +111,30 @@ function VirtualizedList<T>({
         </View>
       ) : (
         <FlatList
-          {...listProps}
+          data={visibleData}
+          renderItem={optimizedRenderItem}
+          keyExtractor={keyExtractor}
+          numColumns={numColumns > 1 ? numColumns : 1}
+          onEndReached={onEndReached}
+          onEndReachedThreshold={onEndReachedThreshold}
+          ListFooterComponent={loading ? React.createElement(ActivityIndicator, { color: theme.colors.primary.main, size: "large" }) : (ListFooterComponent || null)}
+          showsVerticalScrollIndicator={showsVerticalScrollIndicator}
+          horizontal={horizontal}
+          contentContainerStyle={{
+            width: horizontal ? undefined : '100%',
+            paddingHorizontal: numColumns > 1 ? theme.spacing.sm : 0,
+            paddingVertical: theme.spacing.sm,
+          }}
+          style={{
+            minHeight: horizontal ? undefined : containerHeight,
+            minWidth: horizontal ? containerWidth : undefined,
+          }}
+          maxToRenderPerBatch={maxRenderItems}
+          updateCellsBatchingPeriod={50}
+          initialNumToRender={Math.min(maxRenderItems, data.length)}
+          windowSize={10}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
         />
       )}
       
@@ -193,12 +160,12 @@ const styles = {
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
     paddingVertical: theme.spacing.xxl,
   },
   performanceIndicator: {
-    position: 'absolute',
+    position: 'absolute' as const,
     top: 50,
     right: 10,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
@@ -209,7 +176,6 @@ const styles = {
   performanceText: {
     color: theme.colors.text.primary,
     fontSize: 10,
-    fontFamily: 'monospace',
   },
 };
 

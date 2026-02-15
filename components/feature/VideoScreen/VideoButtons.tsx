@@ -1,5 +1,5 @@
 import React from 'react';
-import { VideoActionButtons } from './VideoActionButtons';
+import VideoActionButtons from './VideoActionButtons';
 
 interface VideoButtonsProps {
   isStarred: boolean;

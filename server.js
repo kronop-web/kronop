@@ -525,10 +525,10 @@ const createUploadEndpoint = (contentType, extraFields = {}) => async (req, res)
 // Public upload endpoints (NO LOGIN)
 app.post('/upload/reel', createUploadEndpoint('reel'));
 app.post('/upload/video', createUploadEndpoint('video'));
-app.post('/upload/live', createUploadEndpoint('live', { streamKey: req.body.streamKey }));
-app.post('/upload/story', createUploadEndpoint('story', { expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000) }));
-app.post('/upload/shayari', createUploadEndpoint('shayari', { shayari_text: req.body.shayari_text, shayari_author: req.body.shayari_author }));
-app.post('/upload/photo', createUploadEndpoint('photo', { category: req.body.category }));
+app.post('/upload/live', (req, res) => createUploadEndpoint('live', { streamKey: req.body.streamKey })(req, res));
+app.post('/upload/story', (req, res) => createUploadEndpoint('story', { expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000) })(req, res));
+app.post('/upload/shayari', (req, res) => createUploadEndpoint('shayari', { shayari_text: req.body.shayari_text, shayari_author: req.body.shayari_author })(req, res));
+app.post('/upload/photo', (req, res) => createUploadEndpoint('photo', { category: req.body.category })(req, res));
 
 // OneSignal client override
 const originalOneSignalClient = require('./services/oneSignalClient');

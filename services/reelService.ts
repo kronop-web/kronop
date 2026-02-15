@@ -72,7 +72,7 @@ export const reelService = {
       if (timer) return;
       timer = setInterval(async () => {
         const result = await reelsApi.getAllReels();
-        const data = result.data || [];
+        const data = Array.isArray(result) ? result : [];
         subscribers.forEach(cb => cb(data));
       }, interval);
     };

@@ -18,7 +18,7 @@ const REDIS_TTL_SECONDS = parseInt(process.env.REDIS_TTL_SECONDS || '30', 10);
 // IP logic removed
 
 // Use centralized configuration
-const BUNNY_API_KEY = bunnyConfig.getMasterApiKey();
+const BUNNY_API_KEY = bunnyConfig.getMasterApiKey(); // This returns null, no master key used
 const BUNNY_ACCESS_KEY = process.env.EXPO_PUBLIC_BUNNY_ACCESS_KEY || process.env.BUNNY_ACCESS_KEY || '';
 const BUNNY_ACCESS_KEY_REELS = process.env.EXPO_PUBLIC_BUNNY_REELS_ACCESS_KEY || process.env.BUNNY_REELS_ACCESS_KEY || '';
 const BUNNY_ACCESS_KEY_VIDEO = process.env.EXPO_PUBLIC_BUNNY_LIBRARY_ACCESS_KEY_VIDEO || process.env.BUNNY_LIBRARY_ACCESS_KEY_VIDEO || '';
@@ -32,18 +32,18 @@ try {
   const redisUrl = process.env.REDIS_URL;
   if (redisUrl) {
     redisClient = redis.createClient({ url: redisUrl });
-    redisClient.on('error', (err) => {
-      console.error('Redis client error:', err.message);
+    redisClient.on('error', (_err) => {
+      console.error('Redis client error: Connection error');
     });
-    redisClient.connect().catch((err) => {
-      console.error('Redis connection failed:', err.message);
+    redisClient.connect().catch((_err) => {
+      console.error('Redis connection failed: Connection failed');
       redisClient = null;
     });
   } else {
     console.warn('REDIS_URL not set, skipping Redis caching');
   }
-} catch (_e) {
-  console.warn('Redis module not available, skipping Redis caching');
+} catch (_error) {
+      console.warn('Redis module not available, skipping Redis caching');
 }
 
 const makeCacheKey = (prefix, type, page, limit, fields) => {
@@ -689,23 +689,6 @@ class BunnyContentService {
     return await this.syncAllContent();
   }
   
-  static async getAllContentForFrontend(page = 1, limit = 20, fields = null) {
-    try {
-      const types = ['Reel', 'Video', 'Live', 'Photo', 'Story'];
-      const results = {};
-      
-      for (const type of types) {
-        const content = await this.getContentForFrontend(type, page, limit, fields);
-        results[type] = content;
-      }
-      
-      return results;
-    } catch (error) {
-      console.error('❌ Error fetching all content:', error);
-      return {};
-    }
-  }
-
   // NEW: getAllContent function for auto-sync scheduler
   static async getAllContent(page = 1, limit = 50) {
     try {

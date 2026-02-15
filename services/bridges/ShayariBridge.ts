@@ -310,6 +310,29 @@ export class ShayariBridge {
   }
 
   /**
+   * List shayari by category
+   * @param category - Category to filter by
+   * @returns Promise<any[]>
+   */
+  async listShayariByCategory(category: string): Promise<any[]> {
+    try {
+      const allShayari = await this.listAllShayari();
+      
+      // Filter by category prefix in filename
+      const filteredShayari = allShayari.filter((shayari: any) => {
+        const fileName = shayari.FileName || '';
+        return fileName.toLowerCase().includes(category.toLowerCase());
+      });
+
+      return filteredShayari;
+
+    } catch (error) {
+      console.error('📝❌ ShayariBridge: List shayari by category failed:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Generate unique filename for shayari
    */
   private generateFileName(file: any, metadata?: ShayariMetadata): string {

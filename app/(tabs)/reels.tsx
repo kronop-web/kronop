@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { MaterialIcons } from '@expo/vector-icons';
+import RunningTitle from '../../components/feature/RunningTitle';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -23,12 +24,30 @@ import { hlsOptimizerService } from '../../services/hlsOptimizer';
 import { CommentSheet } from '../../components/feature/CommentSheet';
 import StatusBarOverlay from '../../components/common/StatusBarOverlay';
 import AudioController from '../../services/AudioController';
-import RightButtons from '../../components/feature/RightButtons';
-import RunningTitle from '../../components/feature/RunningTitle';
 import SupportSection from '../../components/feature/SupportSection';
 import ChannelInfo from '../../components/feature/ChannelInfo';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Simple Button Component - No Background (Fixed: Original icons, medium size)
+const ActionButton = ({ icon, count, onPress, color = '#FFFFFF', isReport = false }: any) => (
+  <TouchableOpacity 
+    style={{ alignItems: 'center' }} 
+    onPress={onPress}
+    activeOpacity={0.7}
+  >
+    <MaterialIcons name={icon} size={26} color={color} />
+    {isReport ? (
+      <Text style={{ color: '#FFFFFF', fontSize: 9, fontWeight: '600', marginTop: 3 }}>
+        Report
+      </Text>
+    ) : (
+      <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600', marginTop: 3 }}>
+        {count >= 1000000 ? `${(count / 1000000).toFixed(1)}M` : count >= 1000 ? `${(count / 1000).toFixed(1)}K` : count}
+      </Text>
+    )}
+  </TouchableOpacity>
+);
 
 interface Reel {
   id: string;
@@ -195,26 +214,42 @@ function ReelItem({
         </View>
       </View>
 
-      <RightButtons
-        itemId={item.id}
-        likes={likes[item.id] || item.likes_count || 0}
-        commentsCount={(comments[item.id] || []).length}
-        shares={shares[item.id] || 0}
-        isLiked={!!starred[item.id]}
-        isSaved={!!saved[item.id]}
-        onLikePress={(id: string, nextLiked: boolean) => {
-          const currentCount = likes[id] || 0;
-          const nextCount = nextLiked ? currentCount + 1 : Math.max(0, currentCount - 1);
-          onLikeChange?.(id, nextLiked, nextCount);
-        }}
-        onCommentPress={(id: string) => onCommentPress?.(id)}
-        onSharePress={(id: string) => {
-          const current = shares[id] || 0;
-          onShareChange?.(id, current + 1);
-        }}
-        onSavePress={(id: string, nextSaved: boolean) => onSaveChange?.(id, nextSaved)}
-        onReportPress={(id: string) => onReportPress?.(id)}
-      />
+      {/* Right Side Buttons - No Background, Save Removed */}
+      <View style={styles.rightButtons}>
+        <ActionButton 
+          icon={starred[item.id] ? 'star' : 'star-border'} 
+          count={likes[item.id] || item.likes_count || 0}
+          onPress={() => {
+            const currentCount = likes[item.id] || 0;
+            const nextLiked = !starred[item.id];
+            const nextCount = nextLiked ? currentCount + 1 : Math.max(0, currentCount - 1);
+            onLikeChange?.(item.id, nextLiked, nextCount);
+          }}
+          color={starred[item.id] ? '#8B00FF' : '#FFFFFF'}
+        />
+        
+        <ActionButton 
+          icon="chat-bubble-outline"
+          count={(comments[item.id] || []).length}
+          onPress={() => onCommentPress?.(item.id)}
+        />
+        
+        <ActionButton 
+          icon="send"
+          count={shares[item.id] || 0}
+          onPress={() => {
+            const current = shares[item.id] || 0;
+            onShareChange?.(item.id, current + 1);
+          }}
+        />
+        
+        <ActionButton 
+          icon="flag"
+          count={0}
+          onPress={() => onReportPress?.(item.id)}
+          isReport={true}
+        />
+      </View>
     </View>
   );
 }
@@ -483,5 +518,14 @@ const styles = StyleSheet.create({
   leftTitleRow: {
     marginTop: 10,
     width: '100%',
+  },
+  rightButtons: {
+    position: 'absolute',
+    right: 12,
+    bottom: 100,
+    alignItems: 'center',
+    justifyContent: 'space-evenly',
+    height: 240,
+    zIndex: 10,
   },
 });

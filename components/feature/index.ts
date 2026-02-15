@@ -1,4 +1,4 @@
-export { VideoCard } from './VideoScreen/VideoCard';
+export { default as VideoCard } from './VideoScreen/VideoCard';
 export { CommentItem } from './CommentItem';
 export { StoryItem } from './StoryItem';
 export { PhotoCategoryCard } from './PhotoCategoryCard';

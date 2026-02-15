@@ -146,15 +146,11 @@ export default function StoryUpload({ onClose }: StoryUploadProps) {
       return;
     }
 
-    uploadQueue.enqueue({
-      type: 'STORY',
-      file: selectedFile,
-      metadata: {
-        title: storyData.title.trim(),
-        type: storyData.type,
-        duration: storyData.duration,
-        isPrivate: storyData.isPrivate
-      }
+    uploadQueue.upload('STORY', selectedFile, {
+      title: storyData.title.trim(),
+      type: storyData.type,
+      duration: storyData.duration,
+      isPrivate: storyData.isPrivate
     });
 
     setSelectedFile(null);

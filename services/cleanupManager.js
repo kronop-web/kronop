@@ -156,6 +156,7 @@ class CleanupManager {
    * Clear old caches
    */
   clearOldCaches() {
+    const toDelete = [];
     const now = Date.now();
     const maxAge = 5 * 60 * 1000; // 5 minutes
     

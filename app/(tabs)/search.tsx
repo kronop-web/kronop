@@ -39,8 +39,8 @@ export default function SearchScreen() {
       // Search Videos
       if (activeFilter === 'all' || activeFilter === 'videos') {
         const videosResult = await videosApi.getVideos();
-        if (videosResult.data) {
-          const filtered = videosResult.data.filter((video: any) => 
+        if (Array.isArray(videosResult)) {
+          const filtered = videosResult.filter((video: any) => 
             video.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             video.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             video.user_profiles?.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -53,8 +53,8 @@ export default function SearchScreen() {
       // Search Reels
       if (activeFilter === 'all' || activeFilter === 'reels') {
         const reelsResult = await reelsApi.getReels();
-        if (reelsResult.data) {
-          const filtered = reelsResult.data.filter((reel: any) => 
+        if (Array.isArray(reelsResult)) {
+          const filtered = reelsResult.filter((reel: any) => 
             reel.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             reel.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             reel.user_profiles?.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||

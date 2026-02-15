@@ -166,16 +166,12 @@ export default function ShayariPhotoUpload({ onClose }: ShayariPhotoUploadProps)
       return;
     }
 
-    uploadQueue.enqueue({
-      type: 'SHAYARI',
-      file: selectedFile,
-      metadata: {
-        title: shayariData.shayari_text.trim().substring(0, 50),
-        content: shayariData.shayari_text.trim(),
-        author: shayariData.shayari_author.trim(),
-        tags: shayariData.tags,
-        category: shayariData.category
-      }
+    uploadQueue.upload('SHAYARI', selectedFile, {
+      title: shayariData.shayari_text.trim().substring(0, 50),
+      content: shayariData.shayari_text.trim(),
+      author: shayariData.shayari_author.trim(),
+      tags: shayariData.tags,
+      category: shayariData.category
     });
 
     setSelectedFile(null);
