@@ -19,10 +19,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../constants/theme';
 import { useSWRContent } from '../../hooks/swr';
-import { videoFeedService } from '../../services/videoFeedService';
 import { hlsOptimizerService } from '../../services/hlsOptimizer';
-import { uniqueViewTracker } from '../../services/uniqueViewTracker';
-import { videoChunkingService } from '../../services/videoChunkingService';
 import { CommentSheet } from '../../components/feature/CommentSheet';
 import StatusBarOverlay from '../../components/common/StatusBarOverlay';
 import AudioController from '../../services/AudioController';
@@ -61,13 +58,11 @@ interface Comment {
   timestamp: string;
 }
 
-// Reel Item Component
+// Simple Reel Item
 function ReelItem({ 
   item, 
   isActive,
   onChannelPress,
-  onVideoComplete,
-  onVideoWatched,
   onLikeChange,
   onCommentPress,
   onShareChange,
@@ -98,42 +93,8 @@ function ReelItem({
     return videoUrl;
   };
 
-  const safePlayerPlay = useCallback(async () => {
-    try {
-      if (playerRef.current && isPlayerReadyRef.current) {
-        await playerRef.current.play();
-      }
-    } catch (error) {
-      console.warn('Error playing video:', error);
-    }
-  }, []);
-
-  const safePlayerPause = useCallback(() => {
-    try {
-      if (playerRef.current && isPlayerReadyRef.current) {
-        playerRef.current.pause();
-      }
-    } catch (error) {
-      console.warn('Error pausing video:', error);
-    }
-  }, []);
-
-  const cleanupPlayer = useCallback(() => {
-    try {
-      isPlayerReadyRef.current = false;
-      if (playerRef.current) {
-        playerRef.current.pause();
-        playerRef.current = null;
-      }
-    } catch (error) {
-      console.warn('Error cleaning up player:', error);
-    }
-  }, []);
-
-  const videoSource = getVideoSource();
-
   const player = useVideoPlayer({
-    uri: videoSource,
+    uri: getVideoSource(),
     headers: {
       'User-Agent': 'KronopApp',
       'Referer': 'https://kronop.app',
@@ -141,63 +102,41 @@ function ReelItem({
     }
   }, (playerInstance) => {
     playerRef.current = playerInstance;
-    playerInstance.loop = false;
+    playerInstance.loop = true; // Loop instead of auto-advance
     AudioController.applyToPlayer(playerInstance, isActive);
     isPlayerReadyRef.current = true;
     setIsVideoReady(true);
 
     if (isActive) {
-      onVideoWatched(item.id);
-      videoChunkingService.getChunk(item.id, 0)
-        .then(chunk => {
-          if (chunk && chunk.loaded) {
-            playerInstance.play();
-            playerInstance.currentTime = 0;
-          } else {
-            setTimeout(() => safePlayerPlay(), 200);
-          }
-        })
-        .catch(() => setTimeout(() => safePlayerPlay(), 200));
+      playerInstance.play();
     }
   });
 
+  // Instant memory flush on unmount
   useEffect(() => {
-    return () => cleanupPlayer();
-  }, []);
-
-  useEffect(() => {
-    if (!isActive || !isVideoReady || !isPlayerReadyRef.current) return;
-
-    const checkCompletion = setInterval(() => {
+    return () => {
       try {
-        if (playerRef.current && playerRef.current.currentTime > 0 && playerRef.current.duration > 0) {
-          const progress = (playerRef.current.currentTime / playerRef.current.duration) * 100;
-          if (progress >= 95) {
-            onVideoComplete();
-            onVideoWatched(item.id, true);
-            clearInterval(checkCompletion);
-          }
+        isPlayerReadyRef.current = false;
+        if (playerRef.current) {
+          playerRef.current.pause();
+          playerRef.current = null;
         }
-      } catch (error: any) {
-        if (error?.message?.includes('already released')) {
-          clearInterval(checkCompletion);
-        }
+      } catch (error) {
+        console.warn('Error cleaning up player:', error);
       }
-    }, 500);
-
-    return () => clearInterval(checkCompletion);
-  }, [isActive, isVideoReady, item.id, onVideoComplete, onVideoWatched]);
+    };
+  }, []);
 
   useEffect(() => {
     if (playerRef.current && isPlayerReadyRef.current) {
       AudioController.applyToPlayer(playerRef.current, isActive);
     }
     if (isActive && !isPaused) {
-      safePlayerPlay();
+      playerRef.current?.play();
     } else if (!isActive) {
-      safePlayerPause();
+      playerRef.current?.pause();
     }
-  }, [isActive, isPaused, safePlayerPlay, safePlayerPause]);
+  }, [isActive, isPaused]);
 
   const handleVideoTap = () => {
     const now = Date.now();
@@ -289,7 +228,6 @@ export default function ReelsScreen() {
   const [isScreenFocused, setIsScreenFocused] = useState(true);
   const insets = useSafeAreaInsets();
   const flatListRef = useRef<FlatList>(null);
-  const hasInitializedRef = useRef(false);
 
   const [starred, setStarred] = useState<Record<string, boolean>>({});
   const [saved, setSaved] = useState<Record<string, boolean>>({});
@@ -303,77 +241,19 @@ export default function ReelsScreen() {
 
   const { data: swrReels, loading: swrLoading, refresh } = useSWRContent('Reel', 1, 50);
 
-  // Combined initialization and cleanup effect
+  // Simple initialization
   useEffect(() => {
     AudioController.initialize().catch(() => {});
-    
-    const initializeViewTracker = async () => {
-      try {
-        const userId = await AsyncStorage.getItem('user_id') || 'demo_user';
-        await uniqueViewTracker.initialize(userId);
-        await uniqueViewTracker.syncPendingViews();
-      } catch (error) {
-        console.error('❌ Error initializing view tracker:', error);
-      }
-    };
-
-    initializeViewTracker();
-
-    return () => {
-      videoChunkingService.cleanupAllStreams();
-    };
   }, []);
 
-  // Combined data and index management effect
+  // Simple data management
   useEffect(() => {
     setLoading(swrLoading);
     const result = Array.isArray(swrReels) ? swrReels : [];
     setReels(result);
+  }, [swrReels, swrLoading]);
 
-    if (!hasInitializedRef.current && result.length > 0) {
-      hasInitializedRef.current = true;
-      const validReels = result.filter(reel => reel?.id && reel?.video_url);
-      if (validReels.length > 0) {
-        const videoIds = validReels.map(reel => reel.id);
-        videoFeedService.initializeVideoPool(videoIds);
-        setCurrentIndex(0);
-        flatListRef.current?.scrollToIndex({ index: 0, animated: false });
-      }
-    }
-
-    // Preload next reel
-    if (result.length > 0) {
-      const nextIndex = currentIndex + 1;
-      if (nextIndex >= 0 && nextIndex < result.length && result[nextIndex]) {
-        videoChunkingService.getChunk(result[nextIndex].id, 0).catch(() => {});
-      }
-    }
-  }, [swrReels, swrLoading, currentIndex]);
-
-  // Combined interaction handlers
-  const handleVideoComplete = useCallback(async () => {
-    await uniqueViewTracker.endView();
-    const nextIndex = videoFeedService.getNextUnwatchedVideo(currentIndex);
-    if (nextIndex !== currentIndex) {
-      setCurrentIndex(nextIndex);
-      setTimeout(() => {
-        flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
-      }, 100);
-    }
-  }, [currentIndex]);
-
-  const handleVideoWatched = useCallback(async (videoId: string, completed: boolean = false) => {
-    videoFeedService.markVideoWatched(videoId, completed);
-    if (completed) {
-      await uniqueViewTracker.endView();
-    }
-  }, []);
-
-  const handleViewChange = useCallback(async (newIndex: number) => {
-    if (newIndex === currentIndex) return;
-    setCurrentIndex(newIndex);
-  }, [currentIndex]);
-
+  // Simple interaction handlers
   const handleLikeChange = useCallback((itemId: string, isLiked: boolean, count: number) => {
     setStarred(prev => ({ ...prev, [itemId]: isLiked }));
     setLikes(prev => ({ ...prev, [itemId]: count }));
@@ -404,6 +284,10 @@ export default function ReelsScreen() {
   }, []);
 
   const handleChannelPress = useCallback((reel: Reel) => {}, []);
+
+  const handleViewChange = useCallback((newIndex: number) => {
+    setCurrentIndex(newIndex);
+  }, []);
 
   const handleAddComment = useCallback(async (itemId: string, text: string) => {
     const newComment: Comment = {
@@ -436,34 +320,6 @@ export default function ReelsScreen() {
     }, [])
   );
 
-  useFocusEffect(
-    React.useCallback(() => {
-      const cleanupInvalidReels = async () => {
-        try {
-          const invalidReelsStr = await AsyncStorage.getItem('invalidReels');
-          const invalidReels = invalidReelsStr ? JSON.parse(invalidReelsStr) : [];
-          
-          if (invalidReels.length > 0) {
-            setReels(prevReels => {
-              const validReels = prevReels.filter(reel => {
-                const isInvalid = invalidReels.some((invalid: any) => 
-                  invalid.videoUrl === reel.video_url || invalid.thumbnailUrl === reel.thumbnail_url
-                );
-                return !isInvalid;
-              });
-              return validReels;
-            });
-            await AsyncStorage.removeItem('invalidReels');
-          }
-        } catch (error) {
-          console.error('❌ Error cleaning invalid reels:', error);
-        }
-      };
-
-      cleanupInvalidReels();
-    }, [])
-  );
-
   const renderReel = ({ item, index }: { item: Reel; index: number }) => {
     const isActive = currentIndex === index && isScreenFocused;
 
@@ -473,8 +329,6 @@ export default function ReelsScreen() {
         index={index}
         isActive={isActive}
         onChannelPress={handleChannelPress}
-        onVideoComplete={handleVideoComplete}
-        onVideoWatched={handleVideoWatched}
         onLikeChange={handleLikeChange}
         onCommentPress={handleCommentPress}
         onShareChange={handleShareChange}
