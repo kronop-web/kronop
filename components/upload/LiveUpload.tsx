@@ -278,10 +278,8 @@ export default function LiveUpload({ onClose }: LiveUploadProps) {
     <SafeScreen>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <MaterialIcons name="close" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Live Stream</Text>
+          <View style={styles.placeholder} />
+          <View style={styles.placeholder} />
           <View style={styles.placeholder} />
         </View>
 
@@ -333,9 +331,6 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#333333',
-  },
-  closeButton: {
-    padding: 5,
   },
   headerTitle: {
     fontSize: 18,

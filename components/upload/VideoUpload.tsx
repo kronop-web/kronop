@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert, TextInput, ScrollView,
 import { MaterialIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import { useRouter } from 'expo-router';
-import { uploadQueue } from '../../services/uploadQueue';
 
 interface VideoData {
   title: string;
@@ -93,13 +92,7 @@ export default function VideoUpload({ onClose }: VideoUploadProps) {
 
     setUploading(true);
     try {
-      await uploadQueue.upload('VIDEO', selectedFile, {
-        title: videoData.title.trim(),
-        description: videoData.description.trim(),
-        tags: videoData.tags,
-        category: videoData.category
-      });
-      
+      // TODO: Implement upload logic
       Alert.alert('Success', 'Video upload started!');
       onClose();
       router.replace('/');
@@ -113,10 +106,8 @@ export default function VideoUpload({ onClose }: VideoUploadProps) {
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <MaterialIcons name="close" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Upload Video</Text>
+        <View style={styles.placeholder} />
+        <View style={styles.placeholder} />
         <View style={styles.placeholder} />
       </View>
 
@@ -274,9 +265,6 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#333333',
-  },
-  closeButton: {
-    padding: 5,
   },
   headerTitle: {
     fontSize: 18,

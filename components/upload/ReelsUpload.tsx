@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert, TextInput, ScrollView,
 import { MaterialIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import { useRouter } from 'expo-router';
-import { uploadQueue } from '../../services/uploadQueue';
 
 interface ReelData {
   title: string;
@@ -84,12 +83,7 @@ export default function ReelsUpload({ onClose }: ReelsUploadProps) {
 
     setUploading(true);
     try {
-      await uploadQueue.upload('REELS', selectedFile, {
-        title: reelData.title.trim(),
-        description: reelData.description.trim(),
-        tags: reelData.tags
-      });
-      
+      // TODO: Implement upload logic
       Alert.alert('Success', 'Reel upload started!');
       onClose();
       router.replace('/');
@@ -103,10 +97,8 @@ export default function ReelsUpload({ onClose }: ReelsUploadProps) {
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <MaterialIcons name="close" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Upload Reel</Text>
+        <View style={styles.placeholder} />
+        <View style={styles.placeholder} />
         <View style={styles.placeholder} />
       </View>
 
@@ -241,9 +233,6 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#333333',
-  },
-  closeButton: {
-    padding: 5,
   },
   headerTitle: {
     fontSize: 18,

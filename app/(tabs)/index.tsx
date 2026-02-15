@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback, memo } from 'react';
-import { View, FlatList, StyleSheet, TouchableOpacity, Text, ActivityIndicator, Platform, Modal, Dimensions, TextInput } from 'react-native';
+import { View, FlatList, StyleSheet, TouchableOpacity, Text, ActivityIndicator, Platform, Modal, Dimensions, TextInput, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -15,6 +15,13 @@ import { photosApi, storiesApi } from '../../services/api';
 import StatusBarOverlay from '../../components/common/StatusBarOverlay';
 import AppLogo from '../../components/common/AppLogo';
 import HeaderButton from '../../components/common/HeaderButton';
+import StoryUpload from '../../components/upload/StoryUpload';
+import PhotoUpload from '../../components/upload/PhotoUpload';
+import ReelsUpload from '../../components/upload/ReelsUpload';
+import VideoUpload from '../../components/upload/VideoUpload';
+import LiveUpload from '../../components/upload/LiveUpload';
+import ShayariPhotoUpload from '../../components/upload/ShayariPhotoUpload';
+import SongUpload from '../../components/upload/SongUpload';
 
 // Mock songs data for music player - Hindi New Songs (15 Songs)
 const mockSongs = [
@@ -161,6 +168,7 @@ export default function HomeScreen() {
   
   // Bottom sheet modal state
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [selectedUploadScreen, setSelectedUploadScreen] = useState<string | null>(null);
   
   // Music player states
   const [currentSongId, setCurrentSongId] = useState<string | null>(null);
@@ -360,39 +368,7 @@ export default function HomeScreen() {
 
   const handleUploadOptionPress = (option: string) => {
     setShowUploadModal(false);
-    
-    switch (option) {
-      case 'Story':
-        // Direct to upload screen with story type
-        router.push('/upload?tab=story');
-        break;
-      case 'Photo':
-        // Direct to upload screen with photo type
-        router.push('/upload?tab=photo');
-        break;
-      case 'Reels':
-        // Direct to upload screen with reels type
-        router.push('/upload?tab=reel');
-        break;
-      case 'Video':
-        // Direct to upload screen with video type
-        router.push('/upload?tab=video');
-        break;
-      case 'Live':
-        // Direct to upload screen with live type
-        router.push('/upload?tab=live');
-        break;
-      case 'Shayari':
-        // Direct to upload screen with shayari type
-        router.push('/upload?tab=shayari');
-        break;
-      case 'Song':
-        // Create new song upload screen (for now, go to upload)
-        router.push('/upload?tab=song');
-        break;
-      default:
-        break;
-    }
+    setSelectedUploadScreen(option);
   };
 
   // Add Story Handler
@@ -808,6 +784,49 @@ export default function HomeScreen() {
           />
         </View>
       </Modal>
+
+      {/* Upload Screens Modal */}
+      <Modal
+        visible={!!selectedUploadScreen}
+        animationType="none"
+        onRequestClose={() => setSelectedUploadScreen(null)}
+      >
+        <View style={styles.fullScreenUploadContainer}>
+          {/* Header with Close Button */}
+          <View style={styles.uploadModalHeader}>
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={() => setSelectedUploadScreen(null)}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="close" size={28} color="#fff" />
+            </TouchableOpacity>
+            
+            <Text style={styles.uploadModalTitle}>
+              {selectedUploadScreen === 'Story' && 'Story Upload'}
+              {selectedUploadScreen === 'Photo' && 'Photo Upload'}
+              {selectedUploadScreen === 'Reels' && 'Reels Upload'}
+              {selectedUploadScreen === 'Video' && 'Video Upload'}
+              {selectedUploadScreen === 'Live' && 'Live Upload'}
+              {selectedUploadScreen === 'Shayari' && 'Shayari Upload'}
+              {selectedUploadScreen === 'Song' && 'Song Upload'}
+            </Text>
+            
+            <View style={styles.placeholder} />
+          </View>
+          
+          {/* Upload Screen Content */}
+          <View style={styles.uploadScreenContainer}>
+            {selectedUploadScreen === 'Story' && <StoryUpload onClose={() => setSelectedUploadScreen(null)} />}
+            {selectedUploadScreen === 'Photo' && <PhotoUpload onClose={() => setSelectedUploadScreen(null)} />}
+            {selectedUploadScreen === 'Reels' && <ReelsUpload onClose={() => setSelectedUploadScreen(null)} />}
+            {selectedUploadScreen === 'Video' && <VideoUpload onClose={() => setSelectedUploadScreen(null)} />}
+            {selectedUploadScreen === 'Live' && <LiveUpload onClose={() => setSelectedUploadScreen(null)} />}
+            {selectedUploadScreen === 'Shayari' && <ShayariPhotoUpload onClose={() => setSelectedUploadScreen(null)} />}
+            {selectedUploadScreen === 'Song' && <SongUpload onClose={() => setSelectedUploadScreen(null)} />}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1131,5 +1150,28 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: theme.typography.fontSize.md,
     paddingVertical: 0,
+  },
+  // Upload Modal Styles
+  fullScreenUploadContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  uploadModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: 0,
+    paddingTop: 20, // Minimum space - just for status bar
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
+  },
+  uploadModalTitle: {
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.text.primary,
+  },
+  uploadScreenContainer: {
+    flex: 1,
   },
 });

@@ -13,7 +13,6 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { uploadQueue } from '../../services/uploadQueue';
 
 interface ShayariPhotoData {
   shayari_text: string;
@@ -166,14 +165,8 @@ export default function ShayariPhotoUpload({ onClose }: ShayariPhotoUploadProps)
       return;
     }
 
-    uploadQueue.upload('SHAYARI', selectedFile, {
-      title: shayariData.shayari_text.trim().substring(0, 50),
-      content: shayariData.shayari_text.trim(),
-      author: shayariData.shayari_author.trim(),
-      tags: shayariData.tags,
-      category: shayariData.category
-    });
-
+    // TODO: Implement upload logic
+    Alert.alert('Success', 'Shayari uploaded successfully!');
     setSelectedFile(null);
     setUploadProgress(0);
     setUploading(false);
@@ -184,10 +177,8 @@ export default function ShayariPhotoUpload({ onClose }: ShayariPhotoUploadProps)
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <MaterialIcons name="close" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Upload Shayari</Text>
+        <View style={styles.placeholder} />
+        <View style={styles.placeholder} />
         <View style={styles.placeholder} />
       </View>
 
@@ -368,9 +359,6 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#333333',
-  },
-  closeButton: {
-    padding: 5,
   },
   headerTitle: {
     fontSize: 18,

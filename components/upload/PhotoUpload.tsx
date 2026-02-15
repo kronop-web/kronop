@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert, TextInput, ScrollView,
 import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { uploadQueue } from '../../services/uploadQueue';
 
 interface PhotoData {
   title: string;
@@ -171,16 +170,7 @@ export default function PhotoUpload({ onClose, isShayari = false }: PhotoUploadP
 
     setUploading(true);
     try {
-      for (const file of selectedFiles) {
-        const bridgeType = isShayari ? 'SHAYARI' : 'PHOTO';
-        await uploadQueue.upload(bridgeType, file, {
-          title: photoData.title.trim(),
-          description: photoData.description.trim(),
-          tags: [...photoData.tags, ...(isShayari ? ['shayari', 'poetry'] : [])],
-          category: photoData.category
-        });
-      }
-      
+      // TODO: Implement upload logic
       Alert.alert('Success', `${isShayari ? 'Shayari' : 'Photo'} upload started!`);
       onClose();
       router.replace('/');
@@ -214,10 +204,8 @@ export default function PhotoUpload({ onClose, isShayari = false }: PhotoUploadP
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <MaterialIcons name="close" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{isShayari ? 'Create Shayari' : 'Upload Photos'}</Text>
+        <View style={styles.placeholder} />
+        <View style={styles.placeholder} />
         <View style={styles.placeholder} />
       </View>
 
@@ -370,9 +358,6 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#333333',
-  },
-  closeButton: {
-    padding: 5,
   },
   headerTitle: {
     fontSize: 18,

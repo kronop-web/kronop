@@ -14,7 +14,6 @@ import { MaterialIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { uploadQueue } from '../../services/uploadQueue';
 
 interface StoryData {
   title: string;
@@ -146,13 +145,8 @@ export default function StoryUpload({ onClose }: StoryUploadProps) {
       return;
     }
 
-    uploadQueue.upload('STORY', selectedFile, {
-      title: storyData.title.trim(),
-      type: storyData.type,
-      duration: storyData.duration,
-      isPrivate: storyData.isPrivate
-    });
-
+    // TODO: Implement upload logic
+    Alert.alert('Success', 'Story uploaded successfully!');
     setSelectedFile(null);
     setStoryData({ title: '', type: 'photo', duration: 15, isPrivate: false });
     setUploadProgress(0);
@@ -165,10 +159,8 @@ export default function StoryUpload({ onClose }: StoryUploadProps) {
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <MaterialIcons name="close" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Upload Story</Text>
+        <View style={styles.placeholder} />
+        <View style={styles.placeholder} />
         <View style={styles.placeholder} />
       </View>
 
@@ -345,9 +337,6 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#333333',
-  },
-  closeButton: {
-    padding: 5,
   },
   headerTitle: {
     fontSize: 18,

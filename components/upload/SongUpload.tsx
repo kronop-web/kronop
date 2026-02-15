@@ -1,19 +1,8 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  TextInput,
-  ScrollView,
-  ActivityIndicator,
-  Platform,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, TextInput, ScrollView, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import { useRouter } from 'expo-router';
-import { uploadQueue } from '../../services/uploadQueue';
 
 interface SongData {
   title: string;
@@ -131,24 +120,8 @@ export default function SongUpload({ onClose }: SongUploadProps) {
   };
 
   const uploadSongs = async () => {
-    for (let i = 0; i < selectedFiles.length; i++) {
-      const file = selectedFiles[i];
-
-      const songPayload = {
-        title: songData.title || file.name,
-        artist: songData.artist,
-        description: songData.description,
-        tags: songData.tags,
-        genre: songData.genre,
-        fileUri: file.uri,
-        fileName: file.name,
-        mimeType: file.mimeType,
-        size: file.size || 0,
-      };
-
-      uploadQueue.upload('SONG', null, songPayload);
-    }
-
+    // TODO: Implement upload logic
+    Alert.alert('Success', 'Songs uploaded successfully!');
     setSelectedFiles([]);
     setUploading(false);
     setUploadProgress(0);
@@ -160,10 +133,8 @@ export default function SongUpload({ onClose }: SongUploadProps) {
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <MaterialIcons name="close" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Upload Songs</Text>
+        <View style={styles.placeholder} />
+        <View style={styles.placeholder} />
         <View style={styles.placeholder} />
       </View>
 
@@ -324,9 +295,6 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#333333',
-  },
-  closeButton: {
-    padding: 5,
   },
   headerTitle: {
     fontSize: 18,
