@@ -11,12 +11,10 @@ interface InteractionBarProps {
   comments?: any[];
   shares?: number;
   isLiked?: boolean;
-  isSaved?: boolean;
   isSupported?: boolean;
   onLikeChange?: (itemId: string, isLiked: boolean, count: number) => void;
   onCommentPress?: (itemId: string) => void;
   onShareChange?: (itemId: string, count: number) => void;
-  onSaveChange?: (itemId: string, isSaved: boolean) => void;
   onSupportChange?: (itemId: string, isSupported: boolean, count: number) => void;
   size?: 'small' | 'medium' | 'large';
   showCounts?: boolean;
@@ -29,12 +27,10 @@ export const InteractionBar: React.FC<InteractionBarProps> = ({
   comments = [],
   shares = 0,
   isLiked = false,
-  isSaved = false,
   isSupported = false,
   onLikeChange,
   onCommentPress,
   onShareChange,
-  onSaveChange,
   size = 'medium',
   showCounts = true,
   layout = 'vertical' // TIKTOK STYLE - Default vertical
