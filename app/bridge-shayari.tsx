@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Alert, ActivityIndicator } from 'react-native';
-import ShayariUpload from '../components/upload/ShayariUpload';
+import ShayariPhotoUpload from '../components/upload/ShayariPhotoUpload';
 
 interface BridgeShayariProps {
   onClose: () => void;
@@ -335,7 +335,7 @@ const BridgeShayari: React.FC<BridgeShayariProps> = ({ onClose }) => {
 
   return (
     <View style={styles.container}>
-      <ShayariUpload 
+      <ShayariPhotoUpload 
         onClose={onClose} 
         onUpload={handleShayariUpload}
         uploading={uploading}
