@@ -14,6 +14,7 @@ import * as FileSystem from 'expo-file-system';
 import { photosApi, storiesApi } from '../../services/api';
 import StatusBarOverlay from '../../components/common/StatusBarOverlay';
 import AppLogo from '../../components/common/AppLogo';
+import HeaderButton from '../../components/common/HeaderButton';
 
 // Mock songs data for music player - Hindi New Songs (15 Songs)
 const mockSongs = [
@@ -350,10 +351,12 @@ export default function HomeScreen() {
     }
   };
 
-  // Upload modal handlers
-  const handleUploadPress = () => {
-    setShowUploadModal(true);
-  };
+  // Compressed header button handlers
+  const handleNotificationPress = () => router.push('/notifications');
+  const handleSearchPress = () => router.push('/search-user/search-user');
+  const handleChatPress = () => router.push('/chat');
+  const handleMusicPress = () => setShowMusicModal(true);
+  const handleUploadPress = () => setShowUploadModal(true);
 
   const handleUploadOptionPress = (option: string) => {
     setShowUploadModal(false);
@@ -596,46 +599,11 @@ export default function HomeScreen() {
       <View style={[styles.header, { paddingTop: 40 }]}>
         <Text style={styles.appTitle}>Kronop</Text>
         <View style={styles.headerActions}>
-          <TouchableOpacity 
-            onPress={() => router.push('/notifications')}
-            hitSlop={theme.hitSlop.md}
-            activeOpacity={0.7}
-            style={styles.headerButton}
-          >
-            <MaterialIcons name="notifications" size={24} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={() => router.push('/search-user/search-user')}
-            hitSlop={theme.hitSlop.md}
-            activeOpacity={0.7}
-            style={styles.headerButton}
-          >
-            <MaterialIcons name="person-search" size={24} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={() => router.push('/chat')}
-            hitSlop={theme.hitSlop.md}
-            activeOpacity={0.7}
-            style={styles.headerButton}
-          >
-            <MaterialIcons name="chat-bubble" size={24} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={() => setShowMusicModal(true)}
-            hitSlop={theme.hitSlop.md}
-            activeOpacity={0.7}
-            style={styles.headerButton}
-          >
-            <MaterialIcons name="music-note" size={24} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={handleUploadPress} 
-            hitSlop={theme.hitSlop.md}
-            activeOpacity={0.7}
-            style={styles.headerButton}
-          >
-            <MaterialIcons name="add-circle" size={24} color="#fff" />
-          </TouchableOpacity>
+          <HeaderButton icon="notifications" onPress={handleNotificationPress} testID="notification-btn" />
+          <HeaderButton icon="person-search" onPress={handleSearchPress} testID="search-btn" />
+          <HeaderButton icon="chat-bubble" onPress={handleChatPress} testID="chat-btn" />
+          <HeaderButton icon="music-note" onPress={handleMusicPress} testID="music-btn" />
+          <HeaderButton icon="add-circle" onPress={handleUploadPress} testID="upload-btn" />
         </View>
       </View>
 
@@ -861,14 +829,7 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.xs,
-  },
-  headerButton: {
-    padding: theme.spacing.xs,
-    minWidth: 40,
-    minHeight: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+    gap: 2, // Reduced from theme.spacing.xs (4px) to 2px for tighter spacing
   },
   // Photo Categories - HORIZONTAL SCROLL, TEXT ONLY
   photoCategoriesContainer: {

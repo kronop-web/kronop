@@ -1,17 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  TextInput,
-  ScrollView,
-  ActivityIndicator,
-  Platform,
-  FlatList,
-  Image,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, TextInput, ScrollView, ActivityIndicator, FlatList, Image } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
@@ -33,13 +21,7 @@ export default function PhotoUpload({ onClose, isShayari = false }: PhotoUploadP
   const router = useRouter();
   const [selectedFiles, setSelectedFiles] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [photoData, setPhotoData] = useState<PhotoData>({
-    title: '',
-    description: '',
-    tags: [],
-    category: ''
-  });
+  const [photoData, setPhotoData] = useState<PhotoData>({ title: '', description: '', tags: [], category: '' });
   const [tagInput, setTagInput] = useState('');
 
   const categories = [
@@ -187,31 +169,26 @@ export default function PhotoUpload({ onClose, isShayari = false }: PhotoUploadP
       return;
     }
 
-    if (!photoData.category.trim()) {
-      Alert.alert('Missing Category', `Please select a category for your ${isShayari ? 'shayari' : 'photos'}`);
-      return;
-    }
-
-    for (const file of selectedFiles) {
-      const bridgeType = isShayari ? 'SHAYARI' : 'PHOTO';
-      uploadQueue.enqueue({
-        type: bridgeType,
-        file,
-        metadata: {
+    setUploading(true);
+    try {
+      for (const file of selectedFiles) {
+        const bridgeType = isShayari ? 'SHAYARI' : 'PHOTO';
+        await uploadQueue.upload(bridgeType, file, {
           title: photoData.title.trim(),
           description: photoData.description.trim(),
           tags: [...photoData.tags, ...(isShayari ? ['shayari', 'poetry'] : [])],
           category: photoData.category
-        }
-      });
+        });
+      }
+      
+      Alert.alert('Success', `${isShayari ? 'Shayari' : 'Photo'} upload started!`);
+      onClose();
+      router.replace('/');
+    } catch (error) {
+      Alert.alert('Error', 'Upload failed');
+    } finally {
+      setUploading(false);
     }
-
-    setSelectedFiles([]);
-    setUploadProgress(0);
-    setUploading(false);
-
-    onClose();
-    router.replace('/');
   };
 
   const renderSelectedFile = ({ item, index }: { item: any; index: number }) => (
@@ -376,19 +353,6 @@ export default function PhotoUpload({ onClose, isShayari = false }: PhotoUploadP
           </>
         )}
       </TouchableOpacity>
-
-      {uploading && (
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBar}>
-            <View 
-              style={[styles.progressFill, { width: `${uploadProgress}%` }]} 
-            />
-          </View>
-          <Text style={styles.progressText}>
-            {uploadProgress}% - Uploading {selectedFiles.length} {isShayari ? 'shayari' : 'photo'}{selectedFiles.length > 1 ? 's' : ''}
-          </Text>
-        </View>
-      )}
     </ScrollView>
   );
 }

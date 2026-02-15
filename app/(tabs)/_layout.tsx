@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Platform } from 'react-native';
+import { Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '../../constants/theme';
 import { Home, Sparkles, Monitor, Radio, Database, User } from 'lucide-react-native';
@@ -8,13 +8,15 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: theme.colors.primary.main,
-        tabBarInactiveTintColor: theme.colors.text.tertiary,
-        tabBarShowLabel: false,
-        animation: 'none',
+    <View style={{ flex: 1, backgroundColor: '#000000' }}>
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarActiveTintColor: theme.colors.primary.main,
+          tabBarInactiveTintColor: theme.colors.text.tertiary,
+          tabBarShowLabel: false,
+          animation: 'none',
+          sceneStyle: { backgroundColor: '#000000' },
         tabBarStyle: {
           backgroundColor: theme.colors.background.primary,
           borderTopColor: theme.colors.border.primary,
@@ -115,5 +117,6 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    </View>
   );
 }

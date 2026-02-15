@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import { View, StyleSheet, Animated, ActivityIndicator, Dimensions } from 'react-native';
+import { View, StyleSheet, Animated, ActivityIndicator, Dimensions, TouchableOpacity } from 'react-native';
 import { VideoView, useVideoPlayer } from 'expo-video';
-import VideoChunker, { ChunkInfo } from '../../../services/videoChunker';
+import { MaterialIcons } from '@expo/vector-icons';
 
 interface VideoPlayerProps {
   videoUrl: string;
@@ -13,30 +13,11 @@ export default function VideoPlayer({ videoUrl, onProgress, isFullscreen = false
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [screenDimensions, setScreenDimensions] = useState(Dimensions.get('window'));
+  const [isPlaying, setIsPlaying] = useState(false);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Chunk management state
-  const [chunks, setChunks] = useState<ChunkInfo[]>([]);
-  const [loadedChunks, setLoadedChunks] = useState<Set<number>>(new Set());
-  const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
 
-  // Initialize chunks when video URL changes
-  useEffect(() => {
-    if (videoUrl) {
-      // For now, we'll use a simple approach - let expo-video handle chunking
-      // We'll implement custom chunking later if needed
-      console.log('VideoPlayer: Initializing streaming for', videoUrl);
-    }
-  }, [videoUrl]);
 
-  // Memoize buffer options to prevent re-renders
-  const bufferOptions = useMemo(() => {
-    return VideoChunker.getBufferOptions({
-      chunkSize: 30,
-      bufferSize: 120,
-      preloadAhead: 60,
-    });
-  }, []);
 
   // Memoize progress callback to prevent re-renders
   const handleProgress = useCallback((currentProgress: number, totalDuration: number) => {
@@ -83,10 +64,15 @@ export default function VideoPlayer({ videoUrl, onProgress, isFullscreen = false
     
     player.loop = false;
     
-    // Start playing immediately when ready
-    if (videoUrl) {
-      player.play();
-    }
+    // Don't auto-play - wait for user interaction
+    // if (videoUrl) {
+    //   player.play();
+    // }
+    
+    // Track playing state
+    const playingListener = player.addListener('playingChange', (event) => {
+      setIsPlaying(event.isPlaying);
+    });
     
     // Simple progress tracking without complex chunking
     const updateProgress = () => {
@@ -126,18 +112,51 @@ export default function VideoPlayer({ videoUrl, onProgress, isFullscreen = false
         clearInterval(progressIntervalRef.current);
         progressIntervalRef.current = null;
       }
+      playingListener?.remove();
     };
   });
 
+  const handlePlayPause = useCallback(() => {
+    if (!player) return;
+    
+    if (isPlaying) {
+      player.pause();
+    } else {
+      player.play();
+    }
+  }, [player, isPlaying]);
+
   const progressPercentage = duration > 0 && progress >= 0 ? (progress / duration) * 100 : 0;
 
-  // Cleanup on unmount to prevent Shared Object errors
+  // Instant cleanup on unmount
   useEffect(() => {
     return () => {
-      // Clear any remaining intervals and references
-      console.log('VideoPlayer: Cleanup completed');
+      // Clear intervals
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+      
+      // Stop video player
+      if (player) {
+        try {
+          // @ts-ignore - expo-video player may not have stop method
+          if ('stop' in player && (player as any).stop) {
+            (player as any).stop();
+          }
+          player.replace(null);
+        } catch (error) {
+          console.warn('VideoPlayer: Error stopping player', error);
+        }
+      }
+      
+      // Clear all state
+      setProgress(0);
+      setDuration(0);
+      
+      console.log('VideoPlayer: Instant cleanup completed');
     };
-  }, []);
+  }, [player]);
 
   if (!player) {
     return (
@@ -171,6 +190,22 @@ export default function VideoPlayer({ videoUrl, onProgress, isFullscreen = false
           nativeControls={false}
         />
       </View>
+      
+      {/* Play/Pause Button Overlay */}
+      {!isPlaying && (
+        <TouchableOpacity 
+          style={styles.playButton}
+          onPress={handlePlayPause}
+          activeOpacity={0.8}
+        >
+          <MaterialIcons 
+            name="play-arrow" 
+            size={64} 
+            color="#FFFFFF" 
+            style={styles.playIcon}
+          />
+        </TouchableOpacity>
+      )}
       
       {/* Progress Line */}
       <View style={styles.progressContainer}>
@@ -215,6 +250,21 @@ const styles = StyleSheet.create({
   loadingContainer: {
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  playButton: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -32 }, { translateY: -32 }],
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 32,
+    width: 64,
+    height: 64,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playIcon: {
+    marginLeft: 4, // Center the play icon
   },
   // Fullscreen styles
   fullscreenVideoContainer: {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Modal, Alert, ActivityIndicator, ActionSheetIOS, Platform, Dimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Modal, Alert, ActivityIndicator, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -9,35 +9,18 @@ import { API_BASE_URL } from '../../constants/network';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { userProfileApi, reelsApi, videosApi, photosApi, liveApi, savedApi } from '../../services/api';
-import userContentService, { ContentType } from '../../services/userContentService';
+import { userProfileApi, reelsApi, videosApi, photosApi, liveApi } from '../../services/api';
 import demoUserService from '../../services/demoUserService';
 
-// Import saved components
-import SavedReels from '../../components/profile/SavedReels';
-import SavedVideos from '../../components/profile/SavedVideos';
-import SavedPhotos from '../../components/profile/SavedPhotos';
-import SavedLive from '../../components/profile/SavedLive';
-import SavedShayari from '../../components/profile/SavedShayari';
-import SavedSongs from '../../components/profile/SavedSongs';
-
-// Tab types as enum to avoid TypeScript string comparison issues
 const TAB_TYPES = {
   REELS: 'reels',
   VIDEO: 'video', 
   LIVE: 'live',
-  PHOTO: 'photo',
-  SAVED_REELS: 'saved-reels',
-  SAVED_VIDEOS: 'saved-videos',
-  SAVED_PHOTOS: 'saved-photos',
-  SAVED_LIVE: 'saved-live',
-  SAVED_SHAYARI: 'saved-shayari',
-  SAVED_SONGS: 'saved-songs'
+  PHOTO: 'photo'
 } as const;
 
 type TabType = typeof TAB_TYPES[keyof typeof TAB_TYPES];
 
-// Google Maps service function
 const googleMapsService = {
   async getUserLocation(): Promise<{ address: string } | null> {
     try {
@@ -45,17 +28,9 @@ const googleMapsService = {
       const token = await AsyncStorage.getItem('supabase_token') || await AsyncStorage.getItem('user_token');
       const response = await fetch(`${BACKEND_URL}/maps/location`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token || ''}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token || ''}` },
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        return data;
-      }
-      return null;
+      return response.ok ? await response.json() : null;
     } catch (error) {
       console.error('Location error:', error);
       return null;
@@ -66,18 +41,12 @@ const googleMapsService = {
     try {
       const BACKEND_URL = API_BASE_URL;
       const token = await AsyncStorage.getItem('supabase_token') || await AsyncStorage.getItem('user_token');
-      
       const response = await fetch(`${BACKEND_URL}/maps/update-location`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token || ''}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token || ''}` },
         body: JSON.stringify({ address }),
       });
-
-      const data = await response.json();
-      return data;
+      return await response.json();
     } catch (error) {
       console.error('Update location error:', error);
       return { success: false };
@@ -95,7 +64,6 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pickingImage, setPickingImage] = useState(false);
-  const [userLocation, setUserLocation] = useState<string>('Loading...');
 
   const [profileData, setProfileData] = useState({
     name: 'Kronop Demo',
@@ -107,36 +75,20 @@ export default function ProfileScreen() {
     location: 'India'
   });
 
-  const [stats, setStats] = useState({
-    posts: 0,
-    supporters: 0,
-    supporting: 0,
-  });
-
+  const [stats, setStats] = useState({ posts: 0, supporters: 0, supporting: 0 });
   const [supportersModalVisible, setSupportersModalVisible] = useState(false);
   const [supportingModalVisible, setSupportingModalVisible] = useState(false);
-  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
-  const [showUserDataModal, setShowUserDataModal] = useState(false);
   const [supportersList, setSupportersList] = useState<any[]>([]);
   const [supportingList, setSupportingList] = useState<any[]>([]);
   const [photos, setPhotos] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
   const [reels, setReels] = useState<any[]>([]);
   const [liveSessions, setLiveSessions] = useState<any[]>([]);
-  const [savedItems, setSavedItems] = useState<any[]>([]);
-  const [savedReels, setSavedReels] = useState<any[]>([]);
-  const [savedVideos, setSavedVideos] = useState<any[]>([]);
-  const [savedPhotos, setSavedPhotos] = useState<any[]>([]);
-  const [savedLive, setSavedLive] = useState<any[]>([]);
-  const [savedShayari, setSavedShayari] = useState<any[]>([]);
-  const [savedSongs, setSavedSongs] = useState<any[]>([]);
 
   const loadStoredCoverPhoto = async () => {
     try {
       const storedCoverImage = await AsyncStorage.getItem('user_cover_image');
-      if (storedCoverImage) {
-        setProfileData(prev => ({...prev, coverImage: storedCoverImage}));
-      }
+      if (storedCoverImage) setProfileData(prev => ({...prev, coverImage: storedCoverImage}));
     } catch (error) {
       console.error('Error loading cover photo:', error);
     }
@@ -150,26 +102,10 @@ export default function ProfileScreen() {
     }
   };
 
-  const loadUserLocation = async () => {
-    try {
-      const locationData = await googleMapsService.getUserLocation();
-      if (locationData && locationData.address) {
-        setUserLocation(locationData.address);
-        setProfileData(prev => ({
-          ...prev,
-          location: locationData.address
-        }));
-      }
-    } catch (error) {
-      console.error('Location error:', error);
-    }
-  };
-
   useEffect(() => {
     loadUserProfile();
     loadUserContent();
     loadStoredCoverPhoto();
-    loadUserLocation();
     checkAndSetDemoMode();
   }, []);
 
@@ -199,7 +135,6 @@ export default function ProfileScreen() {
   const loadUserProfile = async () => {
     try {
       setLoading(true);
-      
       const result = await userProfileApi.getCurrentProfile();
       
       if (result.error) {
@@ -219,9 +154,7 @@ export default function ProfileScreen() {
           location: result.data.location || 'India'
         });
         
-        if (result.data.cover_image) {
-          await saveCoverPhoto(result.data.cover_image);
-        }
+        if (result.data.cover_image) await saveCoverPhoto(result.data.cover_image);
       } else {
         console.warn('⚠️ No profile data returned');
         Alert.alert('Warning', 'Profile data not found. Please try again.');
@@ -236,81 +169,23 @@ export default function ProfileScreen() {
 
   const loadUserContent = async () => {
     try {
+      const [photosResult, videosResult, reelsResult] = await Promise.all([
+        photosApi.getPhotos(),
+        videosApi.getVideos(), 
+        reelsApi.getReels()
+      ]);
       
-      // Load PUBLIC content
-      const photosResult = await photosApi.getPhotos();
-      if (photosResult && photosResult.length > 0) {
-        setPhotos(photosResult);
-      } else {
-        setPhotos([]);
-      }
-
-      const videosResult = await videosApi.getVideos();
-      if (videosResult && videosResult.length > 0) {
-        setVideos(videosResult);
-      } else {
-        setVideos([]);
-      }
-
-      const reelsResult = await reelsApi.getReels();
-      if (reelsResult && reelsResult.length > 0) {
-        setReels(reelsResult);
-      } else {
-        setReels([]);
-      }
-
-      // Load live sessions
+      setPhotos(photosResult || []);
+      setVideos(videosResult || []);
+      setReels(reelsResult || []);
+      
       try {
         const liveResult = await liveApi.getLive();
-        if (liveResult && liveResult.length > 0) {
-          setLiveSessions(liveResult);
-        } else {
-          setLiveSessions([]);
-        }
+        setLiveSessions(liveResult || []);
       } catch (liveError) {
         setLiveSessions([]);
       }
-
-      // Load saved items - Filter by content type
-      try {
-        const [savedReelsData, savedVideosData, savedPhotosData, savedLiveData, savedShayariData, savedSongsData] = await Promise.all([
-          savedApi.getSaved('reel'),      // Changed from 'reels' to 'reel'
-          savedApi.getSaved('video'),     // Changed from 'videos' to 'video' 
-          savedApi.getSaved('photo'),     // Changed from 'photos' to 'photo'
-          savedApi.getSaved('live'),      // Changed from 'live' to 'live'
-          savedApi.getSaved('shayari'),   // Changed from 'shayari' to 'shayari'
-          savedApi.getSaved('song')       // Changed from 'songs' to 'song'
-        ]);
-        
-        setSavedReels(savedReelsData || []);
-        setSavedVideos(savedVideosData || []);
-        setSavedPhotos(savedPhotosData || []);
-        setSavedLive(savedLiveData || []);
-        setSavedShayari(savedShayariData || []);
-        setSavedSongs(savedSongsData || []);
-        
-        // Combine all for general saved items
-        const allSaved = [
-          ...savedReelsData,
-          ...savedVideosData,
-          ...savedPhotosData,
-          ...savedLiveData,
-          ...savedShayariData,
-          ...savedSongsData
-        ];
-        setSavedItems(allSaved);
-      } catch (error) {
-        console.error('❌ Error loading saved items:', error);
-        setSavedItems([]);
-        setSavedReels([]);
-        setSavedVideos([]);
-        setSavedPhotos([]);
-        setSavedLive([]);
-        setSavedShayari([]);
-        setSavedSongs([]);
-      }
-
-      // Load supporters and supporting stats
+      
       await loadSupportStats();
     } catch (error: any) {
       console.error('❌ Public content load error:', error);
@@ -319,7 +194,6 @@ export default function ProfileScreen() {
 
   const loadSupportStats = async () => {
     try {
-      // Mock data for supporters/supporting
       const mockSupporters = [
         { id: 1, username: 'ghansyam_sharma', name: 'Ghansyam Sharma', avatar_url: 'https://picsum.photos/seed/ghansyam/50/50' },
         { id: 2, username: 'user2', name: 'User Two', avatar_url: 'https://picsum.photos/seed/user2/50/50' },
@@ -368,37 +242,25 @@ export default function ProfileScreen() {
         
         const formData = new FormData();
         const asset = result.assets[0];
-        
         const localUri = asset.uri;
         const filename = localUri.split('/').pop() || `${type}_${Date.now()}.jpg`;
         const match = /\.(\w+)$/.exec(filename);
         const fileType = match ? `image/${match[1]}` : 'image/jpeg';
         
-        formData.append('image', {
-          uri: localUri,
-          name: filename,
-          type: fileType,
-        } as any);
-        
+        formData.append('image', { uri: localUri, name: filename, type: fileType } as any);
         formData.append('userId', 'current');
         
         const uploadResult = await userProfileApi.uploadProfileImage(formData, type);
 
         if (uploadResult.data) {
           if (type === 'profile') {
-            const updateResult = await userProfileApi.updateProfile({
-              avatar_url: uploadResult.data,
-            });
-            
+            const updateResult = await userProfileApi.updateProfile({ avatar_url: uploadResult.data });
             if (updateResult.data) {
               setProfileData(prev => ({...prev, profileImage: uploadResult.data}));
               Alert.alert('Success', 'Profile image updated successfully!');
             }
           } else {
-            const updateResult = await userProfileApi.updateProfile({
-              cover_image: uploadResult.data,
-            });
-            
+            const updateResult = await userProfileApi.updateProfile({ cover_image: uploadResult.data });
             if (updateResult.data) {
               setProfileData(prev => ({...prev, coverImage: uploadResult.data}));
               await saveCoverPhoto(uploadResult.data);
@@ -424,9 +286,7 @@ export default function ProfileScreen() {
     try {
       setSaving(true);
       
-      if (profileData.location) {
-        await googleMapsService.updateLocation(profileData.location);
-      }
+      if (profileData.location) await googleMapsService.updateLocation(profileData.location);
       
       const result = await userProfileApi.updateProfile({
         username: profileData.username.replace('@', ''),
@@ -447,7 +307,6 @@ export default function ProfileScreen() {
         await saveCoverPhoto(profileData.coverImage);
         Alert.alert('Success', 'Profile updated successfully!');
         setEditModalVisible(false);
-        
         await loadUserProfile();
         await loadUserContent();
       } else {
@@ -474,166 +333,97 @@ export default function ProfileScreen() {
   }
 
   const renderContent = () => {
-    switch (activeTab) {
-      case 'reels':
-        return reels.length === 0 ? (
+    const renderGrid = (items: any[], type: string, icon: keyof typeof MaterialIcons.glyphMap) => {
+      if (items.length === 0) {
+        return (
           <View style={styles.emptyContentContainer}>
-            <MaterialIcons name="movie" size={60} color={theme.colors.text.tertiary} />
-            <Text style={styles.emptyContentText}>No reels yet</Text>
-            <Text style={styles.emptyContentSubtext}>Create your first reel</Text>
-          </View>
-        ) : (
-          <View style={styles.reelsGrid}>
-            {reels.map((reel: any) => (
-              <TouchableOpacity 
-                key={reel.id || reel._id} 
-                style={[styles.reelItem, { width: itemWidth }]}
-                onPress={() => router.push({
-                  pathname: '/video/[id]',
-                  params: { id: reel?.id?.toString() || '' }
-                })}
-              >
-                <Image 
-                  source={{ uri: reel.thumbnail_url || 'https://picsum.photos/400/700' }} 
-                  style={styles.reelImage} 
-                  contentFit="cover"
-                />
-                <View style={styles.reelOverlay}>
-                  <MaterialIcons name="play-arrow" size={24} color="#fff" />
-                </View>
-                <View style={styles.reelStats}>
-                  <View style={styles.reelStat}>
-                    <MaterialIcons name="play-arrow" size={12} color="#fff" />
-                    <Text style={styles.reelStatText}>{reel.views_count || 0}</Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))}
+            <MaterialIcons name={icon} size={60} color={theme.colors.text.tertiary} />
+            <Text style={styles.emptyContentText}>No {type} yet</Text>
+            <Text style={styles.emptyContentSubtext}>Create your first {type.slice(0, -1)}</Text>
           </View>
         );
+      }
 
-      case 'video':
-        return videos.length === 0 ? (
-          <View style={styles.emptyContentContainer}>
-            <MaterialIcons name="videocam" size={60} color={theme.colors.text.tertiary} />
-            <Text style={styles.emptyContentText}>No videos yet</Text>
-            <Text style={styles.emptyContentSubtext}>Upload your first video</Text>
-          </View>
-        ) : (
-          <View style={styles.videosGrid}>
-            {videos.map((video: any) => (
-              <TouchableOpacity 
-                key={video.id || video._id} 
-                style={[styles.videoItem, { width: itemWidth }]}
-                onPress={() => router.push({
-                  pathname: '/video/[id]',
-                  params: { id: video?.id?.toString() || '' }
-                })}
-              >
-                <Image 
-                  source={{ uri: video.thumbnail_url || 'https://picsum.photos/400' }} 
-                  style={styles.videoImage} 
-                  contentFit="cover"
-                />
+      const gridStyle = type === 'reels' ? styles.reelsGrid :
+                         type === 'videos' ? styles.videosGrid :
+                         type === 'live' ? styles.liveGrid :
+                         styles.photosGrid;
+
+      const itemStyle = type === 'reels' ? styles.reelItem :
+                        type === 'videos' ? styles.videoItem :
+                        type === 'live' ? styles.liveItem :
+                        styles.photoItem;
+
+      const imageStyle = type === 'reels' ? styles.reelImage :
+                         type === 'videos' ? styles.videoImage :
+                         type === 'live' ? styles.liveImage :
+                         styles.photoImage;
+
+      return (
+        <View style={gridStyle}>
+          {items.map((item: any) => (
+            <TouchableOpacity 
+              key={item.id || item._id} 
+              style={[itemStyle, { width: itemWidth }]}
+              onPress={() => router.push({
+                pathname: '/video/[id]',
+                params: { id: item?.id?.toString() || '' }
+              })}
+            >
+              <Image 
+                source={{ uri: item.thumbnail_url || item.url || 'https://picsum.photos/400' }} 
+                style={imageStyle} 
+                contentFit="cover"
+              />
+              {type === 'reels' && (
+                <>
+                  <View style={styles.reelOverlay}>
+                    <MaterialIcons name="play-arrow" size={24} color="#fff" />
+                  </View>
+                  <View style={styles.reelStats}>
+                    <View style={styles.reelStat}>
+                      <MaterialIcons name="play-arrow" size={12} color="#fff" />
+                      <Text style={styles.reelStatText}>{item.views_count || 0}</Text>
+                    </View>
+                  </View>
+                </>
+              )}
+              {type === 'videos' && (
                 <View style={styles.videoOverlay}>
                   <MaterialIcons name="play-arrow" size={20} color="#fff" />
                   <Text style={styles.videoDuration}>
-                    {Math.floor((video?.duration || 0) / 60)}:{((video?.duration || 0) % 60).toString().padStart(2, '0')}
+                    {Math.floor((item?.duration || 0) / 60)}:{((item?.duration || 0) % 60).toString().padStart(2, '0')}
                   </Text>
                 </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-        );
-
-      case 'live':
-        return liveSessions.length === 0 ? (
-          <View style={styles.emptyContentContainer}>
-            <MaterialIcons name="live-tv" size={60} color={theme.colors.text.tertiary} />
-            <Text style={styles.emptyContentText}>No live sessions yet</Text>
-            <Text style={styles.emptyContentSubtext}>Go live to connect with your audience</Text>
-          </View>
-        ) : (
-          <View style={styles.liveGrid}>
-            {liveSessions.map((live: any) => (
-              <TouchableOpacity 
-                key={live.id || live._id} 
-                style={[styles.liveItem, { width: itemWidth }]}
-                onPress={() => router.push({
-                  pathname: '/video/[id]',
-                  params: { id: live?.id?.toString() || '' }
-                })}
-              >
-                <Image 
-                  source={{ uri: live.thumbnail_url || 'https://picsum.photos/400' }} 
-                  style={styles.liveImage} 
-                  contentFit="cover"
-                />
-                <View style={styles.liveBadge}>
-                  <Text style={styles.liveBadgeText}>LIVE</Text>
-                </View>
-                <View style={styles.liveInfo}>
-                  <Text style={styles.liveViewers}>{live.viewers_count || 0} watching</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-        );
-
-      case 'photo':
-        return photos.length === 0 ? (
-          <View style={styles.emptyContentContainer}>
-            <MaterialIcons name="photo-library" size={60} color={theme.colors.text.tertiary} />
-            <Text style={styles.emptyContentText}>No photos yet</Text>
-            <Text style={styles.emptyContentSubtext}>Upload your first photo to get started</Text>
-          </View>
-        ) : (
-          <View style={styles.photosGrid}>
-            {photos.map((photo: any) => (
-              <TouchableOpacity 
-                key={photo.id || photo._id} 
-                style={[styles.photoItem, { width: itemWidth }]}
-                onPress={() => router.push({
-                  pathname: '/video/[id]',
-                  params: { id: photo?.id?.toString() || '' }
-                })}
-              >
-                <Image 
-                  source={{ uri: photo.url || 'https://picsum.photos/400' }} 
-                  style={styles.photoImage} 
-                  contentFit="cover"
-                />
-                {photo.likes_count > 0 && (
-                  <View style={styles.photoLikes}>
-                    <MaterialIcons name="favorite" size={12} color="#fff" />
-                    <Text style={styles.photoLikesText}>{photo.likes_count}</Text>
+              )}
+              {type === 'live' && (
+                <>
+                  <View style={styles.liveBadge}>
+                    <Text style={styles.liveBadgeText}>LIVE</Text>
                   </View>
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
-        );
+                  <View style={styles.liveInfo}>
+                    <Text style={styles.liveViewers}>{item.viewers_count || 0} watching</Text>
+                  </View>
+                </>
+              )}
+              {type === 'photos' && item.likes_count > 0 && (
+                <View style={styles.photoLikes}>
+                  <MaterialIcons name="favorite" size={12} color="#fff" />
+                  <Text style={styles.photoLikesText}>{item.likes_count}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+      );
+    };
 
-      case TAB_TYPES.SAVED_REELS:
-        return <SavedReels reels={savedReels} itemWidth={itemWidth} />;
-
-      case TAB_TYPES.SAVED_VIDEOS:
-        return <SavedVideos videos={savedVideos} itemWidth={itemWidth} />;
-
-      case TAB_TYPES.SAVED_PHOTOS:
-        return <SavedPhotos photos={savedPhotos} itemWidth={itemWidth} />;
-
-      case TAB_TYPES.SAVED_LIVE:
-        return <SavedLive liveSessions={savedLive} itemWidth={itemWidth} />;
-
-      case TAB_TYPES.SAVED_SHAYARI:
-        return <SavedShayari shayari={savedShayari} itemWidth={itemWidth} />;
-
-      case TAB_TYPES.SAVED_SONGS:
-        return <SavedSongs songs={savedSongs} itemWidth={itemWidth} />;
-
-      default:
-        return null;
+    switch (activeTab) {
+      case 'reels': return renderGrid(reels, 'reels', 'movie');
+      case 'video': return renderGrid(videos, 'videos', 'videocam');
+      case 'live': return renderGrid(liveSessions, 'live', 'live-tv');
+      case 'photo': return renderGrid(photos, 'photos', 'photo-library');
+      default: return null;
     }
   };
 
@@ -853,8 +643,7 @@ export default function ProfileScreen() {
             { key: 'reels', icon: 'movie', label: 'Reels' },
             { key: 'video', icon: 'smart-display', label: 'Video' },
             { key: 'live', icon: 'live-tv', label: 'Live' },
-            { key: 'photo', icon: 'photo-library', label: 'Photo' },
-            { key: TAB_TYPES.SAVED_REELS, icon: 'bookmark', label: 'Saved' }
+            { key: 'photo', icon: 'photo-library', label: 'Photo' }
           ].map((tab) => (
             <TouchableOpacity
               key={tab.key}
@@ -870,53 +659,6 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           ))}
         </View>
-
-        {/* Save Sub-Tabs - 6 Buttons */}
-        {(activeTab === TAB_TYPES.SAVED_REELS || 
-          activeTab === TAB_TYPES.SAVED_VIDEOS || 
-          activeTab === TAB_TYPES.SAVED_PHOTOS || 
-          activeTab === TAB_TYPES.SAVED_LIVE || 
-          activeTab === TAB_TYPES.SAVED_SHAYARI || 
-          activeTab === TAB_TYPES.SAVED_SONGS) && (
-          <View style={styles.subTabsContainer}>
-            <TouchableOpacity
-              style={[styles.subTab, activeTab === TAB_TYPES.SAVED_REELS && styles.activeSubTab]}
-              onPress={() => setActiveTab(TAB_TYPES.SAVED_REELS)}
-            >
-              <Text style={styles.subTabText}>Reels</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.subTab, activeTab === TAB_TYPES.SAVED_VIDEOS && styles.activeSubTab]}
-              onPress={() => setActiveTab(TAB_TYPES.SAVED_VIDEOS)}
-            >
-              <Text style={styles.subTabText}>Videos</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.subTab, activeTab === TAB_TYPES.SAVED_PHOTOS && styles.activeSubTab]}
-              onPress={() => setActiveTab(TAB_TYPES.SAVED_PHOTOS)}
-            >
-              <Text style={styles.subTabText}>Photos</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.subTab, activeTab === TAB_TYPES.SAVED_LIVE && styles.activeSubTab]}
-              onPress={() => setActiveTab(TAB_TYPES.SAVED_LIVE)}
-            >
-              <Text style={styles.subTabText}>Live</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.subTab, activeTab === TAB_TYPES.SAVED_SHAYARI && styles.activeSubTab]}
-              onPress={() => setActiveTab(TAB_TYPES.SAVED_SHAYARI)}
-            >
-              <Text style={styles.subTabText}>Shayari</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.subTab, activeTab === TAB_TYPES.SAVED_SONGS && styles.activeSubTab]}
-              onPress={() => setActiveTab(TAB_TYPES.SAVED_SONGS)}
-            >
-              <Text style={styles.subTabText}>Songs</Text>
-            </TouchableOpacity>
-          </View>
-        )}
 
         {/* Content Grid */}
         {renderContent()}
@@ -989,271 +731,36 @@ export default function ProfileScreen() {
           </ScrollView>
         </View>
       </Modal>
-
-      {/* Analytics Modal */}
-      <Modal visible={showAnalyticsModal} animationType="slide" presentationStyle="pageSheet">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>User Analytics</Text>
-            <TouchableOpacity onPress={() => setShowAnalyticsModal(false)}>
-              <MaterialIcons name="close" size={24} color={theme.colors.text.primary} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView style={styles.analyticsScroll} showsVerticalScrollIndicator={false}>
-            {/* Days Active */}
-            <View style={styles.analyticsSection}>
-              <View style={styles.analyticsHeader}>
-                <MaterialIcons name="calendar-today" size={24} color={theme.colors.primary.main} />
-                <Text style={styles.analyticsSectionTitle}>Days Active</Text>
-              </View>
-              <Text style={styles.analyticsValue}>347 Days</Text>
-              <Text style={styles.analyticsSubtext}>Since January 2025</Text>
-            </View>
-
-            {/* Total Stars */}
-            <View style={styles.analyticsSection}>
-              <View style={styles.analyticsHeader}>
-                <MaterialIcons name="star" size={24} color="#FFD700" />
-                <Text style={styles.analyticsSectionTitle}>Total Stars</Text>
-              </View>
-              <Text style={styles.analyticsValue}>25,847 Stars</Text>
-              <Text style={styles.analyticsSubtext}>From all content</Text>
-            </View>
-
-            {/* Total Count */}
-            <View style={styles.analyticsSection}>
-              <View style={styles.analyticsHeader}>
-                <MaterialIcons name="content-cut" size={24} color={theme.colors.primary.main} />
-                <Text style={styles.analyticsSectionTitle}>Total Content Created</Text>
-              </View>
-              <View style={styles.contentCount}>
-                <View style={styles.countItem}>
-                  <Text style={styles.countNumber}>{reels.length}</Text>
-                  <Text style={styles.countLabel}>Reels</Text>
-                </View>
-                <View style={styles.countItem}>
-                  <Text style={styles.countNumber}>{videos.length}</Text>
-                  <Text style={styles.countLabel}>Videos</Text>
-                </View>
-                <View style={styles.countItem}>
-                  <Text style={styles.countNumber}>{photos.length}</Text>
-                  <Text style={styles.countLabel}>Photos</Text>
-                </View>
-              </View>
-            </View>
-
-          </ScrollView>
-        </View>
-      </Modal>
-
-      {/* User Data Modal */}
-      <Modal visible={showUserDataModal} animationType="slide" presentationStyle="pageSheet">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>My Content Data</Text>
-            <TouchableOpacity onPress={() => setShowUserDataModal(false)}>
-              <MaterialIcons name="close" size={24} color={theme.colors.text.primary} />
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.userDataContent}>
-            <View style={styles.userDataHeader}>
-              <MaterialIcons name="analytics" size={28} color="#FF0000" />
-              <Text style={styles.userDataTitle}>Grand Total</Text>
-            </View>
-            
-            <View style={styles.userDataStats}>
-              <View style={styles.userDataStat}>
-                <Ionicons name="star" size={24} color="#FFD700" />
-                <Text style={styles.userDataNumber}>25,847</Text>
-                <Text style={styles.userDataLabel}>Total Stars</Text>
-              </View>
-              
-              <View style={styles.userDataStat}>
-                <MaterialIcons name="comment" size={24} color="#4CAF50" />
-                <Text style={styles.userDataNumber}>3,456</Text>
-                <Text style={styles.userDataLabel}>Total Comments</Text>
-              </View>
-              
-              <View style={styles.userDataStat}>
-                <MaterialIcons name="share" size={24} color="#2196F3" />
-                <Text style={styles.userDataNumber}>1,234</Text>
-                <Text style={styles.userDataLabel}>Total Shares</Text>
-              </View>
-            </View>
-            
-            <View style={styles.userDataFooter}>
-              <Text style={styles.userDataContentText}>1,400 Total Content</Text>
-              <Text style={styles.userDataViewsText}>45,678 Total Views</Text>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  // ... rest of the code remains the same ...
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background.primary,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: theme.spacing.md,
-    fontSize: theme.typography.fontSize.md,
-    color: theme.colors.text.secondary,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: theme.colors.background.primary,
-  },
-  username: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: theme.colors.text.primary,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  headerIconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: theme.colors.background.secondary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  // Cover Photo - FIXED: Separate section
-  coverContainer: {
-    width: '100%',
-    height: 200, // Increased height for better visibility
-    position: 'relative',
-  },
-  coverImage: {
-    width: '100%',
-    height: '100%',
-  },
-  editCoverButton: {
-    position: 'absolute',
-    bottom: 12,
-    right: 12,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  profileSection: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    alignItems: 'center', // Center align everything
-  },
-  // Profile Image - Centered and above stats
-  profileImageWrapper: {
-    marginTop: -50, // This pulls the profile image up over the cover
-    marginBottom: 16,
-    position: 'relative',
-  },
-  profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    borderWidth: 3,
-    borderColor: theme.colors.background.primary,
-  },
-  editProfileImageButton: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: theme.colors.primary.main,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: theme.colors.background.primary,
-  },
-  // Stats Container - Below profile image
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
-    marginBottom: 16,
-    paddingHorizontal: 20,
-  },
-  statItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  statNumber: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: theme.colors.text.primary,
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: theme.colors.text.secondary,
-  },
-  name: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: theme.colors.text.primary,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  bioText: {
-    fontSize: 14,
-    color: theme.colors.text.primary,
-    lineHeight: 20,
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    justifyContent: 'center',
-  },
-  infoText: {
-    fontSize: 14,
-    color: theme.colors.text.secondary,
-    marginLeft: 6,
-  },
-  websiteText: {
-    color: theme.colors.primary.main,
-  },
-  // Edit Button - Centered
-  editButton: {
-    width: '100%',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: theme.colors.border.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 16,
-  },
-  editButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: theme.colors.text.primary,
-  },
+  container: { flex: 1, backgroundColor: theme.colors.background.primary },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { marginTop: theme.spacing.md, fontSize: theme.typography.fontSize.md, color: theme.colors.text.secondary },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: theme.colors.background.primary },
+  username: { fontSize: 20, fontWeight: '700', color: theme.colors.text.primary },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  headerIconButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: theme.colors.background.secondary, justifyContent: 'center', alignItems: 'center' },
+  coverContainer: { width: '100%', height: 200, position: 'relative' },
+  coverImage: { width: '100%', height: '100%' },
+  editCoverButton: { position: 'absolute', bottom: 12, right: 12, backgroundColor: 'rgba(0,0,0,0.6)', width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+  profileSection: { paddingHorizontal: 16, paddingBottom: 16, alignItems: 'center' },
+  profileImageWrapper: { marginTop: -50, marginBottom: 16, position: 'relative' },
+  profileImage: { width: 100, height: 100, borderRadius: 50, borderWidth: 3, borderColor: theme.colors.background.primary },
+  editProfileImageButton: { position: 'absolute', bottom: 0, right: 0, backgroundColor: theme.colors.primary.main, width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: theme.colors.background.primary },
+  statsContainer: { flexDirection: 'row', justifyContent: 'space-around', width: '100%', marginBottom: 16, paddingHorizontal: 20 },
+  statItem: { alignItems: 'center', flex: 1 },
+  statNumber: { fontSize: 18, fontWeight: '700', color: theme.colors.text.primary, marginBottom: 4 },
+  statLabel: { fontSize: 12, color: theme.colors.text.secondary },
+  name: { fontSize: 18, fontWeight: '600', color: theme.colors.text.primary, marginBottom: 8, textAlign: 'center' },
+  bioText: { fontSize: 14, color: theme.colors.text.primary, lineHeight: 20, marginBottom: 12, textAlign: 'center' },
+  infoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, justifyContent: 'center' },
+  infoText: { fontSize: 14, color: theme.colors.text.secondary, marginLeft: 6 },
+  websiteText: { color: theme.colors.primary.main },
+  editButton: { backgroundColor: theme.colors.primary.main, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8, marginTop: 16 },
+  editButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   tabsContainer: {
     flexDirection: 'row',
     borderTopWidth: 1,
@@ -1275,157 +782,30 @@ const styles = StyleSheet.create({
     height: 2,
     backgroundColor: theme.colors.text.primary,
   },
-  reelsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  reelItem: {
-    aspectRatio: 9/16,
-    padding: 1,
-    position: 'relative',
-  },
-  reelImage: {
-    width: '100%',
-    height: '100%',
-  },
-  reelOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.2)',
-  },
-  reelStats: {
-    position: 'absolute',
-    bottom: 8,
-    left: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  reelStat: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  reelStatText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '600',
-    marginLeft: 2,
-  },
-  videosGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  videoItem: {
-    aspectRatio: 1,
-    padding: 1,
-    position: 'relative',
-  },
-  videoImage: {
-    width: '100%',
-    height: '100%',
-  },
-  videoOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.2)',
-  },
-  videoDuration: {
-    position: 'absolute',
-    bottom: 8,
-    right: 8,
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '600',
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  liveGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  liveItem: {
-    aspectRatio: 1,
-    padding: 1,
-    position: 'relative',
-  },
-  liveImage: {
-    width: '100%',
-    height: '100%',
-  },
-  liveBadge: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    backgroundColor: '#FF0000',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  liveBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  liveInfo: {
-    position: 'absolute',
-    bottom: 8,
-    left: 8,
-    right: 8,
-  },
-  liveViewers: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '600',
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  photosGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  photoItem: {
-    aspectRatio: 1,
-    padding: 1,
-    position: 'relative',
-  },
-  photoImage: {
-    width: '100%',
-    height: '100%',
-  },
-  photoLikes: {
-    position: 'absolute',
-    bottom: 8,
-    right: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  photoLikesText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '600',
-    marginLeft: 2,
-  },
+  reelsGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  reelItem: { aspectRatio: 9/16, padding: 1, position: 'relative' },
+  reelImage: { width: '100%', height: '100%' },
+  reelOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.2)' },
+  reelStats: { position: 'absolute', bottom: 8, left: 8, flexDirection: 'row', alignItems: 'center' },
+  reelStat: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  reelStatText: { color: '#fff', fontSize: 11, fontWeight: '600', marginLeft: 2 },
+  videosGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  videoItem: { aspectRatio: 1, padding: 1, position: 'relative' },
+  videoImage: { width: '100%', height: '100%' },
+  videoOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.2)' },
+  videoDuration: { position: 'absolute', bottom: 8, right: 8, color: '#fff', fontSize: 11, fontWeight: '600', backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 4, paddingVertical: 2, borderRadius: 4 },
+  liveGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  liveItem: { aspectRatio: 1, padding: 1, position: 'relative' },
+  liveImage: { width: '100%', height: '100%' },
+  liveBadge: { position: 'absolute', top: 8, left: 8, backgroundColor: '#FF0000', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  liveBadgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
+  liveInfo: { position: 'absolute', bottom: 8, left: 8, right: 8 },
+  liveViewers: { color: '#fff', fontSize: 11, fontWeight: '600', backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  photosGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  photoItem: { aspectRatio: 1, padding: 1, position: 'relative' },
+  photoImage: { width: '100%', height: '100%' },
+  photoLikes: { position: 'absolute', bottom: 8, right: 8, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  photoLikesText: { color: '#fff', fontSize: 11, fontWeight: '600', marginLeft: 2 },
   savedGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1465,27 +845,28 @@ const styles = StyleSheet.create({
     right: 8,
   },
   emptyContentContainer: {
-    width: '100%',
-    paddingVertical: 60,
-    alignItems: 'center',
+    flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+    minHeight: 200
   },
   emptyContentText: {
     fontSize: 16,
     fontWeight: '600',
-    color: theme.colors.text.secondary,
-    marginTop: 12,
+    color: theme.colors.text.tertiary,
+    marginTop: 16,
+    textAlign: 'center'
   },
   emptyContentSubtext: {
     fontSize: 14,
     color: theme.colors.text.tertiary,
-    marginTop: 4,
-    textAlign: 'center',
-    paddingHorizontal: 40,
+    marginTop: 8,
+    textAlign: 'center'
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: theme.colors.background.primary,
+    backgroundColor: theme.colors.background.primary
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1494,34 +875,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border.primary,
+    borderBottomColor: theme.colors.border.primary
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: theme.colors.text.primary,
+    fontWeight: '600',
+    color: theme.colors.text.primary
   },
   editForm: {
     flex: 1,
+    padding: 16
   },
   editSection: {
-    marginBottom: 20,
+    marginBottom: 24
   },
   sectionLabel: {
     fontSize: 16,
     fontWeight: '600',
     color: theme.colors.text.primary,
-    marginBottom: 12,
-    paddingHorizontal: 16,
+    marginBottom: 12
   },
   coverEdit: {
     width: '100%',
-    height: 150,
-    position: 'relative',
+    height: 120,
+    borderRadius: 8,
+    overflow: 'hidden',
+    position: 'relative'
   },
   coverPreview: {
     width: '100%',
-    height: '100%',
+    height: '100%'
   },
   editOverlay: {
     position: 'absolute',
@@ -1531,63 +914,66 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
+    alignItems: 'center'
   },
   editText: {
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
+    marginTop: 8
   },
   profileImageEdit: {
     alignItems: 'center',
-    paddingHorizontal: 16,
+    marginBottom: 24
   },
   profilePreview: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 3,
+    borderColor: theme.colors.border.primary
   },
   cameraIcon: {
     position: 'absolute',
     bottom: 0,
-    right: 16,
+    right: 0,
     backgroundColor: theme.colors.primary.main,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: theme.colors.background.primary
   },
   formGroup: {
-    paddingHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 20
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
     color: theme.colors.text.primary,
-    marginBottom: 8,
+    marginBottom: 8
   },
   input: {
-    backgroundColor: theme.colors.background.secondary,
     borderWidth: 1,
     borderColor: theme.colors.border.primary,
     borderRadius: 8,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
+    paddingVertical: 12,
+    fontSize: 16,
     color: theme.colors.text.primary,
+    backgroundColor: theme.colors.background.secondary
   },
   bioInput: {
-    minHeight: 80,
-    paddingTop: 10,
+    height: 80,
+    textAlignVertical: 'top'
   },
   formActions: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 20,
     gap: 12,
+    marginTop: 24,
+    marginBottom: 32
   },
   cancelButton: {
     flex: 1,
@@ -1595,64 +981,66 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: theme.colors.border.primary,
-    alignItems: 'center',
+    alignItems: 'center'
   },
   cancelButtonText: {
-    color: theme.colors.text.primary,
     fontSize: 16,
     fontWeight: '600',
+    color: theme.colors.text.primary
   },
   saveButton: {
     flex: 1,
+    backgroundColor: theme.colors.primary.main,
     paddingVertical: 12,
     borderRadius: 8,
-    backgroundColor: theme.colors.primary.main,
-    alignItems: 'center',
+    alignItems: 'center'
   },
   saveButtonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+    color: '#fff'
   },
   supportListScroll: {
     flex: 1,
+    padding: 16
   },
   supportItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border.primary,
+    borderBottomColor: theme.colors.border.primary
   },
   supportAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12
   },
   supportInfo: {
-    flex: 1,
+    flex: 1
   },
   supportName: {
     fontSize: 16,
     fontWeight: '600',
-    color: theme.colors.text.primary,
-    marginBottom: 4,
+    color: theme.colors.text.primary
   },
   supportBio: {
     fontSize: 14,
     color: theme.colors.text.secondary,
+    marginTop: 2
   },
   emptySupport: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 80,
+    paddingVertical: 60
   },
   emptySupportText: {
     fontSize: 16,
-    color: theme.colors.text.secondary,
-    marginTop: 12,
+    fontWeight: '600',
+    color: theme.colors.text.tertiary,
+    textAlign: 'center'
   },
   userDataButton: {
     flexDirection: 'row',

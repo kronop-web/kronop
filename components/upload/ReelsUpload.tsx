@@ -1,15 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  TextInput,
-  ScrollView,
-  ActivityIndicator,
-  Platform,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, TextInput, ScrollView, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import { useRouter } from 'expo-router';
@@ -29,25 +19,18 @@ export default function ReelsUpload({ onClose }: ReelsUploadProps) {
   const router = useRouter();
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [reelData, setReelData] = useState<ReelData>({
-    title: '',
-    description: '',
-    tags: []
-  });
+  const [reelData, setReelData] = useState<ReelData>({ title: '', description: '', tags: [] });
   const [tagInput, setTagInput] = useState('');
 
   const pickFile = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ['video/*'], // Allow all video types
+        type: ['video/*'],
         copyToCacheDirectory: true,
       });
 
       if (!result.canceled && result.assets[0]) {
         const file = result.assets[0];
-        
-        // More lenient validation - just check if it is a video file
         const fileName = file.name || '';
         const extension = fileName.split('.').pop()?.toLowerCase();
         const allowedExtensions = ['mp4', 'mov', 'avi', 'webm', '3gp', 'mkv'];
@@ -57,21 +40,16 @@ export default function ReelsUpload({ onClose }: ReelsUploadProps) {
           return;
         }
 
-        // Basic file size validation
-        const MAX_SIZE = 500 * 1024 * 1024; // 500MB for reels
+        const MAX_SIZE = 500 * 1024 * 1024;
         if (file.size && file.size > MAX_SIZE) {
           Alert.alert('File Too Large', 'Reel files must be less than 500MB');
           return;
         }
 
         setSelectedFile(file);
-        setReelData(prev => ({
-          ...prev,
-          title: prev.title || file.name.split('.')[0]
-        }));
+        setReelData(prev => ({ ...prev, title: prev.title || file.name.split('.')[0] }));
       }
     } catch (error) {
-      console.error('Error picking file:', error);
       Alert.alert('Error', 'Failed to pick file');
     }
   };
@@ -104,24 +82,22 @@ export default function ReelsUpload({ onClose }: ReelsUploadProps) {
       return;
     }
 
-    uploadQueue.enqueue({
-      type: 'REELS',
-      file: selectedFile,
-      metadata: {
+    setUploading(true);
+    try {
+      await uploadQueue.upload('REELS', selectedFile, {
         title: reelData.title.trim(),
         description: reelData.description.trim(),
         tags: reelData.tags
-      }
-    });
-
-    setSelectedFile(null);
-    setReelData({ title: '', description: '', tags: [] });
-    setTagInput('');
-    setUploadProgress(0);
-    setUploading(false);
-
-    onClose();
-    router.replace('/');
+      });
+      
+      Alert.alert('Success', 'Reel upload started!');
+      onClose();
+      router.replace('/');
+    } catch (error) {
+      Alert.alert('Error', 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -248,17 +224,6 @@ export default function ReelsUpload({ onClose }: ReelsUploadProps) {
           </>
         )}
       </TouchableOpacity>
-
-      {uploading && (
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBar}>
-            <View 
-              style={[styles.progressFill, { width: `${uploadProgress}%` }]} 
-            />
-          </View>
-          <Text style={styles.progressText}>{uploadProgress}%</Text>
-        </View>
-      )}
     </ScrollView>
   );
 }
@@ -427,25 +392,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-  },
-  progressContainer: {
-    marginHorizontal: 16,
-    marginBottom: 20,
-  },
-  progressBar: {
-    height: 4,
-    backgroundColor: '#e9ecef',
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#FF4444',
-  },
-  progressText: {
-    fontSize: 12,
-    color: '#6c757d',
-    textAlign: 'center',
-    marginTop: 8,
   },
 });

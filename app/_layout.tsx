@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { View } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AlertProvider } from '../template/ui';
@@ -60,7 +61,7 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <>
+    <View style={{ flex: 1, backgroundColor: '#000000' }}>
       {/* Premium Status Bar Overlay - Global */}
       <StatusBarOverlay style="light" backgroundColor="transparent" translucent={true} />
       
@@ -119,6 +120,6 @@ export default function RootLayout() {
             </RealtimeSyncManager>
         </AuthProvider>
       </AlertProvider>
-    </>
+    </View>
   );
 }

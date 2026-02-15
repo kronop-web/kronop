@@ -10,10 +10,6 @@ import Title from './Title';
 import Star from './Star';
 import Comment from './Comment';
 import Share from './Share';
-import Save from './Save';
-import Report from './Report';
-import Support from './Support';
-import Unsupport from './Unsupport';
 import Setting from './Setting';
 import Horizontal from './Horizontal';
 import VideoPlayer from './VideoPlayer';
@@ -26,8 +22,6 @@ export default function MainScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isStarred, setIsStarred] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
-  const [isSupported, setIsSupported] = useState(false);
   const [showFullTitle, setShowFullTitle] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -46,7 +40,6 @@ export default function MainScreen() {
 
         if (fetchedVideo) {
           setVideo(fetchedVideo);
-          setIsSupported(fetchedVideo.user.isSupported || false);
         } else {
           setError('Video not found');
         }
@@ -64,9 +57,6 @@ export default function MainScreen() {
   const handleStar = () => setIsStarred(!isStarred);
   const handleComment = () => console.log('Comment pressed');
   const handleShare = () => console.log('Share pressed');
-  const handleSave = () => setIsSaved(!isSaved);
-  const handleReport = () => console.log('Report pressed');
-  const handleSupport = () => setIsSupported(!isSupported);
   const handleSettings = () => console.log('Settings pressed');
   const handleFullscreen = (fullscreenState: boolean) => {
     setIsFullscreen(fullscreenState);
@@ -80,6 +70,21 @@ export default function MainScreen() {
   const handleVideoProgress = (progress: number, duration: number) => {
     // Progress tracking handled by VideoPlayer component
   };
+
+  // Instant cleanup on unmount
+  useEffect(() => {
+    return () => {
+      // Clear all video data
+      setVideo(null);
+      setLoading(false);
+      setError(null);
+      setIsStarred(false);
+      setShowFullTitle(false);
+      setIsFullscreen(false);
+      
+      console.log('MainScreen: Instant cleanup completed');
+    };
+  }, []);
 
   // Loading State
   if (loading) {
@@ -170,17 +175,6 @@ export default function MainScreen() {
                 videoUrl={video?.videoUrl || ''}
                 videoTitle={video?.title}
               />
-              <Save 
-                isSaved={isSaved} 
-                onPress={handleSave}
-                videoId={video?.id}
-                videoTitle={video?.title}
-              />
-              <Report 
-                onPress={handleReport}
-                videoId={video?.id}
-                videoTitle={video?.title}
-              />
             </View>
 
             {/* Channel Section */}
@@ -193,7 +187,6 @@ export default function MainScreen() {
                 />
                 <Text style={styles.channelName}>{video.user.name}</Text>
               </View>
-              <Support isSupported={isSupported} onPress={handleSupport} />
             </View>
 
             {/* Description */}

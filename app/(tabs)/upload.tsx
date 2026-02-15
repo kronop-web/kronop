@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions
+  View, Text, StyleSheet, TouchableOpacity, ScrollView
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeScreen } from '../../components/layout';
 import { theme } from '../../constants/theme';
 
+// Import only needed components
 import VideoUpload from '../../components/upload/VideoUpload';
 import ReelsUpload from '../../components/upload/ReelsUpload';
 import PhotoUpload from '../../components/upload/PhotoUpload';
@@ -14,79 +15,34 @@ import StoryUpload from '../../components/upload/StoryUpload';
 import LiveUpload from '../../components/upload/LiveUpload';
 import SongUpload from '../../components/upload/SongUpload';
 
-const { width } = Dimensions.get('window');
-
-// ==================== MAIN UPLOAD SCREEN ====================
 export default function UploadScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const [activeComponent, setActiveComponent] = useState<'reel' | 'video' | 'photo' | 'story' | 'live' | 'shayari' | 'song' | null>(null);
+  const [activeComponent, setActiveComponent] = useState<string | null>(null);
 
-  // Handle query parameter to auto-select upload type
+  // Auto-select upload type from query
   useEffect(() => {
     if (params.tab) {
       const tab = params.tab as string;
       if (['reel', 'video', 'photo', 'story', 'live', 'shayari', 'song'].includes(tab)) {
-        setActiveComponent(tab as any);
+        setActiveComponent(tab);
       }
     }
   }, [params.tab]);
 
-  const handleUploadPress = (type: 'reel' | 'video' | 'photo' | 'story' | 'live' | 'shayari' | 'song') => {
+  const handleUploadPress = (type: string) => {
     setActiveComponent(type);
   };
 
-  // 7 buttons array - EK KE NICHE EK
+  // Simple upload buttons
   const uploadButtons = [
-    {
-      id: 'story',
-      title: 'Story',
-      icon: 'auto-stories',
-      description: '24 hours visible',
-      type: 'story' as const,
-    },
-    {
-      id: 'photo',
-      title: 'Photo',
-      icon: 'image',
-      description: 'Gallery photos',
-      type: 'photo' as const,
-    },
-    {
-      id: 'reel',
-      title: 'Reels',
-      icon: 'movie',
-      description: 'Short videos',
-      type: 'reel' as const,
-    },
-    {
-      id: 'live',
-      title: 'Live',
-      icon: 'live-tv',
-      description: 'Go live now',
-      type: 'live' as const,
-    },
-    {
-      id: 'video',
-      title: 'Video',
-      icon: 'videocam',
-      description: 'Long videos',
-      type: 'video' as const,
-    },
-    {
-      id: 'shayari',
-      title: 'Shayari',
-      icon: 'format-quote',
-      description: 'Poetry & quotes',
-      type: 'shayari' as const,
-    },
-    {
-      id: 'song',
-      title: 'Song',
-      icon: 'music-note',
-      description: 'Music files',
-      type: 'song' as const,
-    },
+    { id: 'story', title: 'Story', icon: 'auto-stories' },
+    { id: 'photo', title: 'Photo', icon: 'image' },
+    { id: 'reel', title: 'Reels', icon: 'movie' },
+    { id: 'live', title: 'Live', icon: 'live-tv' },
+    { id: 'video', title: 'Video', icon: 'videocam' },
+    { id: 'shayari', title: 'Shayari', icon: 'format-quote' },
+    { id: 'song', title: 'Song', icon: 'music-note' }
   ];
 
   return (
@@ -108,7 +64,7 @@ export default function UploadScreen() {
             <TouchableOpacity
               key={button.id}
               style={styles.uploadButtonCard}
-              onPress={() => handleUploadPress(button.type)}
+              onPress={() => handleUploadPress(button.id)}
               activeOpacity={0.8}
             >
               <View style={styles.buttonIconContainer}>
@@ -117,7 +73,6 @@ export default function UploadScreen() {
               
               <View style={styles.cardContent}>
                 <Text style={styles.cardTitle}>{button.title}</Text>
-                <Text style={styles.cardDescription}>{button.description}</Text>
               </View>
 
               <MaterialIcons 

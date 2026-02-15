@@ -1,15 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  TextInput,
-  ScrollView,
-  ActivityIndicator,
-  Platform,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, TextInput, ScrollView, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import { useRouter } from 'expo-router';
@@ -30,20 +20,10 @@ export default function VideoUpload({ onClose }: VideoUploadProps) {
   const router = useRouter();
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [videoData, setVideoData] = useState<VideoData>({
-    title: '',
-    description: '',
-    tags: [],
-    category: ''
-  });
+  const [videoData, setVideoData] = useState<VideoData>({ title: '', description: '', tags: [], category: '' });
   const [tagInput, setTagInput] = useState('');
 
-  const categories = [
-    'Entertainment', 'Music', 'Gaming', 'Education', 'Technology', 
-    'News', 'Sports', 'Business', 'Health', 'Travel', 'Comedy', 
-    'Lifestyle', 'Food', 'Science', 'Documentary'
-  ];
+  const categories = ['Entertainment', 'Music', 'Gaming', 'Education', 'Technology', 'News', 'Sports', 'Business', 'Health', 'Travel', 'Comedy', 'Lifestyle', 'Food', 'Science', 'Documentary'];
 
   const pickFile = async () => {
     try {
@@ -102,44 +82,32 @@ export default function VideoUpload({ onClose }: VideoUploadProps) {
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      console.error('[VIDEO_UPLOAD_FAIL]: No file selected');
+      Alert.alert('No File Selected', 'Please select a video file first');
       return;
     }
 
     if (!videoData.title.trim()) {
-      console.error('[VIDEO_UPLOAD_FAIL]: Missing title');
+      Alert.alert('Missing Title', 'Please enter a title for your video');
       return;
     }
 
-    if (!videoData.category.trim()) {
-      console.error('[VIDEO_UPLOAD_FAIL]: Missing category');
-      return;
-    }
-
-    uploadQueue.enqueue({
-      type: 'VIDEO',
-      file: selectedFile,
-      metadata: {
+    setUploading(true);
+    try {
+      await uploadQueue.upload('VIDEO', selectedFile, {
         title: videoData.title.trim(),
         description: videoData.description.trim(),
         tags: videoData.tags,
         category: videoData.category
-      }
-    });
-
-    setSelectedFile(null);
-    setVideoData({
-      title: '',
-      description: '',
-      category: '',
-      tags: []
-    });
-    setTagInput('');
-    setUploadProgress(0);
-    setUploading(false);
-
-    onClose();
-    router.replace('/');
+      });
+      
+      Alert.alert('Success', 'Video upload started!');
+      onClose();
+      router.replace('/');
+    } catch (error) {
+      Alert.alert('Error', 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -289,17 +257,6 @@ export default function VideoUpload({ onClose }: VideoUploadProps) {
           </>
         )}
       </TouchableOpacity>
-
-      {uploading && (
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBar}>
-            <View 
-              style={[styles.progressFill, { width: `${uploadProgress}%` }]} 
-            />
-          </View>
-          <Text style={styles.progressText}>{uploadProgress}%</Text>
-        </View>
-      )}
     </ScrollView>
   );
 }
