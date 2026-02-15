@@ -7,19 +7,16 @@ import {
   Dimensions, 
   TouchableOpacity, 
   FlatList,
-  Animated,
   Alert,
   ActivityIndicator,
   RefreshControl
 } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { Image } from 'expo-image';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { SafeScreen } from '../../components/layout';
 import { theme } from '../../constants/theme';
 import { useSWRContent } from '../../hooks/swr';
 import { videoFeedService } from '../../services/videoFeedService';
@@ -35,7 +32,6 @@ import SupportSection from '../../components/feature/SupportSection';
 import ChannelInfo from '../../components/feature/ChannelInfo';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
-const REEL_HEIGHT = SCREEN_HEIGHT;
 
 interface Reel {
   id: string;
@@ -65,76 +61,9 @@ interface Comment {
   timestamp: string;
 }
 
-interface VideoMetadata {
-  duration: number;
-  isLoaded: boolean;
-  sourceType?: string;
-}
-
-// Simple Marquee Text Component
-const MarqueeText = ({ text }: { text: string }) => {
-  const scrollX = useRef(new Animated.Value(0)).current;
-  const [textWidth, setTextWidth] = useState(0);
-  const [containerWidth, setContainerWidth] = useState(0);
-
-  useEffect(() => {
-    if (textWidth > containerWidth && containerWidth > 0) {
-      const scrollDistance = textWidth - containerWidth + 50;
-      const duration = scrollDistance * 20;
-      
-      scrollX.setValue(0);
-      
-      Animated.loop(
-        Animated.sequence([
-          Animated.delay(500),
-          Animated.timing(scrollX, {
-            toValue: -scrollDistance,
-            duration: duration,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scrollX, {
-            toValue: 0,
-            duration: 0,
-            useNativeDriver: true,
-          }),
-          Animated.delay(1000),
-        ])
-      ).start();
-    }
-  }, [textWidth, containerWidth]);
-
-  return (
-    <View 
-      style={styles.marqueeContainer}
-      onLayout={(event) => {
-        const { width } = event.nativeEvent.layout;
-        setContainerWidth(width);
-      }}
-    >
-      <Animated.Text
-        style={[
-          styles.description,
-          {
-            transform: [{ translateX: scrollX }],
-            width: textWidth > containerWidth ? textWidth : '100%',
-          }
-        ]}
-        onLayout={(event) => {
-          const { width } = event.nativeEvent.layout;
-          setTextWidth(width);
-        }}
-        numberOfLines={1}
-      >
-        {text}
-      </Animated.Text>
-    </View>
-  );
-};
-
 // Reel Item Component
 function ReelItem({ 
   item, 
-  index, 
   isActive,
   onChannelPress,
   onVideoComplete,
@@ -154,25 +83,13 @@ function ReelItem({
 }: any) {
   const [isPaused, setIsPaused] = useState(false);
   const [isVideoReady, setIsVideoReady] = useState(false);
-  const [videoMetadata, setVideoMetadata] = useState<VideoMetadata>({
-    duration: 0,
-    isLoaded: false,
-    sourceType: ''
-  });
   const lastTap = useRef(0);
+  const playerRef = useRef<any>(null);
+  const isPlayerReadyRef = useRef(false);
 
   useEffect(() => {
-    if (isActive) {
-      setIsPaused(false);
-    }
+    if (isActive) setIsPaused(false);
   }, [isActive]);
-
-  const getSourceType = (url: string) => {
-    if (url.includes('.m3u8')) {
-      return 'm3u8';
-    }
-    return 'mp4';
-  };
 
   const getVideoSource = () => {
     let videoUrl = item.video_url;
@@ -181,15 +98,12 @@ function ReelItem({
     return videoUrl;
   };
 
-  const playerRef = useRef<any>(null);
-  const isPlayerReadyRef = useRef(false);
-
   const safePlayerPlay = useCallback(async () => {
     try {
       if (playerRef.current && isPlayerReadyRef.current) {
         await playerRef.current.play();
       }
-    } catch (error: any) {
+    } catch (error) {
       console.warn('Error playing video:', error);
     }
   }, []);
@@ -199,7 +113,7 @@ function ReelItem({
       if (playerRef.current && isPlayerReadyRef.current) {
         playerRef.current.pause();
       }
-    } catch (error: any) {
+    } catch (error) {
       console.warn('Error pausing video:', error);
     }
   }, []);
@@ -208,9 +122,7 @@ function ReelItem({
     try {
       isPlayerReadyRef.current = false;
       if (playerRef.current) {
-        try {
-          playerRef.current.pause();
-        } catch {}
+        playerRef.current.pause();
         playerRef.current = null;
       }
     } catch (error) {
@@ -219,7 +131,6 @@ function ReelItem({
   }, []);
 
   const videoSource = getVideoSource();
-  const sourceType = getSourceType(videoSource);
 
   const player = useVideoPlayer({
     uri: videoSource,
@@ -230,57 +141,37 @@ function ReelItem({
     }
   }, (playerInstance) => {
     playerRef.current = playerInstance;
-    
     playerInstance.loop = false;
     AudioController.applyToPlayer(playerInstance, isActive);
-    
     isPlayerReadyRef.current = true;
     setIsVideoReady(true);
-    
-    setVideoMetadata({
-      duration: playerInstance.duration || 0,
-      isLoaded: true,
-      sourceType: sourceType
-    });
 
     if (isActive) {
       onVideoWatched(item.id);
-    }
-
-    if (isActive) {
       videoChunkingService.getChunk(item.id, 0)
         .then(chunk => {
           if (chunk && chunk.loaded) {
             playerInstance.play();
             playerInstance.currentTime = 0;
           } else {
-            setTimeout(() => {
-              safePlayerPlay();
-            }, 200);
+            setTimeout(() => safePlayerPlay(), 200);
           }
         })
-        .catch(() => {
-          setTimeout(() => {
-            safePlayerPlay();
-          }, 200);
-        });
+        .catch(() => setTimeout(() => safePlayerPlay(), 200));
     }
   });
 
   useEffect(() => {
-    return () => {
-      cleanupPlayer();
-    };
+    return () => cleanupPlayer();
   }, []);
 
   useEffect(() => {
-    if (!isActive || !videoMetadata.isLoaded || !isPlayerReadyRef.current) return;
+    if (!isActive || !isVideoReady || !isPlayerReadyRef.current) return;
 
     const checkCompletion = setInterval(() => {
       try {
         if (playerRef.current && playerRef.current.currentTime > 0 && playerRef.current.duration > 0) {
           const progress = (playerRef.current.currentTime / playerRef.current.duration) * 100;
-          
           if (progress >= 95) {
             onVideoComplete();
             onVideoWatched(item.id, true);
@@ -295,7 +186,7 @@ function ReelItem({
     }, 500);
 
     return () => clearInterval(checkCompletion);
-  }, [isActive, videoMetadata.isLoaded, item.id, onVideoComplete, onVideoWatched]);
+  }, [isActive, isVideoReady, item.id, onVideoComplete, onVideoWatched]);
 
   useEffect(() => {
     if (playerRef.current && isPlayerReadyRef.current) {
@@ -307,19 +198,6 @@ function ReelItem({
       safePlayerPause();
     }
   }, [isActive, isPaused, safePlayerPlay, safePlayerPause]);
-
-  useEffect(() => {
-    if (isActive && isPlayerReadyRef.current && playerRef.current) {
-      videoChunkingService.getChunk(item.id, 0)
-        .then(chunk => {
-          if (chunk && chunk.loaded && isActive) {
-            playerRef.current?.play();
-            playerRef.current.currentTime = 0;
-          }
-        })
-        .catch(() => {});
-    }
-  }, [isActive, item.id]);
 
   const handleVideoTap = () => {
     const now = Date.now();
@@ -411,16 +289,7 @@ export default function ReelsScreen() {
   const [isScreenFocused, setIsScreenFocused] = useState(true);
   const insets = useSafeAreaInsets();
   const flatListRef = useRef<FlatList>(null);
-  const currentIndexRef = useRef(0);
   const hasInitializedRef = useRef(false);
-
-  useEffect(() => {
-    AudioController.initialize().catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    currentIndexRef.current = currentIndex;
-  }, [currentIndex]);
 
   const [starred, setStarred] = useState<Record<string, boolean>>({});
   const [saved, setSaved] = useState<Record<string, boolean>>({});
@@ -434,7 +303,10 @@ export default function ReelsScreen() {
 
   const { data: swrReels, loading: swrLoading, refresh } = useSWRContent('Reel', 1, 50);
 
+  // Combined initialization and cleanup effect
   useEffect(() => {
+    AudioController.initialize().catch(() => {});
+    
     const initializeViewTracker = async () => {
       try {
         const userId = await AsyncStorage.getItem('user_id') || 'demo_user';
@@ -446,26 +318,52 @@ export default function ReelsScreen() {
     };
 
     initializeViewTracker();
+
+    return () => {
+      videoChunkingService.cleanupAllStreams();
+    };
   }, []);
 
+  // Combined data and index management effect
+  useEffect(() => {
+    setLoading(swrLoading);
+    const result = Array.isArray(swrReels) ? swrReels : [];
+    setReels(result);
+
+    if (!hasInitializedRef.current && result.length > 0) {
+      hasInitializedRef.current = true;
+      const validReels = result.filter(reel => reel?.id && reel?.video_url);
+      if (validReels.length > 0) {
+        const videoIds = validReels.map(reel => reel.id);
+        videoFeedService.initializeVideoPool(videoIds);
+        setCurrentIndex(0);
+        flatListRef.current?.scrollToIndex({ index: 0, animated: false });
+      }
+    }
+
+    // Preload next reel
+    if (result.length > 0) {
+      const nextIndex = currentIndex + 1;
+      if (nextIndex >= 0 && nextIndex < result.length && result[nextIndex]) {
+        videoChunkingService.getChunk(result[nextIndex].id, 0).catch(() => {});
+      }
+    }
+  }, [swrReels, swrLoading, currentIndex]);
+
+  // Combined interaction handlers
   const handleVideoComplete = useCallback(async () => {
     await uniqueViewTracker.endView();
     const nextIndex = videoFeedService.getNextUnwatchedVideo(currentIndex);
-    
     if (nextIndex !== currentIndex) {
       setCurrentIndex(nextIndex);
       setTimeout(() => {
-        flatListRef.current?.scrollToIndex({
-          index: nextIndex,
-          animated: true
-        });
+        flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
       }, 100);
     }
   }, [currentIndex]);
 
   const handleVideoWatched = useCallback(async (videoId: string, completed: boolean = false) => {
     videoFeedService.markVideoWatched(videoId, completed);
-    
     if (completed) {
       await uniqueViewTracker.endView();
     }
@@ -475,76 +373,6 @@ export default function ReelsScreen() {
     if (newIndex === currentIndex) return;
     setCurrentIndex(newIndex);
   }, [currentIndex]);
-
-  useEffect(() => {
-    return () => {
-      videoChunkingService.cleanupAllStreams();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!reels || reels.length === 0 || !Array.isArray(reels)) {
-      return;
-    }
-    
-    if (!hasInitializedRef.current) {
-      hasInitializedRef.current = true;
-      
-      const validReels = reels.filter(reel => reel?.id && reel?.video_url);
-      if (validReels.length === 0) {
-        console.warn('⚠️ No valid reels found for initialization');
-        return;
-      }
-      
-      const videoIds = validReels.map(reel => reel.id);
-      videoFeedService.initializeVideoPool(videoIds);
-      
-      setCurrentIndex(0);
-      
-      flatListRef.current?.scrollToIndex({
-        index: 0,
-        animated: false
-      });
-    }
-  }, [reels.length]);
-
-  useEffect(() => {
-    if (reels.length > 0) {
-      const nextIndex = currentIndex + 1;
-      if (nextIndex >= 0 && nextIndex < reels.length && reels[nextIndex]) {
-        videoChunkingService.getChunk(reels[nextIndex].id, 0).catch(() => {});
-      }
-    }
-  }, [currentIndex, reels.length]);
-
-  useFocusEffect(
-    React.useCallback(() => {
-      const cleanupInvalidReels = async () => {
-        try {
-          const invalidReelsStr = await AsyncStorage.getItem('invalidReels');
-          const invalidReels = invalidReelsStr ? JSON.parse(invalidReelsStr) : [];
-          
-          if (invalidReels.length > 0) {
-            setReels(prevReels => {
-              const validReels = prevReels.filter(reel => {
-                const isInvalid = invalidReels.some((invalid: any) => 
-                  invalid.videoUrl === reel.video_url || invalid.thumbnailUrl === reel.thumbnail_url
-                );
-                return !isInvalid;
-              });
-              return validReels;
-            });
-            
-            await AsyncStorage.removeItem('invalidReels');
-          }
-        } catch (error) {
-          console.error('❌ Error cleaning invalid reels:', error);
-        }
-      };
-
-      cleanupInvalidReels();
-    }, [])
-  );
 
   const handleLikeChange = useCallback((itemId: string, isLiked: boolean, count: number) => {
     setStarred(prev => ({ ...prev, [itemId]: isLiked }));
@@ -575,8 +403,7 @@ export default function ReelsScreen() {
     setSaved(prev => ({ ...prev, [itemId]: isSaved }));
   }, []);
 
-  const handleChannelPress = useCallback((reel: Reel) => {
-  }, []);
+  const handleChannelPress = useCallback((reel: Reel) => {}, []);
 
   const handleAddComment = useCallback(async (itemId: string, text: string) => {
     const newComment: Comment = {
@@ -602,19 +429,38 @@ export default function ReelsScreen() {
     setRefreshing(false);
   };
 
-  useEffect(() => {
-    setLoading(swrLoading);
-    const result = Array.isArray(swrReels) ? swrReels : [];
-    setReels(result);
-  }, [swrReels, swrLoading]);
-
   useFocusEffect(
     React.useCallback(() => {
       setIsScreenFocused(true);
-      
-      return () => {
-        setIsScreenFocused(false);
+      return () => setIsScreenFocused(false);
+    }, [])
+  );
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const cleanupInvalidReels = async () => {
+        try {
+          const invalidReelsStr = await AsyncStorage.getItem('invalidReels');
+          const invalidReels = invalidReelsStr ? JSON.parse(invalidReelsStr) : [];
+          
+          if (invalidReels.length > 0) {
+            setReels(prevReels => {
+              const validReels = prevReels.filter(reel => {
+                const isInvalid = invalidReels.some((invalid: any) => 
+                  invalid.videoUrl === reel.video_url || invalid.thumbnailUrl === reel.thumbnail_url
+                );
+                return !isInvalid;
+              });
+              return validReels;
+            });
+            await AsyncStorage.removeItem('invalidReels');
+          }
+        } catch (error) {
+          console.error('❌ Error cleaning invalid reels:', error);
+        }
       };
+
+      cleanupInvalidReels();
     }, [])
   );
 
@@ -690,20 +536,15 @@ export default function ReelsScreen() {
         onMomentumScrollEnd={(event) => {
           const offsetY = event.nativeEvent.contentOffset.y;
           const nextIndex = Math.max(0, Math.min(Math.round(offsetY / SCREEN_HEIGHT), reels.length - 1));
-          
           if (nextIndex !== currentIndex) {
             handleViewChange(nextIndex);
           }
         }}
         getItemLayout={(_, index) => ({
-          length: REEL_HEIGHT,
-          offset: REEL_HEIGHT * index,
+          length: SCREEN_HEIGHT,
+          offset: SCREEN_HEIGHT * index,
           index,
         })}
-        initialNumToRender={1}
-        maxToRenderPerBatch={2}
-        windowSize={5}
-        removeClippedSubviews={false}
         refreshControl={
           <RefreshControl 
             refreshing={refreshing} 
@@ -746,7 +587,7 @@ const styles = StyleSheet.create({
   },
   reelContainer: {
     width: SCREEN_WIDTH,
-    height: REEL_HEIGHT,
+    height: SCREEN_HEIGHT,
     backgroundColor: '#000',
     overflow: 'hidden',
   },
@@ -788,18 +629,5 @@ const styles = StyleSheet.create({
   leftTitleRow: {
     marginTop: 10,
     width: '100%',
-  },
-  marqueeContainer: {
-    overflow: 'hidden',
-    height: 24,
-    marginTop: 6,
-  },
-  description: {
-    color: theme.colors.text.primary,
-    fontSize: theme.typography.fontSize.md,
-    lineHeight: 20,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
   },
 });
