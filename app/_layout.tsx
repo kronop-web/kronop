@@ -24,7 +24,7 @@ export default function RootLayout() {
               <Stack 
                 screenOptions={{ 
                   headerShown: false,
-                  animation: 'fade',
+                  animation: 'none',
                   animationTypeForReplace: 'push',
                   contentStyle: { backgroundColor: '#000' }
                 }}
@@ -37,7 +37,7 @@ export default function RootLayout() {
                   name="chat" 
                   options={{ 
                     headerShown: false,
-                    animation: 'fade',
+                    animation: 'none',
                     presentation: 'modal',
                     contentStyle: { backgroundColor: '#000' }
                   }} 
@@ -46,7 +46,7 @@ export default function RootLayout() {
                   name="notifications" 
                   options={{ 
                     headerShown: false,
-                    animation: 'fade',
+                    animation: 'none',
                     presentation: 'modal',
                     contentStyle: { backgroundColor: '#000' }
                   }} 
@@ -55,7 +55,7 @@ export default function RootLayout() {
                   name="songs" 
                   options={{ 
                     headerShown: false,
-                    animation: 'fade',
+                    animation: 'none',
                     presentation: 'modal',
                     contentStyle: { backgroundColor: '#000' }
                   }} 
@@ -64,7 +64,7 @@ export default function RootLayout() {
                   name="video/[id]" 
                   options={{ 
                     headerShown: false,
-                    animation: 'fade',
+                    animation: 'none',
                     presentation: 'modal',
                     contentStyle: { backgroundColor: '#000' }
                   }} 

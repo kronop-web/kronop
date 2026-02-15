@@ -28,18 +28,18 @@ export default function LoginScreen() {
     setLoginError('');
 
     if (!email.trim()) {
-      setEmailError('ईमेल खाली नहीं हो सकता!');
+      setEmailError('Email cannot be empty!');
       isValid = false;
     } else if (!validateEmail(email)) {
-      setEmailError('सही ईमेल डालें!');
+      setEmailError('Please enter a valid email!');
       isValid = false;
     }
 
     if (!password.trim()) {
-      setPasswordError('पासवर्ड खाली नहीं हो सकता!');
+      setPasswordError('Password cannot be empty!');
       isValid = false;
     } else if (password.length < 6) {
-      setPasswordError('पासवर्ड कम से कम 6 अक्षर का होना चाहिए!');
+      setPasswordError('Password must be at least 6 characters!');
       isValid = false;
     }
 
@@ -63,11 +63,11 @@ export default function LoginScreen() {
       if (result.success) {
         router.replace('/(tabs)');
       } else {
-        setLoginError(result.error || 'गलत पासवर्ड या ईमेल!');
+        setLoginError(result.error || 'Wrong password or email!');
       }
     } catch (error: any) {
       console.error('💥 Login Error:', error);
-      setLoginError(error.message || 'गलत पासवर्ड या ईमेल!');
+      setLoginError(error.message || 'Wrong password or email!');
     } finally {
       setLoading(false);
     }

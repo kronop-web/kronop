@@ -14,6 +14,7 @@ export default function TabLayout() {
         tabBarActiveTintColor: theme.colors.primary.main,
         tabBarInactiveTintColor: theme.colors.text.tertiary,
         tabBarShowLabel: false,
+        animation: 'none',
         tabBarStyle: {
           backgroundColor: theme.colors.background.primary,
           borderTopColor: theme.colors.border.primary,

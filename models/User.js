@@ -22,7 +22,8 @@ const userSchema = new mongoose.Schema({
   username: {
     type: String,
     unique: true,
-    sparse: true // Allow null/undefined to be non-unique
+    sparse: true, // Allow null/undefined to be non-unique
+    trim: true
   },
   displayName: {
     type: String,
@@ -54,6 +55,8 @@ const userSchema = new mongoose.Schema({
   },
   followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  supporters: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  supporting: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   verified: {
     type: Boolean,
     default: false
@@ -96,6 +99,12 @@ const userSchema = new mongoose.Schema({
     default: Date.now
   }
 });
+
+// Add indexes for better search performance
+userSchema.index({ username: 'text', displayName: 'text', bio: 'text' });
+userSchema.index({ username: 1 });
+userSchema.index({ displayName: 1 });
+userSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('User', userSchema);
 

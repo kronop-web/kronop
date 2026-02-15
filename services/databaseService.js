@@ -243,26 +243,25 @@ class DatabaseService {
   }
 
   // --- Saved Content Methods ---
-  static async getSavedContent(userId, page = 1, limit = 20) {
+  static async getSavedContent(userId, page = 1, limit = 20, contentType = null) {
     await this.connect();
     try {
       const skip = (page - 1) * limit;
       
-      // Find user's saved content
-      const user = await User.findById(userId).populate({
-        path: 'savedContent',
-        options: { 
-          sort: { savedAt: -1 },
-          skip: skip,
-          limit: limit 
-        }
-      });
-      
-      if (!user) {
-        throw new Error('User not found');
+      // Build query with content type filter
+      const query = { userId };
+      if (contentType) {
+        query.contentType = contentType;
       }
       
-      return user.savedContent || [];
+      // Find user's saved content with content type filter
+      const savedContent = await mongoose.connection.db.collection('savedcontents').find(query)
+        .sort({ savedAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .toArray();
+      
+      return savedContent || [];
     } catch (error) {
       throw new Error(`Failed to get saved content: ${error.message}`);
     }

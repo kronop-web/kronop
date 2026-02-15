@@ -11,10 +11,33 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { userProfileApi, reelsApi, videosApi, photosApi, liveApi, savedApi } from '../../services/api';
 import userContentService, { ContentType } from '../../services/userContentService';
+import demoUserService from '../../services/demoUserService';
 
-type TabType = 'reels' | 'video' | 'live' | 'photo' | 'save';
+// Import saved components
+import SavedReels from '../../components/profile/SavedReels';
+import SavedVideos from '../../components/profile/SavedVideos';
+import SavedPhotos from '../../components/profile/SavedPhotos';
+import SavedLive from '../../components/profile/SavedLive';
+import SavedShayari from '../../components/profile/SavedShayari';
+import SavedSongs from '../../components/profile/SavedSongs';
 
-// Google Maps सेवा फ़ंक्शन
+// Tab types as enum to avoid TypeScript string comparison issues
+const TAB_TYPES = {
+  REELS: 'reels',
+  VIDEO: 'video', 
+  LIVE: 'live',
+  PHOTO: 'photo',
+  SAVED_REELS: 'saved-reels',
+  SAVED_VIDEOS: 'saved-videos',
+  SAVED_PHOTOS: 'saved-photos',
+  SAVED_LIVE: 'saved-live',
+  SAVED_SHAYARI: 'saved-shayari',
+  SAVED_SONGS: 'saved-songs'
+} as const;
+
+type TabType = typeof TAB_TYPES[keyof typeof TAB_TYPES];
+
+// Google Maps service function
 const googleMapsService = {
   async getUserLocation(): Promise<{ address: string } | null> {
     try {
@@ -75,19 +98,19 @@ export default function ProfileScreen() {
   const [userLocation, setUserLocation] = useState<string>('Loading...');
 
   const [profileData, setProfileData] = useState({
-    name: 'Simran Kumari',
-    username: '@simran_kumari_964_',
-    bio: 'Hello Friend Follow For Amazing Dance Video 😍❤️',
-    coverImage: 'https://picsum.photos/seed/cover/1080/400',
-    profileImage: 'https://picsum.photos/seed/profile/300/300',
-    website: 'https://www.instagram.com/simran_kumari_964_?igsh=MWpnd3llanlqejBqZQ==',
-    location: 'Auraiya'
+    name: 'Kronop Demo',
+    username: '@kronop_demo',
+    bio: 'This is a demo profile. Here you can see how the app works.',
+    coverImage: 'https://picsum.photos/seed/kronop_cover/1080/400',
+    profileImage: 'https://picsum.photos/seed/kronop_profile/300/300',
+    website: '',
+    location: 'India'
   });
 
   const [stats, setStats] = useState({
-    posts: 1400,
-    supporters: 117000,
-    supporting: 13,
+    posts: 0,
+    supporters: 0,
+    supporting: 0,
   });
 
   const [supportersModalVisible, setSupportersModalVisible] = useState(false);
@@ -101,6 +124,12 @@ export default function ProfileScreen() {
   const [reels, setReels] = useState<any[]>([]);
   const [liveSessions, setLiveSessions] = useState<any[]>([]);
   const [savedItems, setSavedItems] = useState<any[]>([]);
+  const [savedReels, setSavedReels] = useState<any[]>([]);
+  const [savedVideos, setSavedVideos] = useState<any[]>([]);
+  const [savedPhotos, setSavedPhotos] = useState<any[]>([]);
+  const [savedLive, setSavedLive] = useState<any[]>([]);
+  const [savedShayari, setSavedShayari] = useState<any[]>([]);
+  const [savedSongs, setSavedSongs] = useState<any[]>([]);
 
   const loadStoredCoverPhoto = async () => {
     try {
@@ -141,7 +170,31 @@ export default function ProfileScreen() {
     loadUserContent();
     loadStoredCoverPhoto();
     loadUserLocation();
+    checkAndSetDemoMode();
   }, []);
+
+  const checkAndSetDemoMode = async () => {
+    try {
+      const shouldShowDemo = await demoUserService.shouldShowDemoProfile();
+      if (shouldShowDemo) {
+        const demoUser = await demoUserService.getDemoUser();
+        setProfileData({
+          name: demoUser.name,
+          username: demoUser.username,
+          bio: 'This is a demo profile. Here you can see how app works.',
+          coverImage: demoUser.coverImage,
+          profileImage: demoUser.profileImage,
+          website: demoUser.website,
+          location: demoUser.location
+        });
+        setStats(demoUser.stats);
+        await demoUserService.setDemoMode(true);
+        await demoUserService.markDemoAsSeen();
+      }
+    } catch (error) {
+      console.error('Demo mode error:', error);
+    }
+  };
 
   const loadUserProfile = async () => {
     try {
@@ -157,13 +210,13 @@ export default function ProfileScreen() {
       
       if (result.data) {
         setProfileData({
-          name: result.data.full_name || 'Simran Kumari',
-          username: result.data.username ? `@${result.data.username}` : '@simran_kumari_964_',
-          bio: result.data.bio || 'Hello Friend Follow For Amazing Dance Video 😍❤️',
-          coverImage: result.data.cover_image || 'https://picsum.photos/seed/cover/1080/400',
-          profileImage: result.data.avatar_url || 'https://via.placeholder.com/100',
-          website: result.data.website || 'https://www.instagram.com/simran_kumari_964_?igsh=MWpnd3llanlqejBqZQ==',
-          location: result.data.location || 'Auraiya'
+          name: result.data.full_name || 'Kronop Demo',
+          username: result.data.username ? `@${result.data.username}` : '@kronop_demo',
+          bio: result.data.bio || 'This is a demo profile. Here you can see how app works.',
+          coverImage: result.data.cover_image || 'https://picsum.photos/seed/kronop_cover/1080/400',
+          profileImage: result.data.avatar_url || 'https://picsum.photos/seed/kronop_profile/300/300',
+          website: result.data.website || '',
+          location: result.data.location || 'India'
         });
         
         if (result.data.cover_image) {
@@ -218,14 +271,43 @@ export default function ProfileScreen() {
         setLiveSessions([]);
       }
 
-      // Load saved items
+      // Load saved items - Filter by content type
       try {
-        const savedResult = await savedApi.getSaved();
-        if (savedResult && savedResult.length > 0) {
-          setSavedItems(savedResult);
-        }
+        const [savedReelsData, savedVideosData, savedPhotosData, savedLiveData, savedShayariData, savedSongsData] = await Promise.all([
+          savedApi.getSaved('reel'),      // Changed from 'reels' to 'reel'
+          savedApi.getSaved('video'),     // Changed from 'videos' to 'video' 
+          savedApi.getSaved('photo'),     // Changed from 'photos' to 'photo'
+          savedApi.getSaved('live'),      // Changed from 'live' to 'live'
+          savedApi.getSaved('shayari'),   // Changed from 'shayari' to 'shayari'
+          savedApi.getSaved('song')       // Changed from 'songs' to 'song'
+        ]);
+        
+        setSavedReels(savedReelsData || []);
+        setSavedVideos(savedVideosData || []);
+        setSavedPhotos(savedPhotosData || []);
+        setSavedLive(savedLiveData || []);
+        setSavedShayari(savedShayariData || []);
+        setSavedSongs(savedSongsData || []);
+        
+        // Combine all for general saved items
+        const allSaved = [
+          ...savedReelsData,
+          ...savedVideosData,
+          ...savedPhotosData,
+          ...savedLiveData,
+          ...savedShayariData,
+          ...savedSongsData
+        ];
+        setSavedItems(allSaved);
       } catch (error) {
+        console.error('❌ Error loading saved items:', error);
         setSavedItems([]);
+        setSavedReels([]);
+        setSavedVideos([]);
+        setSavedPhotos([]);
+        setSavedLive([]);
+        setSavedShayari([]);
+        setSavedSongs([]);
       }
 
       // Load supporters and supporting stats
@@ -402,9 +484,9 @@ export default function ProfileScreen() {
           </View>
         ) : (
           <View style={styles.reelsGrid}>
-            {reels.map((reel) => (
+            {reels.map((reel: any) => (
               <TouchableOpacity 
-                key={reel.id} 
+                key={reel.id || reel._id} 
                 style={[styles.reelItem, { width: itemWidth }]}
                 onPress={() => router.push({
                   pathname: '/profile/[contentType]',
@@ -439,9 +521,9 @@ export default function ProfileScreen() {
           </View>
         ) : (
           <View style={styles.videosGrid}>
-            {videos.map((video) => (
+            {videos.map((video: any) => (
               <TouchableOpacity 
-                key={video.id} 
+                key={video.id || video._id} 
                 style={[styles.videoItem, { width: itemWidth }]}
                 onPress={() => router.push({
                   pathname: '/profile/[contentType]',
@@ -473,9 +555,9 @@ export default function ProfileScreen() {
           </View>
         ) : (
           <View style={styles.liveGrid}>
-            {liveSessions.map((live) => (
+            {liveSessions.map((live: any) => (
               <TouchableOpacity 
-                key={live.id} 
+                key={live.id || live._id} 
                 style={[styles.liveItem, { width: itemWidth }]}
                 onPress={() => router.push({
                   pathname: '/profile/[contentType]',
@@ -507,9 +589,9 @@ export default function ProfileScreen() {
           </View>
         ) : (
           <View style={styles.photosGrid}>
-            {photos.map((photo) => (
+            {photos.map((photo: any) => (
               <TouchableOpacity 
-                key={photo.id} 
+                key={photo.id || photo._id} 
                 style={[styles.photoItem, { width: itemWidth }]}
                 onPress={() => router.push({
                   pathname: '/profile/[contentType]',
@@ -532,36 +614,23 @@ export default function ProfileScreen() {
           </View>
         );
 
-      case 'save':
-        return savedItems.length === 0 ? (
-          <View style={styles.emptyContentContainer}>
-            <MaterialIcons name="bookmark-border" size={60} color={theme.colors.text.tertiary} />
-            <Text style={styles.emptyContentText}>No saved items yet</Text>
-            <Text style={styles.emptyContentSubtext}>Save posts you want to revisit later</Text>
-          </View>
-        ) : (
-          <View style={styles.savedGrid}>
-            {savedItems.map((item) => (
-              <TouchableOpacity 
-                key={item.id} 
-                style={[styles.savedItem, { width: itemWidth }]}
-                onPress={() => router.push({
-                  pathname: '/post/[id]',
-                  params: { id: item?.id?.toString() || '' }
-                })}
-              >
-                <Image 
-                  source={{ uri: item.thumbnail_url || item.url || 'https://picsum.photos/400' }} 
-                  style={styles.savedImage} 
-                  contentFit="cover"
-                />
-                <View style={styles.savedIcon}>
-                  <MaterialIcons name="bookmark" size={16} color="#fff" />
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-        );
+      case TAB_TYPES.SAVED_REELS:
+        return <SavedReels reels={savedReels} itemWidth={itemWidth} />;
+
+      case TAB_TYPES.SAVED_VIDEOS:
+        return <SavedVideos videos={savedVideos} itemWidth={itemWidth} />;
+
+      case TAB_TYPES.SAVED_PHOTOS:
+        return <SavedPhotos photos={savedPhotos} itemWidth={itemWidth} />;
+
+      case TAB_TYPES.SAVED_LIVE:
+        return <SavedLive liveSessions={savedLive} itemWidth={itemWidth} />;
+
+      case TAB_TYPES.SAVED_SHAYARI:
+        return <SavedShayari shayari={savedShayari} itemWidth={itemWidth} />;
+
+      case TAB_TYPES.SAVED_SONGS:
+        return <SavedSongs songs={savedSongs} itemWidth={itemWidth} />;
 
       default:
         return null;
@@ -785,7 +854,7 @@ export default function ProfileScreen() {
             { key: 'video', icon: 'smart-display', label: 'Video' },
             { key: 'live', icon: 'live-tv', label: 'Live' },
             { key: 'photo', icon: 'photo-library', label: 'Photo' },
-            { key: 'save', icon: 'bookmark-border', label: 'Save' }
+            { key: TAB_TYPES.SAVED_REELS, icon: 'bookmark', label: 'Saved' }
           ].map((tab) => (
             <TouchableOpacity
               key={tab.key}
@@ -801,6 +870,53 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           ))}
         </View>
+
+        {/* Save Sub-Tabs - 6 Buttons */}
+        {(activeTab === TAB_TYPES.SAVED_REELS || 
+          activeTab === TAB_TYPES.SAVED_VIDEOS || 
+          activeTab === TAB_TYPES.SAVED_PHOTOS || 
+          activeTab === TAB_TYPES.SAVED_LIVE || 
+          activeTab === TAB_TYPES.SAVED_SHAYARI || 
+          activeTab === TAB_TYPES.SAVED_SONGS) && (
+          <View style={styles.subTabsContainer}>
+            <TouchableOpacity
+              style={[styles.subTab, activeTab === TAB_TYPES.SAVED_REELS && styles.activeSubTab]}
+              onPress={() => setActiveTab(TAB_TYPES.SAVED_REELS)}
+            >
+              <Text style={styles.subTabText}>Reels</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.subTab, activeTab === TAB_TYPES.SAVED_VIDEOS && styles.activeSubTab]}
+              onPress={() => setActiveTab(TAB_TYPES.SAVED_VIDEOS)}
+            >
+              <Text style={styles.subTabText}>Videos</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.subTab, activeTab === TAB_TYPES.SAVED_PHOTOS && styles.activeSubTab]}
+              onPress={() => setActiveTab(TAB_TYPES.SAVED_PHOTOS)}
+            >
+              <Text style={styles.subTabText}>Photos</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.subTab, activeTab === TAB_TYPES.SAVED_LIVE && styles.activeSubTab]}
+              onPress={() => setActiveTab(TAB_TYPES.SAVED_LIVE)}
+            >
+              <Text style={styles.subTabText}>Live</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.subTab, activeTab === TAB_TYPES.SAVED_SHAYARI && styles.activeSubTab]}
+              onPress={() => setActiveTab(TAB_TYPES.SAVED_SHAYARI)}
+            >
+              <Text style={styles.subTabText}>Shayari</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.subTab, activeTab === TAB_TYPES.SAVED_SONGS && styles.activeSubTab]}
+              onPress={() => setActiveTab(TAB_TYPES.SAVED_SONGS)}
+            >
+              <Text style={styles.subTabText}>Songs</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Content Grid */}
         {renderContent()}
@@ -822,7 +938,7 @@ export default function ProfileScreen() {
                 <Text style={styles.emptySupportText}>No supporters yet</Text>
               </View>
             ) : (
-              supportersList.map((supporter) => (
+              supportersList.map((supporter: any) => (
                 <View key={supporter.id} style={styles.supportItem}>
                   <Image 
                     source={{ uri: supporter.avatar_url || 'https://via.placeholder.com/50' }} 
@@ -856,7 +972,7 @@ export default function ProfileScreen() {
                 <Text style={styles.emptySupportText}>Not supporting anyone yet</Text>
               </View>
             ) : (
-              supportingList.map((supporting) => (
+              supportingList.map((supporting: any) => (
                 <View key={supporting.id} style={styles.supportItem}>
                   <Image 
                     source={{ uri: supporting.avatar_url || 'https://via.placeholder.com/50' }} 
@@ -1322,6 +1438,26 @@ const styles = StyleSheet.create({
   savedImage: {
     width: '100%',
     height: '100%',
+  },
+  subTabsContainer: {
+    flexDirection: 'row',
+    backgroundColor: theme.colors.background.secondary,
+    paddingHorizontal: theme.spacing.sm,
+  },
+  subTab: {
+    flex: 1,
+    paddingVertical: theme.spacing.sm,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  activeSubTab: {
+    borderBottomColor: theme.colors.primary.main,
+  },
+  subTabText: {
+    fontSize: theme.typography.fontSize.sm,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.text.primary,
   },
   savedIcon: {
     position: 'absolute',

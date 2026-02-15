@@ -697,12 +697,17 @@ export const liveApi = {
 
 
 export const savedApi = {
-  getSaved: async (page = 1, limit = 20) => {
+  getSaved: async (contentType?: string, page = 1, limit = 20) => {
     try {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString()
       });
+      
+      // Add content type filter if provided
+      if (contentType) {
+        params.append('content_type', contentType);
+      }
       
       const endpoint = `/content/saved?${params}`;
       console.log('🔍 Calling savedApi.getSaved with endpoint:', endpoint);

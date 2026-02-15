@@ -14,6 +14,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { theme } from '../../constants/theme';
 import { Story } from '../../types/story';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import demoUserService from '../../services/demoUserService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const STORY_BOX_WIDTH = 78;
@@ -119,6 +120,18 @@ export function StorySection({
     );
   }
 
+  if (stories.length === 0) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.emptyContainer}>
+          <MaterialIcons name="photo-library" size={40} color={theme.colors.text.tertiary} />
+          <Text style={styles.emptyTitle}>{demoUserService.getDemoMessage('stories').title}</Text>
+          <Text style={styles.emptySubtitle}>{demoUserService.getDemoMessage('stories').subtitle}</Text>
+        </View>
+      </View>
+    );
+  }
+
 
   return (
     <View style={styles.container}>
@@ -183,5 +196,21 @@ const styles = StyleSheet.create({
   loadingContainer: {
     paddingVertical: theme.spacing.xl,
     alignItems: 'center',
+  },
+  emptyContainer: {
+    paddingVertical: theme.spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitle: {
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.text.primary,
+    marginTop: theme.spacing.sm,
+  },
+  emptySubtitle: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.secondary,
+    marginTop: theme.spacing.xs,
   },
 });

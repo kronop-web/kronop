@@ -181,7 +181,7 @@ export function StoryViewer({ visible, stories, initialIndex, onClose, onRefresh
   return (
     <Modal
       visible={visible}
-      animationType="fade"
+      animationType="none"
       transparent={false}
       onRequestClose={onClose}
     >

@@ -8,6 +8,7 @@ import { useSWRContent } from '../../hooks/swr';
 import { useRouter } from 'expo-router';
 import ShayariCard from '../../components/feature/Shayari';
 import UrlValidationService from '../../services/urlValidationService';
+import demoUserService from '../../services/demoUserService';
 
 interface Photo {
   id: string;
@@ -223,8 +224,8 @@ export default function PhotosScreen() {
         ListEmptyComponent={
           <View style={styles.listEmptyContainer}>
             <MaterialIcons name="photo-library" size={80} color={theme.colors.text.tertiary} />
-            <Text style={styles.listEmptyTitle}>No Photos Yet</Text>
-            <Text style={styles.listEmptyText}>Upload your first photo to get started</Text>
+            <Text style={styles.listEmptyTitle}>{demoUserService.getDemoMessage('photos').title}</Text>
+            <Text style={styles.listEmptyText}>{demoUserService.getDemoMessage('photos').subtitle}</Text>
             <TouchableOpacity 
               style={styles.listEmptyUploadButton}
               onPress={() => router.push('/upload')}

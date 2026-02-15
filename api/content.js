@@ -328,7 +328,7 @@ router.post('/security/enable/:type', async (req, res) => {
 // GET /api/content/saved - Get saved content for user
 router.get('/saved', async (req, res) => {
   try {
-    const { userId, page = 1, limit = 20 } = req.query;
+    const { userId, page = 1, limit = 20, content_type } = req.query;
     
     if (!userId) {
       return res.status(400).json({ 
@@ -340,8 +340,8 @@ router.get('/saved', async (req, res) => {
     const parsedPage = parseInt(page);
     const parsedLimit = Math.min(parseInt(limit), 50);
 
-    // Get saved content from database
-    const savedContent = await DatabaseService.getSavedContent(userId, parsedPage, parsedLimit);
+    // Get saved content from database with content type filter
+    const savedContent = await DatabaseService.getSavedContent(userId, parsedPage, parsedLimit, content_type);
     
     res.json({ 
       success: true, 

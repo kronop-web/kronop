@@ -17,6 +17,7 @@ import {
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Image } from 'expo-image';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -563,6 +564,7 @@ function ReelItem({
 }
 
 export default function ReelsScreen() {
+  const router = useRouter();
   const [reels, setReels] = useState<Reel[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -1003,7 +1005,7 @@ export default function ReelsScreen() {
   );
 }
 
-const CIRCLE = 36; // छोटा किया
+const CIRCLE = 36; // Circle diameter
 
 const styles = StyleSheet.create({
   container: {
@@ -1104,7 +1106,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   channelAvatarContainer: {
-    marginRight: 10, // Avatar और channel name के बीच थोड़ा space
+    marginRight: 10, // Avatar and channel name ke beech thoda space
   },
   avatar: {
     width: 38,
@@ -1113,7 +1115,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: theme.colors.text.primary,
   },
-  // Channel name और support button बिल्कुल पास
+  // Channel name and support button are close
   channelAndSupport: {
     flex: 1,
     flexDirection: 'row',
@@ -1121,16 +1123,16 @@ const styles = StyleSheet.create({
   },
   channelNameTouchable: {
     flex: 1,
-    marginRight: 8, // Channel name और support button के बीच बहुत कम space
+    marginRight: 8, // Channel name and support button ke beech bahut kam space
   },
   channelName: {
     color: theme.colors.text.primary,
-    fontSize: 16, // थोड़ा बड़ा font
+    fontSize: 16, // Thoda bada font
     fontWeight: 'bold',
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
-    flexShrink: 1, // Text को shrink करने दें
+    flexShrink: 1, // Text ko shrink karne dein
   },
   supportButton: {
     paddingHorizontal: 10,
@@ -1139,7 +1141,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.sm,
     minWidth: 72, // Fixed width
     alignItems: 'center',
-    flexShrink: 0, // Button का size fixed रहे
+    flexShrink: 0, // Button ka size fixed rahe
   },
   supportText: {
     color: theme.colors.text.primary,
@@ -1165,7 +1167,7 @@ const styles = StyleSheet.create({
   },
   actionGroup: {
     alignItems: 'center',
-    marginBottom: 8, // और कम किया बटनों को पास लाने के लिए
+    marginBottom: 8, // Make buttons closer
   },
   actionButtonWrap: {
     width: CIRCLE,
@@ -1184,9 +1186,9 @@ const styles = StyleSheet.create({
   },
   actionText: {
     color: theme.colors.text.primary,
-    fontSize: 10, // छोटा किया
+    fontSize: 10, // Chota size
     fontWeight: theme.typography.fontWeight.semibold,
-    marginTop: 3, // कम किया
+    marginTop: 3, // Kam karne
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,

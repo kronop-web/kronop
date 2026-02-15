@@ -361,31 +361,31 @@ export default function HomeScreen() {
     switch (option) {
       case 'Story':
         // Direct to upload screen with story type
-        router.replace('/upload?tab=story');
+        router.push('/upload?tab=story');
         break;
       case 'Photo':
         // Direct to upload screen with photo type
-        router.replace('/upload?tab=photo');
+        router.push('/upload?tab=photo');
         break;
       case 'Reels':
         // Direct to upload screen with reels type
-        router.replace('/upload?tab=reel');
+        router.push('/upload?tab=reel');
         break;
       case 'Video':
         // Direct to upload screen with video type
-        router.replace('/upload?tab=video');
+        router.push('/upload?tab=video');
         break;
       case 'Live':
         // Direct to upload screen with live type
-        router.replace('/upload?tab=live');
+        router.push('/upload?tab=live');
         break;
       case 'Shayari':
         // Direct to upload screen with shayari type
-        router.replace('/upload?tab=shayari');
+        router.push('/upload?tab=shayari');
         break;
       case 'Song':
         // Create new song upload screen (for now, go to upload)
-        router.replace('/upload?tab=song');
+        router.push('/upload?tab=song');
         break;
       default:
         break;
@@ -604,6 +604,14 @@ export default function HomeScreen() {
             <MaterialIcons name="notifications" size={24} color="#fff" />
           </TouchableOpacity>
           <TouchableOpacity 
+            onPress={() => router.push('/search-user/search-user')}
+            hitSlop={theme.hitSlop.md}
+            activeOpacity={0.7}
+            style={styles.headerButton}
+          >
+            <MaterialIcons name="person-search" size={24} color="#fff" />
+          </TouchableOpacity>
+          <TouchableOpacity 
             onPress={() => router.push('/chat')}
             hitSlop={theme.hitSlop.md}
             activeOpacity={0.7}
@@ -712,7 +720,7 @@ export default function HomeScreen() {
       <Modal
         visible={showUploadModal}
         transparent={true}
-        animationType="slide"
+        animationType="none"
         onRequestClose={() => setShowUploadModal(false)}
       >
         <TouchableOpacity 
@@ -788,7 +796,7 @@ export default function HomeScreen() {
       {/* Music Player Modal - Full Screen */}
       <Modal
         visible={showMusicModal}
-        animationType="fade"
+        animationType="none"
         onRequestClose={() => setShowMusicModal(false)}
       >
         <View style={styles.fullScreenMusicContainer}>
