@@ -23,7 +23,6 @@ import VideoErrorBoundary from '../common/VideoErrorBoundary';
 import MarqueeText from '../common/MarqueeText';
 import { ZeroDataVideoCacheService } from '../../services/zeroDataVideoCacheService';
 import { LocalVideoProxyServer } from '../../services/localVideoProxyServer';
-import { videoPreloaderService } from '../../services/videoPreloader';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 const REEL_HEIGHT = SCREEN_HEIGHT;
@@ -88,14 +87,7 @@ const ReelPlayer = ({
     initializeZeroDataSystem();
   }, []);
 
-  // FIX 3: Start aggressive pre-warming immediately when reels are available
-  useEffect(() => {
-    if (reels.length > 0) {
-      import('../../services/videoPreloader').then(({ videoPreloaderService }) => {
-        videoPreloaderService.startAggressivePreloading(reels);
-      });
-    }
-  }, [reels]);
+  // Reels available - ready for playback
 
   // Save video functionality
   const handleSaveVideo = useCallback(async (reel) => {

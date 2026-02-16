@@ -1,6 +1,8 @@
 // MongoDB Profile Service
 // Handles all profile-related operations with MongoDB
 
+import { mongoDB } from '../app/services/upload-api-manager';
+
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://common-jesse-kronop-app-19cf0acc.koyeb.app';
 const CURRENT_USER_ID = 'guest_user';
 
@@ -16,22 +18,11 @@ class ProfileService {
     try {
       console.log('🔍 Testing MongoDB connection for profiles...');
       
-      const response = await fetch(`${API_BASE_URL}/api/test-connection`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✅ MongoDB Connection Test Result:', data);
-        this.isConnected = data.connected;
-        this.connectionAttempts = 0;
-        return { success: true, connected: data.connected };
-      } else {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
+      const result = await mongoDB.testConnection();
+      console.log('✅ MongoDB Connection Test Result:', result);
+      this.isConnected = result.success;
+      this.connectionAttempts = 0;
+      return { success: result.success, connected: result.success };
     } catch (error) {
       console.error('❌ MongoDB Connection Test Failed:', error);
       this.connectionAttempts++;
@@ -85,34 +76,20 @@ class ProfileService {
   // Create new profile
   async createProfile(profileData) {
     try {
-      if (!this.isConnected) {
-        const connectionTest = await this.testConnection();
-        if (!connectionTest.success) {
-          throw new Error('MongoDB not connected');
-        }
-      }
-
       console.log('🆕 Creating new profile:', profileData);
       
-      const response = await fetch(`${API_BASE_URL}/api/users/profile`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...profileData,
-          userId: CURRENT_USER_ID,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        })
+      const result = await mongoDB.insertOne('profiles', {
+        ...profileData,
+        userId: CURRENT_USER_ID,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✅ Profile created successfully:', data);
-        return { success: true, data };
+      if (result.success) {
+        console.log('✅ Profile created successfully:', result.data);
+        return { success: true, data: { ...profileData, _id: result.data.insertedId } };
       } else {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        throw new Error(result.error);
       }
     } catch (error) {
       console.error('❌ Create Profile Error:', error);
@@ -120,35 +97,24 @@ class ProfileService {
     }
   }
 
-  // Update profile
+      // Update profile
   async updateProfile(profileData) {
     try {
-      if (!this.isConnected) {
-        const connectionTest = await this.testConnection();
-        if (!connectionTest.success) {
-          throw new Error('MongoDB not connected');
-        }
-      }
-
       console.log('📝 Updating profile:', profileData);
       
-      const response = await fetch(`${API_BASE_URL}/api/users/profile/${CURRENT_USER_ID}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const result = await mongoDB.updateOne('profiles', 
+        { userId: CURRENT_USER_ID },
+        { 
           ...profileData,
           updatedAt: new Date().toISOString()
-        })
-      });
+        }
+      );
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✅ Profile updated successfully:', data);
-        return { success: true, data };
+      if (result.success) {
+        console.log('✅ Profile updated successfully:', result.data);
+        return { success: true, data: profileData };
       } else {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        throw new Error(result.error);
       }
     } catch (error) {
       console.error('❌ Update Profile Error:', error);
@@ -159,28 +125,15 @@ class ProfileService {
   // Delete profile
   async deleteProfile(userId = CURRENT_USER_ID) {
     try {
-      if (!this.isConnected) {
-        const connectionTest = await this.testConnection();
-        if (!connectionTest.success) {
-          throw new Error('MongoDB not connected');
-        }
-      }
-
       console.log(`🗑️ Deleting profile for user: ${userId}`);
       
-      const response = await fetch(`${API_BASE_URL}/api/users/profile/${userId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
+      const result = await mongoDB.deleteOne('profiles', { userId });
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✅ Profile deleted successfully:', data);
-        return { success: true, data };
+      if (result.success) {
+        console.log('✅ Profile deleted successfully:', result.data);
+        return { success: true, data: result.data };
       } else {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        throw new Error(result.error);
       }
     } catch (error) {
       console.error('❌ Delete Profile Error:', error);

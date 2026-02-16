@@ -1,11 +1,12 @@
 /**
  * Background Activity Manager
- * Controls background processes and pauses them during focus mode
+ * Controls background processes and optimizes for speed
  */
 
 class BackgroundManager {
   static instance = null;
   backgroundProcesses = new Map();
+  essentialProcesses = ['upload', 'notification', 'currentScreen'];
   
   constructor() {
     if (BackgroundManager.instance) {
@@ -23,12 +24,13 @@ class BackgroundManager {
   registerProcess(id, process, options = {}) {
     this.backgroundProcesses.set(id, {
       process,
-      options,
+      options: { ...options }, // Ensure options is always an object
       isPaused: false,
-      intervalId: null
+      intervalId: null,
+      priority: options.priority || 'normal'
     });
     
-    console.log(`📋 Background process registered: ${id}`);
+    console.log(`📋 Background process registered: ${id} (priority: ${options.priority || 'normal'})`);
   }
   
   /**
@@ -49,8 +51,19 @@ class BackgroundManager {
     
     // Start interval if needed
     if (bgProcess.options.interval && !bgProcess.intervalId) {
-      bgProcess.intervalId = setInterval(bgProcess.process, bgProcess.options.interval);
-      console.log(`⏰ Started interval for: ${id} (${bgProcess.options.interval}ms)`);
+      bgProcess.intervalId = setInterval(() => {
+        if (!bgProcess.isPaused) {
+          bgProcess.process();
+        }
+      }, bgProcess.options.interval);
+      
+      console.log(`⏰ Started interval for process: ${id}`);
+    }
+    
+    // Execute immediately if not interval-based
+    if (!bgProcess.options.interval) {
+      bgProcess.process();
+      console.log(`🚀 Started one-time process: ${id}`);
     }
   }
   
@@ -66,114 +79,42 @@ class BackgroundManager {
     }
     
     if (!bgProcess.isPaused) {
-      console.log(`⏸️ Pausing background process: ${id}`);
       bgProcess.isPaused = true;
-      
-      // Clear interval
-      if (bgProcess.intervalId) {
-        clearInterval(bgProcess.intervalId);
-        bgProcess.intervalId = null;
-      }
+      console.log(`⏸️ Paused background process: ${id}`);
     }
   }
   
   /**
-   * Pause all background processes (for focus mode)
-   */
-  pauseAllProcesses() {
-    console.log('⏸️ Pausing all background processes for focus mode');
-    this.backgroundProcesses.forEach((bgProcess, id) => {
-      this.pauseProcess(id);
-    });
-  }
-  
-  /**
-   * Resume all background processes
-   */
-  resumeAllProcesses() {
-    console.log('▶️ Resuming all background processes');
-    this.backgroundProcesses.forEach((bgProcess, id) => {
-      this.startProcess(id);
-    });
-  }
-  
-  /**
-   * Stop and remove a background process
+   * Stop a background process
    * @param {string} id - Process identifier
    */
   stopProcess(id) {
     const bgProcess = this.backgroundProcesses.get(id);
     if (!bgProcess) {
+      console.warn(`⚠️ Process not found: ${id}`);
       return;
     }
     
-    // Clear interval
+    // Clear interval if exists
     if (bgProcess.intervalId) {
       clearInterval(bgProcess.intervalId);
+      bgProcess.intervalId = null;
     }
     
-    // Remove from registry
-    this.backgroundProcesses.delete(id);
-    console.log(`🛑 Stopped background process: ${id}`);
+    bgProcess.isPaused = true;
+    console.log(`⏹️ Stopped background process: ${id}`);
   }
   
   /**
-   * Get status of all background processes
-   */
-  getProcessStatus() {
-    const status = {};
-    this.backgroundProcesses.forEach((bgProcess, id) => {
-      status[id] = {
-        isPaused: bgProcess.isPaused,
-        hasInterval: !!bgProcess.intervalId,
-        options: bgProcess.options
-      };
-    });
-    return status;
-  }
-  
-  /**
-   * Cleanup all processes
-   */
-  cleanup() {
-    console.log('🧹 Cleaning up all background processes');
-    this.backgroundProcesses.forEach((bgProcess, id) => {
-      this.stopProcess(id);
-    });
-  }
-  
-  /**
-   * Optimize for 0.5ms response time
-   */
-  optimizeForSpeed() {
-    console.log('⚡ Optimizing background processes for 0.5ms response...');
-    
-    // Kill all non-essential
-    this.killAllNonEssential();
-    
-    // Set high priority for essential
-    this.setEssentialHighPriority();
-    
-    // Clear caches
-    this.clearAllCaches();
-    
-    return {
-      processesKilled: this.backgroundProcesses.size - this.essentialProcesses.size,
-      memoryFreed: this.getMemoryUsage().nonEssential,
-      responseTime: '0.5ms'
-    };
-  }
-  
-  /**
-   * Kill all non-essential processes
+   * Kill all non-essential processes for focus mode
    */
   killAllNonEssential() {
     const killedProcesses = [];
     
-    for (const [name, process] of this.backgroundProcesses) {
-      if (!this.essentialProcesses.has(name)) {
-        this.stopProcess(name);
-        killedProcesses.push(name);
+    for (const [processId, bgProcess] of this.backgroundProcesses) {
+      if (!this.essentialProcesses.includes(processId) && !bgProcess.isPaused) {
+        this.stopProcess(processId);
+        killedProcesses.push(processId);
       }
     }
     
@@ -187,83 +128,87 @@ class BackgroundManager {
   setEssentialHighPriority() {
     for (const processName of this.essentialProcesses) {
       const process = this.backgroundProcesses.get(processName);
-      if (process) {
+      if (process && process.options) {
         process.options = { ...process.options, priority: 'high' };
+        console.log(`🚀 Set high priority for: ${processName}`);
       }
     }
     
-    console.log('🚀 Set high priority for essential processes');
+    console.log('✅ Essential processes set to high priority');
+  }
+  
+  /**
+   * Optimize for speed - kill non-essential and boost essential
+   */
+  optimizeForSpeed() {
+    console.log('⚡ Optimizing background processes for speed...');
+    
+    // Kill non-essential processes
+    const killedProcesses = this.killAllNonEssential();
+    
+    // Set essential processes to high priority
+    this.setEssentialHighPriority();
+    
+    // Clear caches for memory
+    this.clearAllCaches();
+    
+    return {
+      killedProcesses,
+      essentialProcesses: this.essentialProcesses.length,
+      optimizationLevel: 'ultra-fast'
+    };
   }
   
   /**
    * Clear all caches
    */
   clearAllCaches() {
-    // Clear component caches
-    if (typeof global !== 'undefined' && global.componentCache) {
-      global.componentCache.clear();
+    try {
+      // Clear component caches
+      if (typeof global !== 'undefined' && global.componentCache) {
+        global.componentCache.clear();
+        console.log('🗑️ Cleared component cache');
+      }
+      
+      // Clear image caches
+      if (typeof global !== 'undefined' && global.imageCache) {
+        global.imageCache.clear();
+        console.log('🗑️ Cleared image cache');
+      }
+      
+      // Force garbage collection if available
+      if (typeof global !== 'undefined' && global.gc) {
+        global.gc();
+        console.log('🗜️ Forced garbage collection');
+      }
+      
+      console.log('✅ All caches cleared successfully');
+    } catch (error) {
+      console.error('❌ Error clearing caches:', error);
     }
-    
-    // Clear image caches
-    if (typeof global !== 'undefined' && global.imageCache) {
-      global.imageCache.clear();
-    }
-    
-    console.log('🧹 Cleared all caches');
   }
   
   /**
-   * Get memory usage by processes
+   * Get process status
    */
-  getMemoryUsage() {
-    let totalMemory = 0;
-    const processMemory = {};
+  getProcessStatus() {
+    const processes = {};
     
-    for (const [name, process] of this.backgroundProcesses) {
-      const memory = this.estimateProcessMemory(name);
-      processMemory[name] = memory;
-      totalMemory += memory;
+    for (const [id, bgProcess] of this.backgroundProcesses) {
+      processes[id] = {
+        isPaused: bgProcess.isPaused,
+        priority: bgProcess.options.priority || 'normal',
+        hasInterval: !!bgProcess.intervalId,
+        isEssential: this.essentialProcesses.includes(id)
+      };
     }
     
     return {
-      total: totalMemory,
-      processes: processMemory,
-      essential: this.getEssentialMemoryUsage(processMemory),
-      nonEssential: totalMemory - this.getEssentialMemoryUsage(processMemory)
+      totalProcesses: this.backgroundProcesses.size,
+      essentialProcesses: this.essentialProcesses.length,
+      activeProcesses: Array.from(this.backgroundProcesses.keys()).filter(id => !this.backgroundProcesses.get(id).isPaused),
+      processes
     };
-  }
-  
-  /**
-   * Estimate memory usage for a process
-   */
-  estimateProcessMemory(processName) {
-    const memoryMap = {
-      upload: 50,      // 50MB for upload
-      notification: 20, // 20MB for notifications
-      currentScreen: 200, // 200MB for current screen
-      reels: 150,      // 150MB for reels
-      videos: 180,     // 180MB for videos
-      photos: 120,     // 120MB for photos
-      live: 160,       // 160MB for live
-      shayari: 80,     // 80MB for shayari
-      songs: 100,      // 100MB for songs
-      saved: 90        // 90MB for saved
-    };
-    
-    return memoryMap[processName] || 50;
-  }
-  
-  /**
-   * Get essential processes memory usage
-   */
-  getEssentialMemoryUsage(processMemory) {
-    let essentialMemory = 0;
-    
-    for (const processName of this.essentialProcesses) {
-      essentialMemory += processMemory[processName] || 0;
-    }
-    
-    return essentialMemory;
   }
   
   // Singleton instance

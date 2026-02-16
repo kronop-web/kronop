@@ -17,6 +17,11 @@ export default function SettingsScreen() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // Add console log to verify component mounting
+  useEffect(() => {
+    console.log('SettingsScreen mounted successfully!');
+  }, []);
+
   // Notification Settings
   const [notifications, setNotifications] = useState({
     pushNotifications: true,
