@@ -92,7 +92,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <User size={24} color={color} strokeWidth={2} />,
         }}
       />
-    </Tabs>
+          </Tabs>
     </View>
   );
 }

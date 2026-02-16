@@ -241,7 +241,7 @@ export default function ProfileScreen() {
         <TouchableOpacity style={styles.leftIcon}>
           <MaterialIcons name="bar-chart" size={24} color={theme.colors.text.primary} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.rightIcon}>
+        <TouchableOpacity style={styles.rightIcon} onPress={() => router.push('/settings')}>
           <MaterialIcons name="settings" size={24} color={theme.colors.text.primary} />
         </TouchableOpacity>
       </View>

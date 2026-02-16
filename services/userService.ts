@@ -11,7 +11,6 @@ export interface User {
   username: string;
   displayName: string;
   avatar: string;
-  bio: string;
   supporters: number;
   supporting: number;
   posts: number;

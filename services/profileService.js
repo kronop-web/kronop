@@ -1,82 +1,221 @@
-const DatabaseService = require('./databaseService');
-const User = require('../models/User');
+// MongoDB Profile Service
+// Handles all profile-related operations with MongoDB
 
-async function getProfile({ userId, phone }) {
-  if (userId) {
-    const user = await DatabaseService.getUserById(userId);
-    return user || null;
-  }
-  if (phone) {
-    let user = await DatabaseService.findUserByPhone(phone);
-    if (!user) {
-      user = await DatabaseService.createUser({ phone });
-    }
-    return user;
-  }
-  let user = await User.findOne({});
-  if (!user) {
-    user = await DatabaseService.createUser({ phone: 'unknown' });
-  }
-  return user;
-}
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://common-jesse-kronop-app-19cf0acc.koyeb.app';
+const CURRENT_USER_ID = 'guest_user';
 
-async function updateProfile({ id, phone, name, username, bio, profilePic, avatar, displayName, avatar_url, cover_image, location }) {
-  console.log(`[ProfileService] Updating profile for identifier: ${id || phone}`);
-  
-  const payload = {
-    ...(phone ? { phone } : {}),
-    ...(name ? { name } : {}),
-    ...(username ? { username } : {}),
-    ...(bio ? { bio } : {}),
-    ...(profilePic ? { profilePic } : {}),
-    ...(avatar ? { avatar } : {}),
-    ...(displayName ? { displayName } : {}),
-    ...(avatar_url ? { avatar: avatar_url, profilePic: avatar_url } : {}),
-    ...(cover_image ? { coverImage: cover_image } : {}),
-    ...(location ? { location } : {}),
-  };
+class ProfileService {
+  constructor() {
+    this.isConnected = false;
+    this.connectionAttempts = 0;
+    this.maxRetries = 3;
+  }
 
-  if (id) {
-    const updated = await DatabaseService.updateUser(id, payload);
-    if (!updated) {
-      // If ID not found, maybe it's a firebaseUid or phone
-      const user = await User.findOne({ 
-        $or: [
-          { firebaseUid: id },
-          { phone: id },
-          { email: id }
-        ]
+  // Test MongoDB connection
+  async testConnection() {
+    try {
+      console.log('🔍 Testing MongoDB connection for profiles...');
+      
+      const response = await fetch(`${API_BASE_URL}/api/test-connection`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
       });
-      if (user) return await DatabaseService.updateUser(user._id, payload);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ MongoDB Connection Test Result:', data);
+        this.isConnected = data.connected;
+        this.connectionAttempts = 0;
+        return { success: true, connected: data.connected };
+      } else {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('❌ MongoDB Connection Test Failed:', error);
+      this.connectionAttempts++;
+      this.isConnected = false;
+      
+      // If too many failures, disconnect
+      if (this.connectionAttempts >= this.maxRetries) {
+        console.log('🚫 Max connection attempts reached. Disconnecting profile service.');
+        return { success: false, error: 'Connection failed after max retries' };
+      }
+      
+      return { success: false, error: error.message };
     }
-    return updated;
-  }
-  
-  if (phone) {
-    const existing = await DatabaseService.findUserByPhone(phone);
-    if (existing) {
-      return await DatabaseService.updateUser(existing._id, payload);
-    }
-    return await DatabaseService.createUser({ phone, ...payload });
-  }
-  
-  // Fallback: If no identifier, try to find ANY user (last resort for dev stability)
-  const fallbackUser = await User.findOne({});
-  if (fallbackUser) {
-    return await DatabaseService.updateUser(fallbackUser._id, payload);
   }
 
-  throw new Error('Missing user identifier: Please provide userId or phone');
+  // Get user profile
+  async getProfile(userId = CURRENT_USER_ID) {
+    try {
+      if (!this.isConnected) {
+        const connectionTest = await this.testConnection();
+        if (!connectionTest.success) {
+          throw new Error('MongoDB not connected');
+        }
+      }
+
+      console.log(`📋 Fetching profile for user: ${userId}`);
+      
+      const response = await fetch(`${API_BASE_URL}/api/users/profile/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Profile fetched successfully:', data);
+        return { success: true, data };
+      } else if (response.status === 404) {
+        console.log('ℹ️ Profile not found, will create new one');
+        return { success: false, error: 'Profile not found', createNew: true };
+      } else {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('❌ Get Profile Error:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Create new profile
+  async createProfile(profileData) {
+    try {
+      if (!this.isConnected) {
+        const connectionTest = await this.testConnection();
+        if (!connectionTest.success) {
+          throw new Error('MongoDB not connected');
+        }
+      }
+
+      console.log('🆕 Creating new profile:', profileData);
+      
+      const response = await fetch(`${API_BASE_URL}/api/users/profile`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...profileData,
+          userId: CURRENT_USER_ID,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Profile created successfully:', data);
+        return { success: true, data };
+      } else {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('❌ Create Profile Error:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Update profile
+  async updateProfile(profileData) {
+    try {
+      if (!this.isConnected) {
+        const connectionTest = await this.testConnection();
+        if (!connectionTest.success) {
+          throw new Error('MongoDB not connected');
+        }
+      }
+
+      console.log('📝 Updating profile:', profileData);
+      
+      const response = await fetch(`${API_BASE_URL}/api/users/profile/${CURRENT_USER_ID}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...profileData,
+          updatedAt: new Date().toISOString()
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Profile updated successfully:', data);
+        return { success: true, data };
+      } else {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('❌ Update Profile Error:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Delete profile
+  async deleteProfile(userId = CURRENT_USER_ID) {
+    try {
+      if (!this.isConnected) {
+        const connectionTest = await this.testConnection();
+        if (!connectionTest.success) {
+          throw new Error('MongoDB not connected');
+        }
+      }
+
+      console.log(`🗑️ Deleting profile for user: ${userId}`);
+      
+      const response = await fetch(`${API_BASE_URL}/api/users/profile/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Profile deleted successfully:', data);
+        return { success: true, data };
+      } else {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('❌ Delete Profile Error:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Disconnect from MongoDB
+  disconnect() {
+    console.log('🔌 Disconnecting profile service from MongoDB');
+    this.isConnected = false;
+    this.connectionAttempts = 0;
+  }
+
+  // Reconnect to MongoDB
+  async reconnect() {
+    console.log('🔄 Reconnecting profile service to MongoDB');
+    this.connectionAttempts = 0;
+    return await this.testConnection();
+  }
+
+  // Get connection status
+  getConnectionStatus() {
+    return {
+      connected: this.isConnected,
+      attempts: this.connectionAttempts,
+      maxRetries: this.maxRetries
+    };
+  }
 }
 
-async function uploadProfileImage(userId, imageUrl) {
-  if (!userId || !imageUrl) throw new Error('userId and imageUrl required');
-  const user = await DatabaseService.updateUser(userId, { avatar: imageUrl, profilePic: imageUrl });
-  return user?.avatar || null;
-}
+// Create singleton instance
+const profileService = new ProfileService();
 
-module.exports = {
-  getProfile,
-  updateProfile,
-  uploadProfileImage,
-};
+// Auto-test connection on service load
+profileService.testConnection();
+
+export default profileService;

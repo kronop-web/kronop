@@ -15,7 +15,6 @@ const demoUsers: User[] = [
     username: 'payal_kumar',
     displayName: 'Payal Kumar',
     avatar: 'https://picsum.photos/100/100?random=101',
-    bio: 'Content Creator | Travel Enthusiast',
     supporters: 15420,
     supporting: 892,
     posts: 234,
@@ -26,7 +25,6 @@ const demoUsers: User[] = [
     username: 'rahul_sharma',
     displayName: 'Rahul Sharma',
     avatar: 'https://picsum.photos/100/100?random=102',
-    bio: 'Photographer | Nature Lover',
     supporters: 8934,
     supporting: 456,
     posts: 567,
@@ -37,7 +35,6 @@ const demoUsers: User[] = [
     username: 'priya_patel',
     displayName: 'Priya Patel',
     avatar: 'https://picsum.photos/100/100?random=103',
-    bio: 'Dancer | Fitness Coach',
     supporters: 23456,
     supporting: 234,
     posts: 189,
@@ -48,7 +45,6 @@ const demoUsers: User[] = [
     username: 'amit_singh',
     displayName: 'Amit Singh',
     avatar: 'https://picsum.photos/100/100?random=104',
-    bio: 'Musician | Guitar Player',
     supporters: 12456,
     supporting: 678,
     posts: 445,
@@ -59,7 +55,6 @@ const demoUsers: User[] = [
     username: 'neha_verma',
     displayName: 'Neha Verma',
     avatar: 'https://picsum.photos/100/100?random=105',
-    bio: 'Fashion Designer | Stylist',
     supporters: 34567,
     supporting: 123,
     posts: 678,
@@ -70,7 +65,6 @@ const demoUsers: User[] = [
     username: 'vijay_kumar',
     displayName: 'Vijay Kumar',
     avatar: 'https://picsum.photos/100/100?random=106',
-    bio: 'Actor | Model',
     supporters: 45678,
     supporting: 234,
     posts: 234,
@@ -106,8 +100,7 @@ export default function SearchUserScreen() {
         // Demo users always appear first
         const demoFiltered = demoUsers.filter(user => 
           user.username.toLowerCase().includes(query.toLowerCase()) ||
-          user.displayName.toLowerCase().includes(query.toLowerCase()) ||
-          user.bio.toLowerCase().includes(query.toLowerCase())
+          user.displayName.toLowerCase().includes(query.toLowerCase())
         );
         
         // Remove duplicates and combine
@@ -126,8 +119,7 @@ export default function SearchUserScreen() {
         // Fallback to demo users only
         const demoFiltered = demoUsers.filter(user => 
           user.username.toLowerCase().includes(query.toLowerCase()) ||
-          user.displayName.toLowerCase().includes(query.toLowerCase()) ||
-          user.bio.toLowerCase().includes(query.toLowerCase())
+          user.displayName.toLowerCase().includes(query.toLowerCase())
         );
         setFilteredUsers(demoFiltered);
       }
@@ -151,8 +143,8 @@ export default function SearchUserScreen() {
   };
 
   const handleUserPress = (userId: string) => {
-    // Navigate to user profile
-    router.push(`/profile/${userId}`);
+    // Profile navigation removed - system purged
+    console.log(`User ${userId} pressed - profile system removed`);
   };
 
   const handleSupport = async (userId: string) => {
@@ -199,7 +191,6 @@ export default function SearchUserScreen() {
       <View style={styles.userInfo}>
         <Text style={styles.displayName}>{item.displayName}</Text>
         <Text style={styles.username}>@{item.username}</Text>
-        <Text style={styles.userBio} numberOfLines={2}>{item.bio}</Text>
         
         <View style={styles.userStats}>
           <Text style={styles.statText}>
@@ -294,7 +285,7 @@ export default function SearchUserScreen() {
           <View style={styles.emptyContainer}>
             <MaterialIcons name="person-search" size={64} color="#666" />
             <Text style={styles.emptyTitle}>Search User Fatafat</Text>
-            <Text style={styles.emptySubtitle}>Find users by username, name or bio</Text>
+            <Text style={styles.emptySubtitle}>Find users by username or name</Text>
             
             {searchHistory.length > 0 && (
               <View style={styles.historyContainer}>
@@ -473,12 +464,6 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.text.secondary,
     marginTop: 2,
-  },
-  userBio: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.text.secondary,
-    marginTop: 4,
-    lineHeight: 16,
   },
   userStats: {
     flexDirection: 'row',

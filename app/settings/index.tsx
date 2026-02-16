@@ -24,7 +24,6 @@ export default function SettingsScreen() {
     chatNotifications: true,
     likeNotifications: true,
     commentNotifications: true,
-    followerNotifications: true,
   });
 
   // Privacy Settings
@@ -250,15 +249,9 @@ export default function SettingsScreen() {
           
           <View style={styles.settingItem}>
             <View style={styles.settingInfo}>
-              <Text style={styles.settingLabel}>Private Account</Text>
-              <Text style={styles.settingDescription}>Only followers can see your posts</Text>
+              <Text style={styles.settingLabel}>Account Privacy</Text>
+              <Text style={styles.settingDescription}>Privacy settings removed - system purged</Text>
             </View>
-            <Switch
-              value={privacy.privateAccount}
-              onValueChange={(value) => handlePrivacyChange('privateAccount', value)}
-              trackColor={{ false: '#767577', true: theme.colors.primary.main }}
-              thumbColor={privacy.privateAccount ? '#fff' : '#f4f3f4'}
-            />
           </View>
 
           <View style={styles.settingItem}>

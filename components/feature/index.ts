@@ -2,7 +2,6 @@ export { default as VideoCard } from './VideoScreen/VideoCard';
 export { CommentItem } from './CommentItem';
 export { StoryItem } from './StoryItem';
 export { PhotoCategoryCard } from './PhotoCategoryCard';
-export { default as SettingsSection } from './SettingsSection';
 export { StoryViewer } from './StoryViewer';
 
 // Components used by tabs - Updated
